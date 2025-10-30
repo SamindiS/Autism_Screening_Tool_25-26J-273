@@ -40,18 +40,32 @@ const GameWebView: React.FC<GameWebViewProps> = ({
 
   const getGameUrl = () => {
     const baseUrl = 'file:///android_asset/';
+    let gameUrl = '';
+    
     switch (gameType) {
       case 'frog_jump':
-        return `${baseUrl}games/index.html?type=frog_jump`;
+        gameUrl = `${baseUrl}games/index.html?type=frog_jump&lang=${language}`;
+        console.log('🎮 Loading Frog Jump Game:', gameUrl);
+        break;
       case 'day_night':
-        return `${baseUrl}games/day-night.html`;
+        gameUrl = `${baseUrl}games/day-night.html?lang=${language}`;
+        console.log('🎮 Loading Day-Night Game:', gameUrl);
+        break;
       case 'color_shape':
-        return `${baseUrl}games/color-shape.html`;
+        gameUrl = `${baseUrl}games/color-shape.html?lang=${language}`;
+        console.log('🎮 Loading Color-Shape Game:', gameUrl);
+        break;
       case 'rule_switch':
-        return `${baseUrl}games/rule-switch.html`;
+        gameUrl = `${baseUrl}games/rule-switch.html?lang=${language}`;
+        console.log('🎮 Loading Rule-Switch Game:', gameUrl);
+        break;
       default:
-        return `${baseUrl}games/index.html`;
+        gameUrl = `${baseUrl}games/index.html?lang=${language}`;
+        console.log('🎮 Loading Default Game (index.html):', gameUrl);
+        break;
     }
+    
+    return gameUrl;
   };
 
   const handleMessage = (event: any) => {
@@ -61,6 +75,7 @@ const GameWebView: React.FC<GameWebViewProps> = ({
       
       switch (data.type) {
         case 'game_complete':
+        case 'adventure_complete': // Handle Magic Garden game completion
           console.log('Game completed with results:', data.results);
           if (handleComplete) {
             handleComplete(data.results);

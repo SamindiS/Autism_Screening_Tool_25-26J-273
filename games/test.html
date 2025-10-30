@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Game</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #87CEEB 0%, #98FB98 100%);
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        .game-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .game-icon {
+            font-size: 100px;
+            margin-bottom: 20px;
+        }
+        
+        .title {
+            font-size: 36px;
+            color: #2E86AB;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .description {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .test-btn {
+            background: linear-gradient(135deg, #4CAF50, #8BC34A);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 30px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .test-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-icon">🎮</div>
+        <h1 class="title">Test Game</h1>
+        <p class="description">This is a test to verify the HTML games are working correctly!</p>
+        <button class="test-btn" onclick="testComplete()">Test Complete</button>
+    </div>
+
+    <script>
+        function testComplete() {
+            if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'game_complete',
+                    gameType: 'test',
+                    results: {
+                        score: 100,
+                        accuracy: 100,
+                        avgReactionTime: 1000,
+                        completionTime: 30,
+                        trials: []
+                    }
+                }));
+            } else {
+                alert('Test completed! This would send results back to React Native.');
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+

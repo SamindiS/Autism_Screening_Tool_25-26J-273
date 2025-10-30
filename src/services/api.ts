@@ -10,6 +10,12 @@ import {
 import { API_ENDPOINTS, STORAGE_KEYS } from '../constants';
 
 class ApiService {
+  getAllActivityLogs() {
+    throw new Error('Method not implemented.');
+  }
+  printDataToConsole() {
+    throw new Error('Method not implemented.');
+  }
   private api: AxiosInstance;
   private baseURL: string;
 

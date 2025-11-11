@@ -1,0 +1,231 @@
+{
+  "app": {
+    "name": "SenseAI",
+    "tagline": "ක්ලිනික් ඔටිසම් පරීක්ෂණ පද්ධතිය"
+  },
+  "common": {
+    "continue": "ඉදිරියට යන්න",
+    "cancel": "අවලංගු කරන්න",
+    "save": "සුරකින්න",
+    "delete": "මකන්න",
+    "edit": "සංස්කරණය කරන්න",
+    "back": "ආපසු",
+    "next": "ඊළඟ",
+    "finish": "අවසන් කරන්න",
+    "loading": "පූරණය වෙමින්...",
+    "error": "දෝෂයකි",
+    "success": "සාර්ථකයි",
+    "confirm": "තහවුරු කරන්න",
+    "yes": "ඔව්",
+    "no": "නැත",
+    "ok": "හරි",
+    "close": "වසන්න"
+  },
+  "auth": {
+    "login": {
+      "title": "ආයුබෝවන්",
+      "subtitle": "ඉදිරියට යාමට පුරනය වන්න",
+      "email": "විද්‍යුත් තැපෑල",
+      "password": "මුරපදය",
+      "emailPlaceholder": "ඔබේ විද්‍යුත් තැපෑල ඇතුළත් කරන්න",
+      "passwordPlaceholder": "ඔබේ මුරපදය ඇතුළත් කරන්න",
+      "loginButton": "පුරනය වන්න",
+      "forgotPassword": "මුරපදය අමතකද?",
+      "noAccount": "ගිණුමක් නැද්ද?",
+      "register": "මෙහි ලියාපදිංචි වන්න",
+      "invalidCredentials": "වැරදි විද්‍යුත් තැපෑල හෝ මුරපදයකි",
+      "loginSuccess": "පුරනය සාර්ථකයි!"
+    },
+    "register": {
+      "title": "ගිණුමක් සාදන්න",
+      "subtitle": "වෛද්‍යවරයකු ලෙස ලියාපදිංචි වන්න",
+      "fullName": "සම්පූර්ණ නම",
+      "username": "පරිශීලක නාමය",
+      "email": "විද්‍යුත් තැපෑල",
+      "password": "මුරපදය",
+      "confirmPassword": "මුරපදය තහවුරු කරන්න",
+      "registerButton": "ලියාපදිංචි වන්න",
+      "haveAccount": "දැනටමත් ගිණුමක් තිබේද?",
+      "login": "මෙහි පුරනය වන්න",
+      "registerSuccess": "ලියාපදිංචිය සාර්ථකයි!"
+    },
+    "twoFactor": {
+      "title": "ද්වි-සාධක සත්‍යාපනය",
+      "subtitle": "ඔබේ විද්‍යුත් තැපෑලට යවන ලද කේතය ඇතුළත් කරන්න",
+      "code": "සත්‍යාපන කේතය",
+      "verify": "සත්‍යාපනය කරන්න",
+      "resend": "කේතය නැවත යවන්න"
+    }
+  },
+  "dashboard": {
+    "title": "උපකරණ පුවරුව",
+    "welcome": "ආයුබෝවන්, {{name}}",
+    "stats": {
+      "totalChildren": "මුළු දරුවන්",
+      "totalSessions": "මුළු සැසි",
+      "sessionsToday": "අද සැසි",
+      "sessionsThisWeek": "මෙම සතියේ සැසි"
+    },
+    "actions": {
+      "newAssessment": "නව තක්සේරුවක්",
+      "viewChildren": "දරුවන් බලන්න",
+      "viewReports": "වාර්තා බලන්න",
+      "settings": "සැකසුම්"
+    },
+    "recentSessions": {
+      "title": "මෑත සැසි",
+      "noSessions": "මෑත සැසි නොමැත"
+    }
+  },
+  "children": {
+    "list": {
+      "title": "දරුවන්",
+      "addChild": "දරුවෙකු එකතු කරන්න",
+      "search": "දරුවන් සොයන්න...",
+      "noChildren": "තවම දරුවන් ලියාපදිංචි කර නැත"
+    },
+    "detail": {
+      "title": "දරුවාගේ විස්තර",
+      "information": "තොරතුරු",
+      "sessions": "සැසි",
+      "reports": "වාර්තා",
+      "edit": "සංස්කරණය කරන්න",
+      "delete": "මකන්න"
+    },
+    "form": {
+      "title": "දරුවා ලියාපදිංචි කිරීම",
+      "name": "සම්පූර්ණ නම",
+      "namePlaceholder": "දරුවාගේ නම ඇතුළත් කරන්න",
+      "age": "වයස",
+      "dateOfBirth": "උපන් දිනය",
+      "gender": "ලිංගභේදය",
+      "male": "පිරිමි",
+      "female": "ගැහැණු",
+      "language": "කැමති භාෂාව",
+      "medicalHistory": "වෛද්‍ය ඉතිහාසය (විකල්ප)",
+      "notes": "සටහන් (විකල්ප)",
+      "parentalConsent": "දෙමාපිය එකඟත්වය ලබා ගෙන ඇත",
+      "save": "දරුවා සුරකින්න",
+      "cancel": "අවලංගු කරන්න",
+      "successCreate": "දරුවා සාර්ථකව ලියාපදිංචි කරන ලදී!",
+      "successUpdate": "දරුවාගේ තොරතුරු යාවත්කාලීන කරන ලදී!"
+    }
+  },
+  "assessment": {
+    "ageSelection": {
+      "title": "තක්සේරුව ආරම්භ කරන්න",
+      "subtitle": "{{name}} සඳහා තක්සේරුව",
+      "selectedGame": "තෝරාගත් ක්‍රීඩාව",
+      "suitable": "{{ageGroup}} සඳහා සුදුසුයි",
+      "start": "තක්සේරුව ආරම්භ කරන්න"
+    },
+    "instructions": {
+      "title": "ක්‍රීඩා උපදෙස්",
+      "goNoGo": {
+        "title": "මැඩියා පැනීමේ ක්‍රීඩාව",
+        "instruction1": "මැඩියෙකු දුටු විට ටැප් කරන්න",
+        "instruction2": "ගලක් දුටු විට ටැප් නොකරන්න",
+        "instruction3": "හැකි තරම් වේගවත් හා නිවැරදිව කිරීමට උත්සාහ කරන්න!"
+      },
+      "stroop": {
+        "title": "දිවා සහ රාත්‍රී ක්‍රීඩාව",
+        "instruction1": "ඔබ හිරු දුටු විට, 'රාත්‍රිය' කියන්න",
+        "instruction2": "ඔබ සඳ දුටු විට, 'දිවා' කියන්න",
+        "instruction3": "මතක තබා ගන්න: විරුද්ධ දේ කියන්න!"
+      },
+      "dccs": {
+        "title": "හැඩය සහ වර්ණ ක්‍රීඩාව",
+        "instruction1": "පළමුව, වර්ණය අනුව වර්ග කරන්න",
+        "instruction2": "ඉන්පසු, අපි හැඩය අනුව වර්ග කිරීමට මාරු වෙමු",
+        "instruction3": "නීතියට අවධානය යොමු කරන්න!"
+      },
+      "practice": "පළමුව පුහුණු වෙමු!",
+      "ready": "ආරම්භ කිරීමට සූදානම්ද?"
+    },
+    "game": {
+      "practice": "පුහුණුව",
+      "trial": "උත්සාහය {{number}} / {{total}}",
+      "tap": "ටැප් කරන්න!",
+      "dontTap": "ටැප් නොකරන්න!",
+      "correct": "නිවැරදියි!",
+      "incorrect": "නැවත උත්සාහ කරන්න!",
+      "noResponse": "වැඩි මන්දයි!",
+      "switchRule": "දැන් නව නීතියක්!",
+      "pause": "විරාමය",
+      "quit": "ඉවත් වන්න"
+    },
+    "results": {
+      "title": "තක්සේරුව සම්පූර්ණයි!",
+      "subtitle": "හොඳින් කළා, {{name}}!",
+      "metrics": {
+        "accuracy": "නිරවද්‍යතාවය",
+        "reactionTime": "ප්‍රතික්‍රියා කාලය",
+        "switchCost": "මාරු වීමේ පිරිවැය",
+        "errors": "දෝෂ"
+      },
+      "riskLevel": "අවදානම් මට්ටම",
+      "low": "අඩු",
+      "moderate": "මධ්‍යස්ථ",
+      "high": "ඉහළ",
+      "viewReport": "සවිස්තර වාර්තාව බලන්න",
+      "newAssessment": "නව තක්සේරුවක් ආරම්භ කරන්න",
+      "backToDashboard": "උපකරණ පුවරුවට ආපසු යන්න"
+    }
+  },
+  "reports": {
+    "list": {
+      "title": "වාර්තා",
+      "noReports": "වාර්තා නොමැත"
+    },
+    "detail": {
+      "title": "තක්සේරු වාර්තාව",
+      "childInfo": "දරුවාගේ තොරතුරු",
+      "sessionInfo": "සැසි තොරතුරු",
+      "performance": "කාර්ය සාධන මිනුම්",
+      "riskAssessment": "අවදානම් තක්සේරුව",
+      "recommendations": "නිර්දේශ",
+      "export": "වාර්තාව අපනයනය කරන්න",
+      "downloadPDF": "PDF බාගන්න"
+    },
+    "summary": {
+      "overallScore": "සමස්ත ලකුණු",
+      "cognitiveFlexibility": "සංජානන නම්‍යශීලිත්වය",
+      "inhibitoryControl": "නිෂේධාත්මක පාලනය",
+      "processingSpeed": "සැකසුම් වේගය",
+      "consistency": "ස්ථාවරත්වය"
+    }
+  },
+  "bot": {
+    "title": "වෛද්‍ය ප්‍රශ්න",
+    "subtitle": "කරුණාකර පහත ප්‍රශ්නවලට පිළිතුරු දෙන්න",
+    "submit": "පිළිතුරු ඉදිරිපත් කරන්න",
+    "skipForNow": "දැනට මග හරින්න"
+  },
+  "settings": {
+    "title": "සැකසුම්",
+    "profile": "පැතිකඩ",
+    "language": "භාෂාව",
+    "notifications": "දැනුම්දීම්",
+    "about": "ගැන",
+    "logout": "ඉවත් වන්න",
+    "logoutConfirm": "ඔබට ඉවත් වීමට අවශ්‍ය බව විශ්වාසද?"
+  },
+  "errors": {
+    "network": "ජාල දෝෂයකි. කරුණාකර ඔබේ සම්බන්ධතාවය පරීක්ෂා කරන්න.",
+    "serverError": "සේවාදායක දෝෂයකි. කරුණාකර පසුව නැවත උත්සාහ කරන්න.",
+    "unauthorized": "අනවසරයි. කරුණාකර නැවත පුරනය වන්න.",
+    "notFound": "සම්පත හමු නොවීය.",
+    "validationError": "කරුණාකර ඔබේ ආදානය පරීක්ෂා කරන්න.",
+    "genericError": "යමක් වැරදී ඇත. කරුණාකර නැවත උත්සාහ කරන්න."
+  },
+  "validation": {
+    "required": "මෙම ක්ෂේත්‍රය අවශ්‍යයි",
+    "email": "කරුණාකර වලංගු විද්‍යුත් තැපෑලක් ඇතුළත් කරන්න",
+    "password": "මුරපදය අවම වශයෙන් අක්ෂර 8ක් විය යුතුයි",
+    "passwordMatch": "මුරපද ගැලපිය යුතුයි",
+    "age": "වයස 2 සහ 6 අතර විය යුතුයි"
+  }
+}
+
+
+

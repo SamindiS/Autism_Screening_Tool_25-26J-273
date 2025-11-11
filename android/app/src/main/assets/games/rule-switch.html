@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rule Switch Game - DCCS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Arial Rounded MT Bold', 'Helvetica Rounded', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .background {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+
+        .game-container {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .instructions-screen,
+        .game-screen,
+        .results-screen {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Instructions Screen */
+        .instructions-screen {
+            text-align: center;
+            padding: 40px 30px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+        }
+
+        .game-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .instructions-title {
+            font-size: 32px;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .instructions-text {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .rule-examples {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .rule-example {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            border: 3px solid #667eea;
+        }
+
+        .rule-title {
+            font-size: 20px;
+            color: #667eea;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .rule-cards {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .example-card {
+            width: 100px;
+            height: 100px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            border: 3px solid;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #4CAF50, #66BB6A);
+            color: white;
+            border: none;
+            padding: 20px 50px;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
+            transition: transform 0.2s;
+        }
+
+        .start-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Game Screen */
+        .game-screen {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+        }
+
+        .back-btn {
+            background: #FF6B9D;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+
+        .score-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .progress-bar {
+            height: 12px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #66BB6A);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }
+
+        .rule-display {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .rule-text {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .rule-subtitle {
+            font-size: 18px;
+            color: #666;
+        }
+
+        .trial-info {
+            text-align: center;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .stimulus-card {
+            background: white;
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 120px;
+            border: 5px solid;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: cardAppear 0.5s ease;
+        }
+
+        @keyframes cardAppear {
+            from {
+                transform: scale(0.5) rotate(-10deg);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1) rotate(0);
+                opacity: 1;
+            }
+        }
+
+        .sorting-boxes {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 20px;
+        }
+
+        .sorting-box {
+            width: 150px;
+            height: 150px;
+            border-radius: 20px;
+            border: 5px dashed white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .sorting-box:active {
+            transform: scale(0.95);
+        }
+
+        .sorting-box-highlight {
+            background: rgba(255, 255, 255, 0.4);
+            border-color: #FFD700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+        }
+
+        .box-icon {
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+
+        .box-label {
+            font-size: 18px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .feedback-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(76, 175, 80, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: feedbackFade 0.5s;
+        }
+
+        .feedback-overlay.wrong {
+            background: rgba(244, 67, 54, 0.9);
+        }
+
+        @keyframes feedbackFade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .feedback-text {
+            font-size: 60px;
+            font-weight: bold;
+            color: white;
+            animation: feedbackPulse 0.5s;
+        }
+
+        @keyframes feedbackPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        /* Results Screen */
+        .results-screen {
+            text-align: center;
+            padding: 40px 30px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+        }
+
+        .results-icon {
+            font-size: 100px;
+            margin-bottom: 20px;
+        }
+
+        .results-title {
+            font-size: 36px;
+            color: #4CAF50;
+            margin-bottom: 30px;
+        }
+
+        .results-stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 25px;
+            border-radius: 20px;
+            min-width: 120px;
+            color: white;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .complete-btn {
+            background: linear-gradient(135deg, #4CAF50, #66BB6A);
+            color: white;
+            border: none;
+            padding: 20px 50px;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+        }
+
+        .music-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FF6B9D, #FF8E53);
+            border: none;
+            font-size: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.4);
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+    <div class="background" id="background"></div>
+    
+    <div class="game-container">
+        <!-- Instructions Screen -->
+        <div id="instructionsScreen" class="instructions-screen">
+            <div class="game-icon">🔷🔶</div>
+            <h1 class="instructions-title">Rule Switch Game!</h1>
+            <p class="instructions-text">
+                In this game, you'll sort cards by following rules.<br>
+                Sometimes we sort by COLOR, sometimes by SHAPE!<br>
+                Listen carefully to the rule! 🎯
+            </p>
+            
+            <div class="rule-examples">
+                <div class="rule-example">
+                    <div class="rule-title">📘 Color Rule</div>
+                    <p style="color: #666; margin-bottom: 15px;">Sort blue cards to blue box, red cards to red box</p>
+                    <div class="rule-cards">
+                        <div class="example-card" style="background: #2196F3; border-color: #1976D2;">⭐</div>
+                        <div class="example-card" style="background: #F44336; border-color: #C62828;">♥️</div>
+                    </div>
+                </div>
+                
+                <div class="rule-example">
+                    <div class="rule-title">🔷 Shape Rule</div>
+                    <p style="color: #666; margin-bottom: 15px;">Sort stars to star box, hearts to heart box</p>
+                    <div class="rule-cards">
+                        <div class="example-card" style="background: #2196F3; border-color: #1976D2;">⭐</div>
+                        <div class="example-card" style="background: #F44336; border-color: #C62828;">♥️</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="start-btn" onclick="speakInstructions()" style="background: linear-gradient(135deg, #667eea, #764ba2); margin-bottom: 15px;">🔊 Hear Instructions</button>
+            <button class="start-btn" onclick="startGame()">🎮 Let's Play!</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="game-screen hidden">
+            <div class="game-header">
+                <button class="back-btn" onclick="goBack()">← Back</button>
+                <div class="score-display">⭐ <span id="score">0</span></div>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+
+            <div class="rule-display" id="ruleDisplay">
+                <div class="rule-text" id="ruleText">Color Rule</div>
+                <div class="rule-subtitle" id="ruleSubtitle">Match by color!</div>
+            </div>
+
+            <div class="trial-info" id="trialInfo">Trial 1 of 20</div>
+
+            <div class="stimulus-card" id="stimulusCard"></div>
+
+            <div class="sorting-boxes" id="sortingBoxes"></div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="resultsScreen" class="results-screen hidden">
+            <div class="results-icon">🏆</div>
+            <h1 class="results-title">Fantastic Work!</h1>
+            
+            <div class="results-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="finalScore">0</div>
+                    <div class="stat-label">Stars ⭐</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="accuracy">0%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="switchCost">0ms</div>
+                    <div class="stat-label">Switch Speed</div>
+                </div>
+            </div>
+            
+            <button class="complete-btn" onclick="completeGame()">🎉 All Done!</button>
+        </div>
+    </div>
+
+    <!-- Music Toggle -->
+    <button class="music-toggle" id="musicToggle" onclick="toggleMusic()">🔊</button>
+
+    <!-- Background Music Audio -->
+    <audio id="backgroundMusic" loop preload="auto">
+        <source src="file:///android_asset/sounds/frog-game.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        console.log('🎮 Rule Switch Game Loading...');
+        
+        // Translations for multilingual support
+        const translations = {
+            en: {
+                title: "Rule Switch Game",
+                instructions: "First, sort by COLOR!<br>Then, switch to SHAPE!",
+                startButton: "Start Game",
+                sortByColor: "Sort by COLOR!",
+                sortByShape: "Sort by SHAPE!",
+                ruleSwitch: "SWITCH RULE!",
+                back: "Back",
+                music: "Music",
+                score: "Score",
+                time: "Time",
+                gameOver: "Game Over!",
+                totalScore: "Total Score",
+                accuracy: "Accuracy",
+                avgReactionTime: "Avg Reaction Time",
+                switchCost: "Switch Cost",
+                finish: "Finish",
+                excellent: "Excellent!",
+                goodJob: "Good!",
+                tryAgain: "Keep Going!"
+            },
+            si: {
+                title: "රීති මාරු ක්‍රීඩාව",
+                instructions: "පළමුව, වර්ණය අනුව වර්ග කරන්න!<br>පසුව, හැඩය වෙත මාරු වන්න!",
+                startButton: "ක්‍රීඩාව අරඹන්න",
+                sortByColor: "වර්ණය අනුව වර්ග කරන්න!",
+                sortByShape: "හැඩය අනුව වර්ග කරන්න!",
+                ruleSwitch: "රීතිය මාරු කරන්න!",
+                back: "ආපසු",
+                music: "සංගීතය",
+                score: "ලකුණු",
+                time: "කාලය",
+                gameOver: "ක්‍රීඩාව අවසන්!",
+                totalScore: "මුළු ලකුණු",
+                accuracy: "නිරවද්‍යතාව",
+                avgReactionTime: "සාමාන්‍ය ප්‍රතික්‍රියා කාලය",
+                switchCost: "මාරු වියදම",
+                finish: "අවසන් කරන්න",
+                excellent: "විශිෂ්ට!",
+                goodJob: "හොඳයි!",
+                tryAgain: "දිගටම කරගෙන යන්න!"
+            },
+            ta: {
+                title: "விதி மாற்று விளையாட்டு",
+                instructions: "முதலில், நிறம் மூலம் வரிசைப்படுத்தவும்!<br>பின்பு, வடிவத்திற்கு மாறவும்!",
+                startButton: "விளையாட்டை துவக்கு",
+                sortByColor: "நிறம் மூலம் வரிசைப்படுத்தவும்!",
+                sortByShape: "வடிவம் மூலம் வரிசைப்படுத்தவும்!",
+                ruleSwitch: "விதியை மாற்றவும்!",
+                back: "பின்",
+                music: "இசை",
+                score: "மதிப்பெண்",
+                time: "நேரம்",
+                gameOver: "விளையாட்டு முடிந்தது!",
+                totalScore: "மொத்த மதிப்பெண்",
+                accuracy: "துல்லியம்",
+                avgReactionTime: "சராசரி எதிர்வினை நேரம்",
+                switchCost: "மாற்ற செலவு",
+                finish: "முடி",
+                excellent: "சிறப்பு!",
+                goodJob: "நல்லது!",
+                tryAgain: "தொடர்ந்து செய்யுங்கள்!"
+            }
+        };
+        
+        // Current language
+        let currentLanguage = 'en';
+        
+        // Translation helper
+        function t(key) {
+            return translations[currentLanguage][key] || translations['en'][key] || key;
+        }
+
+        // Child data
+        let childData = {
+            age: 5,
+            name: 'Child'
+        };
+        
+        // Game state
+        let gameState = {
+            currentTrial: 1,
+            maxTrials: 20,
+            score: 0,
+            trials: [],
+            currentRule: 'color', // 'color' or 'shape'
+            switchTrials: [11], // Trial numbers where rule switches
+            currentCard: null,
+            sessionStartTime: null,
+            isMusicPlaying: false,
+            lastSwitchTrial: 0
+        };
+
+        // Card configurations
+        const COLORS = {
+            blue: { bg: '#2196F3', border: '#1976D2', name: 'Blue' },
+            red: { bg: '#F44336', border: '#C62828', name: 'Red' }
+        };
+
+        const SHAPES = {
+            star: { emoji: '⭐', name: 'Star' },
+            heart: { emoji: '♥️', name: 'Heart' }
+        };
+
+        // Audio context
+        let audioContext;
+        let sounds = {};
+
+        // Listen for child data and language from React Native
+        window.addEventListener('message', function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'childData') {
+                    childData = data.child;
+                    if (data.language) {
+                        currentLanguage = data.language;
+                        console.log('🌍 Language set to:', currentLanguage);
+                    }
+                    console.log('👶 Received child data:', childData);
+                }
+            } catch (e) {
+                console.log('Message parse error:', e);
+            }
+        });
+
+        // Text-to-Speech function
+        function speak(text) {
+            try {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.1;
+                    utterance.volume = 0.8;
+                    utterance.lang = 'en-US';
+                    window.speechSynthesis.speak(utterance);
+                    console.log('🔊 Speaking:', text);
+                }
+            } catch (e) {
+                console.error('Speech error:', e);
+            }
+        }
+
+        function speakInstructions() {
+            const instructions = "Welcome to the Rule Switch Game! In this game, you'll sort cards by following different rules. Sometimes we sort by COLOR - put blue cards with blue and red cards with red. Sometimes we sort by SHAPE - put stars with stars and hearts with hearts. Listen carefully to which rule we're using!";
+            speak(instructions);
+        }
+
+        function initAudio() {
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return false;
+                audioContext = new AudioContextClass();
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                return true;
+            } catch (e) {
+                console.error('❌ Audio init error:', e);
+                return false;
+            }
+        }
+
+        function playSound(frequency, duration) {
+            if (!audioContext) return;
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration);
+            } catch (e) {
+                console.error('Sound error:', e);
+            }
+        }
+
+        function toggleMusic() {
+            gameState.isMusicPlaying = !gameState.isMusicPlaying;
+            const btn = document.getElementById('musicToggle');
+            const bgMusic = document.getElementById('backgroundMusic');
+            btn.textContent = gameState.isMusicPlaying ? '🔊' : '🔇';
+            if (gameState.isMusicPlaying) {
+                bgMusic.volume = 0.3;
+                bgMusic.play();
+            } else {
+                bgMusic.pause();
+                bgMusic.currentTime = 0;
+            }
+        }
+
+        function createBackground() {
+            const background = document.getElementById('background');
+            for (let i = 0; i < 50; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.width = Math.random() * 3 + 1 + 'px';
+                star.style.height = star.style.width;
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                background.appendChild(star);
+            }
+        }
+
+        function startGame() {
+            console.log('🎮 Game Starting!');
+            if (!audioContext) initAudio();
+            gameState.sessionStartTime = Date.now();
+            gameState.currentTrial = 1;
+            gameState.score = 0;
+            gameState.trials = [];
+            gameState.currentRule = 'color';
+            document.getElementById('instructionsScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+            createBackground();
+            nextTrial();
+        }
+
+        function nextTrial() {
+            if (gameState.currentTrial > gameState.maxTrials) {
+                endGame();
+                return;
+            }
+
+            // Check if it's time to switch rules
+            if (gameState.switchTrials.includes(gameState.currentTrial)) {
+                switchRule();
+            }
+
+            // Generate random card
+            const colors = Object.keys(COLORS);
+            const shapes = Object.keys(SHAPES);
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const shape = shapes[Math.floor(Math.random() * shapes.length)];
+
+            gameState.currentCard = { color, shape };
+            gameState.startTime = Date.now();
+
+            updateUI();
+            showCard();
+            showSortingBoxes();
+        }
+
+        function switchRule() {
+            gameState.currentRule = gameState.currentRule === 'color' ? 'shape' : 'color';
+            gameState.lastSwitchTrial = gameState.currentTrial;
+            
+            // Announce rule change
+            const ruleText = gameState.currentRule === 'color' ? 
+                'New rule: Match by COLOR!' : 
+                'New rule: Match by SHAPE!';
+            speak(ruleText);
+            
+            showRuleSwitchNotification();
+        }
+
+        function showRuleSwitchNotification() {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 30%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #FF6B9D, #FF8E53);
+                color: white;
+                padding: 30px 40px;
+                border-radius: 20px;
+                font-size: 28px;
+                font-weight: bold;
+                text-align: center;
+                z-index: 9999;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+                animation: bounce 0.6s ease;
+            `;
+            notification.innerHTML = `
+                🔄 <span style="display:block; margin-top:10px;">NEW RULE!</span>
+                <span style="font-size:20px; display:block; margin-top:10px;">
+                    ${gameState.currentRule === 'color' ? 'Match by COLOR!' : 'Match by SHAPE!'}
+                </span>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.transition = 'opacity 0.3s';
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
+        }
+
+        function updateUI() {
+            const progress = (gameState.currentTrial / gameState.maxTrials) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('trialInfo').textContent = `Trial ${gameState.currentTrial} of ${gameState.maxTrials}`;
+            document.getElementById('score').textContent = gameState.score;
+
+            const ruleDisplay = document.getElementById('ruleDisplay');
+            if (gameState.currentRule === 'color') {
+                document.getElementById('ruleText').textContent = '📘 Color Rule';
+                document.getElementById('ruleSubtitle').textContent = 'Match by color!';
+                ruleDisplay.style.background = 'linear-gradient(135deg, #E3F2FD, #BBDEFB)';
+            } else {
+                document.getElementById('ruleText').textContent = '🔷 Shape Rule';
+                document.getElementById('ruleSubtitle').textContent = 'Match by shape!';
+                ruleDisplay.style.background = 'linear-gradient(135deg, #F3E5F5, #E1BEE7)';
+            }
+        }
+
+        function showCard() {
+            const card = gameState.currentCard;
+            const stimulusCard = document.getElementById('stimulusCard');
+            stimulusCard.textContent = SHAPES[card.shape].emoji;
+            stimulusCard.style.background = COLORS[card.color].bg;
+            stimulusCard.style.borderColor = COLORS[card.color].border;
+        }
+
+        function showSortingBoxes() {
+            const container = document.getElementById('sortingBoxes');
+            container.innerHTML = '';
+
+            if (gameState.currentRule === 'color') {
+                // Show color boxes
+                Object.keys(COLORS).forEach(color => {
+                    const box = createSortingBox(color, 'color');
+                    container.appendChild(box);
+                });
+            } else {
+                // Show shape boxes
+                Object.keys(SHAPES).forEach(shape => {
+                    const box = createSortingBox(shape, 'shape');
+                    container.appendChild(box);
+                });
+            }
+        }
+
+        function createSortingBox(value, type) {
+            const box = document.createElement('div');
+            box.className = 'sorting-box';
+            box.onclick = () => handleSort(value);
+
+            const icon = document.createElement('div');
+            icon.className = 'box-icon';
+            
+            const label = document.createElement('div');
+            label.className = 'box-label';
+
+            if (type === 'color') {
+                icon.textContent = '●';
+                icon.style.color = COLORS[value].bg;
+                label.textContent = COLORS[value].name;
+                box.style.borderColor = COLORS[value].bg;
+            } else {
+                icon.textContent = SHAPES[value].emoji;
+                label.textContent = SHAPES[value].name;
+            }
+
+            box.appendChild(icon);
+            box.appendChild(label);
+            return box;
+        }
+
+        function handleSort(value) {
+            const card = gameState.currentCard;
+            const reactionTime = Date.now() - gameState.startTime;
+            
+            let isCorrect;
+            if (gameState.currentRule === 'color') {
+                isCorrect = value === card.color;
+            } else {
+                isCorrect = value === card.shape;
+            }
+
+            const isPostSwitch = gameState.currentTrial === gameState.lastSwitchTrial + 1;
+
+            const trial = {
+                trialNumber: gameState.currentTrial,
+                rule: gameState.currentRule,
+                cardColor: card.color,
+                cardShape: card.shape,
+                response: value,
+                reactionTime: reactionTime,
+                correct: isCorrect,
+                isPostSwitch: isPostSwitch,
+                timestamp: new Date().toISOString()
+            };
+            gameState.trials.push(trial);
+
+            console.log(`Trial ${gameState.currentTrial}: ${isCorrect ? 'Correct' : 'Wrong'}, RT: ${reactionTime}ms`);
+
+            if (isCorrect) {
+                gameState.score++;
+                showFeedback(true);
+                playSound(880, 0.15);
+            } else {
+                showFeedback(false);
+                playSound(220, 0.2);
+            }
+
+            setTimeout(() => {
+                gameState.currentTrial++;
+                nextTrial();
+            }, 1500);
+        }
+
+        function showFeedback(isCorrect) {
+            const feedback = document.createElement('div');
+            feedback.className = 'feedback-overlay' + (isCorrect ? '' : ' wrong');
+            const text = document.createElement('div');
+            text.className = 'feedback-text';
+            text.textContent = isCorrect ? '✓ Correct!' : '✗ Try Again!';
+            feedback.appendChild(text);
+            document.body.appendChild(feedback);
+            setTimeout(() => feedback.remove(), 1000);
+        }
+
+        function endGame() {
+            console.log('🏆 Game Complete!');
+            gameState.isMusicPlaying = false;
+            const bgMusic = document.getElementById('backgroundMusic');
+            if (bgMusic) {
+                bgMusic.pause();
+                bgMusic.currentTime = 0;
+            }
+
+            const correctTrials = gameState.trials.filter(t => t.correct);
+            const accuracy = (correctTrials.length / gameState.trials.length) * 100;
+            const avgReactionTime = gameState.trials.reduce((sum, t) => sum + t.reactionTime, 0) / gameState.trials.length;
+            
+            // Calculate switch cost (difference between post-switch and pre-switch trials)
+            const preSwitchTrials = gameState.trials.filter(t => !t.isPostSwitch && t.trialNumber < 11);
+            const postSwitchTrials = gameState.trials.filter(t => t.isPostSwitch);
+            const preSwitchRT = preSwitchTrials.length > 0 ? 
+                preSwitchTrials.reduce((sum, t) => sum + t.reactionTime, 0) / preSwitchTrials.length : 0;
+            const postSwitchRT = postSwitchTrials.length > 0 ? 
+                postSwitchTrials.reduce((sum, t) => sum + t.reactionTime, 0) / postSwitchTrials.length : 0;
+            const switchCost = Math.round(postSwitchRT - preSwitchRT);
+
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('accuracy').textContent = Math.round(accuracy) + '%';
+            document.getElementById('switchCost').textContent = switchCost + 'ms';
+
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('resultsScreen').classList.remove('hidden');
+        }
+
+        function completeGame() {
+            const correctTrials = gameState.trials.filter(t => t.correct);
+            const accuracy = (correctTrials.length / gameState.trials.length) * 100;
+            const avgReactionTime = gameState.trials.reduce((sum, t) => sum + t.reactionTime, 0) / gameState.trials.length;
+            
+            const preSwitchTrials = gameState.trials.filter(t => !t.isPostSwitch && t.trialNumber < 11);
+            const postSwitchTrials = gameState.trials.filter(t => t.isPostSwitch);
+            const preSwitchRT = preSwitchTrials.length > 0 ? 
+                preSwitchTrials.reduce((sum, t) => sum + t.reactionTime, 0) / preSwitchTrials.length : 0;
+            const postSwitchRT = postSwitchTrials.length > 0 ? 
+                postSwitchTrials.reduce((sum, t) => sum + t.reactionTime, 0) / postSwitchTrials.length : 0;
+            const switchCost = Math.round(postSwitchRT - preSwitchRT);
+
+            const completionTime = Math.floor((Date.now() - gameState.sessionStartTime) / 1000);
+
+            const results = {
+                trials: gameState.trials,
+                totalTrials: gameState.maxTrials,
+                correctTrials: correctTrials.length,
+                accuracy: accuracy,
+                avgReactionTime: avgReactionTime,
+                switchCost: switchCost,
+                completionTime: completionTime,
+                score: gameState.score
+            };
+
+            console.log('📊 Results:', results);
+
+            if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'game_complete',
+                    results: results
+                }));
+            } else {
+                console.log('⚠️ Not in React Native WebView');
+                alert('Game completed! Results: ' + JSON.stringify(results, null, 2));
+            }
+        }
+
+        function goBack() {
+            console.log('⬅️ Going back');
+            gameState.isMusicPlaying = false;
+            const bgMusic = document.getElementById('backgroundMusic');
+            if (bgMusic) {
+                bgMusic.pause();
+                bgMusic.currentTime = 0;
+            }
+            if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'go_back'
+                }));
+            } else {
+                console.log('⚠️ Not in React Native WebView');
+                alert('Going back...');
+            }
+        }
+
+        createBackground();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,45 @@
+{
+  "name": "senseai-backend",
+  "version": "1.0.0",
+  "description": "Backend API for SenseAI Autism Screening Tool",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "serve": "firebase emulators:start",
+    "deploy": "npm run build && firebase deploy --only functions"
+  },
+  "keywords": [
+    "autism",
+    "screening",
+    "firebase",
+    "api"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "firebase-admin": "^12.0.0",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.2",
+    "pdfkit": "^0.13.0",
+    "pako": "^2.1.0",
+    "joi": "^17.11.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.5",
+    "@types/cors": "^2.8.17",
+    "@types/pdfkit": "^0.13.0",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0"
+  }
+}
+
+
+

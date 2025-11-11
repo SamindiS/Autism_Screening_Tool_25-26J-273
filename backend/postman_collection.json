@@ -1,0 +1,189 @@
+{
+  "info": {
+    "name": "SenseAI Backend API",
+    "description": "Complete API collection for SenseAI Autism Screening Tool",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["health"]
+        },
+        "description": "Check if the backend API is running"
+      }
+    },
+    {
+      "name": "API Info",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": [""]
+        },
+        "description": "Get API information and available endpoints"
+      }
+    },
+    {
+      "name": "Create Child",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test Child\",\n  \"dateOfBirth\": \"2019-03-15\",\n  \"age\": 5,\n  \"gender\": \"male\",\n  \"language\": \"en\",\n  \"hospitalId\": \"hospital_a\",\n  \"hospitalName\": \"Hospital A\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/children",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "children"]
+        },
+        "description": "Create a new child profile"
+      }
+    },
+    {
+      "name": "Get All Children",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/children?clinicId=hospital_a",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "children"],
+          "query": [
+            {
+              "key": "clinicId",
+              "value": "hospital_a"
+            }
+          ]
+        },
+        "description": "Get all children for a specific clinic"
+      }
+    },
+    {
+      "name": "Upload Session",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"session_id\": \"S-TEST-001\",\n  \"clinic_id\": \"hospital_a\",\n  \"clinician_id\": \"doctor_001\",\n  \"child\": {\n    \"child_id\": \"child_001\",\n    \"name\": \"Test Child\",\n    \"age_years\": 5.5,\n    \"gender\": \"male\",\n    \"language\": \"en\"\n  },\n  \"assessment_type\": \"color_shape\",\n  \"timestamp_start\": \"2024-10-31T10:30:00Z\",\n  \"timestamp_end\": \"2024-10-31T10:35:00Z\",\n  \"game_data\": {\n    \"total_trials\": 20,\n    \"correct_responses\": 17,\n    \"incorrect_responses\": 3,\n    \"mean_rt_ms\": 915,\n    \"switch_cost_ms\": 210,\n    \"inhibition_errors\": 2,\n    \"accuracy_percent\": 85,\n    \"recovery_trials\": 1,\n    \"trials\": [\n      {\n        \"trial_no\": 1,\n        \"stimulus\": \"red_circle\",\n        \"rule\": \"color\",\n        \"response\": \"red\",\n        \"correct\": true,\n        \"rt_ms\": 850\n      }\n    ]\n  },\n  \"questionnaire_data\": {\n    \"routine_change_reaction\": 2,\n    \"activity_switch_ability\": 3,\n    \"flexibility_index\": 2.5\n  },\n  \"clinical_reflection\": {\n    \"observed_behavior\": \"Child was engaged and cooperative\",\n    \"engagement_level\": \"high\"\n  }\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/sessions",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "sessions"]
+        },
+        "description": "Upload a complete assessment session"
+      }
+    },
+    {
+      "name": "Get Session",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/sessions/S-TEST-001?clinicId=hospital_a&childId=child_001",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "sessions", "S-TEST-001"],
+          "query": [
+            {
+              "key": "clinicId",
+              "value": "hospital_a"
+            },
+            {
+              "key": "childId",
+              "value": "child_001"
+            }
+          ]
+        },
+        "description": "Get a specific session by ID"
+      }
+    },
+    {
+      "name": "Trigger ML Prediction",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": \"S-TEST-001\",\n  \"clinicId\": \"hospital_a\",\n  \"childId\": \"child_001\",\n  \"useHeuristic\": true\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/ml/predict",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "ml", "predict"]
+        },
+        "description": "Trigger ML prediction for a session"
+      }
+    },
+    {
+      "name": "Get ML Statistics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/ml/stats?clinicId=hospital_a",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "ml", "stats"],
+          "query": [
+            {
+              "key": "clinicId",
+              "value": "hospital_a"
+            }
+          ]
+        },
+        "description": "Get ML prediction statistics for a clinic"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}
+
+
+
+

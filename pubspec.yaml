@@ -18,7 +18,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.16.2 <3.0.0"
+  sdk: ">=2.16.2 <2.17.0"   # ← Locked for Dart 2.16 compatibility
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -41,6 +41,12 @@ dependencies:
   fl_chart: ^0.40.0
   confetti: ^0.6.0
   json_annotation: ^4.4.0
+  shared_preferences: ^2.0.11
+  simple_animations: ^4.0.2   # ← Fixed version for Dart 2.16
+  supercharged: ^2.1.1        # Works with Dart 2.16
+  webview_flutter: ^2.8.0     # For HTML games (Flutter 2.10.5 compatible)
+  pdf: ^3.6.0                  # For PDF reports
+  printing: ^5.6.0             # For PDF printing
 
 dev_dependencies:
   flutter_test:
@@ -53,8 +59,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/audio/
-
     - assets/images/
+    - assets/games/
   fonts:
     - family: IskoolaPota
       fonts:

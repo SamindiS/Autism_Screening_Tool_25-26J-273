@@ -1,10 +1,13 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
-
 import 'core/localization/l10n.dart';
+import 'core/services/storage_service.dart';
 import 'features/common/splash_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Initialize database
+  await StorageService.database;
   runApp(const SenseAIApp());
 }
 

@@ -17,5 +17,20 @@ class LoggerService {
     // ignore: avoid_print
     print(endTag);
   }
+
+  static void logEvent(Map<String, dynamic> data) {
+    final payload = Map<String, dynamic>.from(data)
+      ..putIfAbsent('timestamp', () => DateTime.now().toIso8601String());
+
+    const startTag = '===ASD_EVENT_START===';
+    const endTag = '===ASD_EVENT_END===';
+
+    // ignore: avoid_print
+    print(startTag);
+    // ignore: avoid_print
+    print(const JsonEncoder.withIndent('  ').convert(payload));
+    // ignore: avoid_print
+    print(endTag);
+  }
 }
 

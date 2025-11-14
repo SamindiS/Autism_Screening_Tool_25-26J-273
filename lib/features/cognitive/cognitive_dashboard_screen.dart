@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/utils/age_calculator.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../widgets/language_selector.dart';
 import '../../data/models/child.dart';
 import 'add_child_screen.dart';
 import 'child_list_screen.dart';
@@ -159,13 +160,28 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const LanguageSelector(),
+          ),
           Builder(
             builder: (context) {
               final l10n = AppLocalizations.of(context);
-              return IconButton(
-                icon: const Icon(Icons.refresh),
-                tooltip: l10n?.refresh ?? 'Refresh',
-                onPressed: _loadData,
+              return Container(
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.refresh),
+                  tooltip: l10n?.refresh ?? 'Refresh',
+                  onPressed: _loadData,
+                ),
               );
             },
           ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/storage_service.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../widgets/language_selector.dart';
 import '../auth/login_screen.dart';
 import '../cognitive/cognitive_dashboard_screen.dart';
 import '../cognitive/add_child_screen.dart';
@@ -129,12 +131,13 @@ class _DashboardScreenState extends State<DashboardScreen>
         }
         
         if (!isRefresh) {
+          final l10n = AppLocalizations.of(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error loading dashboard: $e'),
+              content: Text('${l10n?.error ?? 'Error'} loading dashboard: $e'),
               backgroundColor: Colors.red,
               action: SnackBarAction(
-                label: 'Retry',
+                label: l10n?.retry ?? 'Retry',
                 textColor: Colors.white,
                 onPressed: () => _loadData(),
               ),
@@ -159,21 +162,22 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Future<void> _logout() async {
+    final l10n = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+        title: Text(l10n?.logout ?? 'Logout'),
+        content: Text(l10n?.logoutConfirmation ?? 'Are you sure you want to logout?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n?.cancel ?? 'Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Logout',
-              style: TextStyle(color: Colors.red),
+            child: Text(
+              l10n?.logout ?? 'Logout',
+              style: const TextStyle(color: Colors.red),
             ),
           ),
         ],
@@ -210,9 +214,9 @@ class _DashboardScreenState extends State<DashboardScreen>
               child: const Icon(Icons.dashboard, size: 20),
             ),
             const SizedBox(width: 12),
-            const Text(
-              'SenseAI Dashboard',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context)?.senseaiDashboard ?? 'SenseAI Dashboard',
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
                 letterSpacing: 0.5,
@@ -224,6 +228,14 @@ class _DashboardScreenState extends State<DashboardScreen>
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const LanguageSelector(),
+          ),
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
@@ -273,7 +285,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
-                'Error: $_errorMessage',
+                '${AppLocalizations.of(context)?.error ?? 'Error'}: $_errorMessage',
                 style: const TextStyle(color: Colors.red),
                 textAlign: TextAlign.center,
               ),
@@ -282,7 +294,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ElevatedButton.icon(
               onPressed: () => _loadData(),
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(AppLocalizations.of(context)?.retry ?? 'Retry'),
               style: ElevatedButton.styleFrom(
                 primary: const Color(0xFF0A7C7F),
                 onPrimary: Colors.white,
@@ -302,9 +314,9 @@ class _DashboardScreenState extends State<DashboardScreen>
       onRefresh: _onRefresh,
       header: WaterDropHeader(
         waterDropColor: const Color(0xFF0A7C7F),
-        complete: const Text(
-          'Refreshed',
-          style: TextStyle(color: Colors.green),
+        complete: Text(
+          AppLocalizations.of(context)?.refreshed ?? 'Refreshed',
+          style: const TextStyle(color: Colors.green),
         ),
       ),
       child: Container(
@@ -353,13 +365,14 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildStatisticsCards(bool isDark) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         Row(
           children: [
             Expanded(
               child: StatCard(
-                label: 'Total Children',
+                label: l10n?.totalChildren ?? 'Total Children',
                 value: _totalChildren,
                 icon: Icons.child_care_rounded,
                 color: const Color(0xFF3B82F6),
@@ -371,7 +384,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             const SizedBox(width: 12),
             Expanded(
               child: StatCard(
-                label: 'Completed',
+                label: l10n?.completed ?? 'Completed',
                 value: _completedAssessments,
                 icon: Icons.check_circle_rounded,
                 color: const Color(0xFF10B981),
@@ -387,7 +400,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           children: [
             Expanded(
               child: StatCard(
-                label: 'Pending',
+                label: l10n?.pending ?? 'Pending',
                 value: _pendingAssessments,
                 icon: Icons.pending_actions_rounded,
                 color: const Color(0xFFF59E0B),
@@ -399,7 +412,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             const SizedBox(width: 12),
             Expanded(
               child: StatCard(
-                label: 'Today',
+                label: l10n?.today ?? 'Today',
                 value: _todayAssessments,
                 icon: Icons.today_rounded,
                 color: const Color(0xFF8B5CF6),
@@ -415,6 +428,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildComponentsSection() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -436,9 +450,9 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
-              'Assessment Components',
-              style: TextStyle(
+            Text(
+              l10n?.assessmentComponents ?? 'Assessment Components',
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF1F2937),
@@ -454,8 +468,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           children: [
             ComponentTile(
               icon: Icons.psychology_rounded,
-              title: 'Cognitive Flexibility',
-              subtitle: 'Rule Switching',
+              title: l10n?.cognitiveFlexibility ?? 'Cognitive Flexibility',
+              subtitle: l10n?.ruleSwitching ?? 'Rule Switching',
               color: const Color(0xFF2563EB),
               gradient: const [
                 Color(0xFF3B82F6),
@@ -472,8 +486,8 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
             ComponentTile(
               icon: Icons.repeat_rounded,
-              title: 'RRB',
-              subtitle: 'Restricted & Repetitive',
+              title: l10n?.rrb ?? 'RRB',
+              subtitle: l10n?.restrictedRepetitive ?? 'Restricted & Repetitive',
               color: const Color(0xFF7C3AED),
               gradient: const [
                 Color(0xFF8B5CF6),
@@ -481,8 +495,8 @@ class _DashboardScreenState extends State<DashboardScreen>
               ],
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('RRB Component - Coming Soon'),
+                  SnackBar(
+                    content: Text(l10n?.rrbComingSoon ?? 'RRB Component - Coming Soon'),
                     backgroundColor: Colors.orange,
                   ),
                 );
@@ -490,8 +504,8 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
             ComponentTile(
               icon: Icons.hearing_rounded,
-              title: 'Auditory Checking',
-              subtitle: 'Sound Processing',
+              title: l10n?.auditoryChecking ?? 'Auditory Checking',
+              subtitle: l10n?.soundProcessing ?? 'Sound Processing',
               color: const Color(0xFF0EA5E9),
               gradient: const [
                 Color(0xFF06B6D4),
@@ -499,8 +513,8 @@ class _DashboardScreenState extends State<DashboardScreen>
               ],
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Auditory Checking - Coming Soon'),
+                  SnackBar(
+                    content: Text(l10n?.auditoryComingSoon ?? 'Auditory Checking - Coming Soon'),
                     backgroundColor: Colors.orange,
                   ),
                 );
@@ -508,8 +522,8 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
             ComponentTile(
               icon: Icons.remove_red_eye_rounded,
-              title: 'Visual Checking',
-              subtitle: 'Visual Processing',
+              title: l10n?.visualChecking ?? 'Visual Checking',
+              subtitle: l10n?.visualProcessing ?? 'Visual Processing',
               color: const Color(0xFF059669),
               gradient: const [
                 Color(0xFF10B981),
@@ -517,8 +531,8 @@ class _DashboardScreenState extends State<DashboardScreen>
               ],
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Visual Checking - Coming Soon'),
+                  SnackBar(
+                    content: Text(l10n?.visualComingSoon ?? 'Visual Checking - Coming Soon'),
                     backgroundColor: Colors.orange,
                   ),
                 );
@@ -531,11 +545,12 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildQuickActions() {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Expanded(
           child: QuickActionButton(
-            label: 'Add New Child',
+            label: l10n?.addNewChild ?? 'Add New Child',
             icon: Icons.person_add_rounded,
             gradient: const [
               Color(0xFF0A7C7F),
@@ -553,13 +568,13 @@ class _DashboardScreenState extends State<DashboardScreen>
         const SizedBox(width: 12),
         Expanded(
           child: QuickActionButton(
-            label: 'View Reports',
+            label: l10n?.viewReports ?? 'View Reports',
             icon: Icons.assessment_rounded,
             color: const Color(0xFF0A7C7F),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('View Reports - Coming Soon'),
+                SnackBar(
+                  content: Text(l10n?.viewReportsComingSoon ?? 'View Reports - Coming Soon'),
                   backgroundColor: Colors.orange,
                 ),
               );

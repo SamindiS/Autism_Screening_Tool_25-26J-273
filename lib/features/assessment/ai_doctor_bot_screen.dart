@@ -4,6 +4,7 @@ import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
 import '../../core/services/translation_helper.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../widgets/language_selector.dart';
 import '../cognitive/reflection_screen_2_3.dart';
 import 'result_screen.dart';
 
@@ -451,6 +452,14 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
                     ),
                   ],
                 ),
+              ),
+              Container(
+                margin: const EdgeInsets.only(left: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const LanguageSelector(),
               ),
             ],
           ),

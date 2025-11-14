@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/localization/app_localizations.dart';
 
 class WelcomeCard extends StatelessWidget {
   final String? name;
@@ -12,6 +13,7 @@ class WelcomeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
@@ -55,9 +57,9 @@ class WelcomeCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Text(
-                      'Welcome Back!',
-                      style: TextStyle(
+                    Text(
+                      l10n?.welcomeBack ?? 'Welcome Back!',
+                      style: const TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,

@@ -3,6 +3,8 @@ import '../../data/models/child.dart';
 import '../../data/models/game_results.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../widgets/language_selector.dart';
 import '../assessment/result_screen.dart';
 
 class ClinicianReflectionScreen extends StatefulWidget {
@@ -188,9 +190,19 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Clinician Reflection'),
+        title: Text(AppLocalizations.of(context)?.clinicianReflection ?? 'Clinician Reflection'),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const LanguageSelector(),
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(

@@ -4,6 +4,8 @@ import 'package:webview_flutter/webview_flutter.dart' as webview;
 import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
 import '../../core/utils/age_calculator.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../widgets/language_selector.dart';
 import '../../data/models/child.dart';
 import '../../data/models/game_results.dart';
 import '../cognitive/reflection_screen.dart';
@@ -139,6 +141,16 @@ class _GameScreenState extends State<GameScreen> {
         title: Text(_getGameTitle()),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const LanguageSelector(),
+          ),
+        ],
       ),
       body: Stack(
         children: [

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../data/models/child.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../widgets/language_selector.dart';
 import '../assessment/result_screen.dart';
 
 class ClinicianReflectionScreen2_3 extends StatefulWidget {
@@ -264,9 +266,19 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Clinical Reflection (Ages 2-3.5)'),
+        title: Text(AppLocalizations.of(context)?.clinicianReflection2_3 ?? 'Clinical Reflection (Ages 2-3.5)'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const LanguageSelector(),
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(

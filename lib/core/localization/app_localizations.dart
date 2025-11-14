@@ -79,6 +79,7 @@ class AppLocalizations {
   String get exportPdf => translate('export_pdf');
   String get backToDashboard => translate('back_to_dashboard');
   String get clinicianReflection => translate('clinician_reflection');
+  String get clinicianReflection2_3 => translate('clinician_reflection_2_3');
   String get manualTasks => translate('manual_tasks');
   String get behavioralObservations => translate('behavioral_observations');
   String get refresh => translate('refresh');
@@ -90,6 +91,32 @@ class AppLocalizations {
   String get todayText => translate('today_text');
   String get yesterday => translate('yesterday');
   String get daysAgo => translate('days_ago');
+  String get welcomeBack => translate('welcome_back');
+  String get senseaiDashboard => translate('senseai_dashboard');
+  String get assessmentComponents => translate('assessment_components');
+  String get addNewChild => translate('add_new_child');
+  String get viewReports => translate('view_reports');
+  String get systemInformation => translate('system_information');
+  String get version => translate('version');
+  String get status => translate('status');
+  String get pilotMode => translate('pilot_mode');
+  String get mode => translate('mode');
+  String get offlineFirst => translate('offline_first');
+  String get refreshed => translate('refreshed');
+  String get error => translate('error');
+  String get comingSoon => translate('coming_soon');
+  String get rrb => translate('rrb');
+  String get restrictedRepetitive => translate('restricted_repetitive');
+  String get auditoryChecking => translate('auditory_checking');
+  String get soundProcessing => translate('sound_processing');
+  String get visualChecking => translate('visual_checking');
+  String get visualProcessing => translate('visual_processing');
+  String get rrbComingSoon => translate('rrb_coming_soon');
+  String get auditoryComingSoon => translate('auditory_coming_soon');
+  String get visualComingSoon => translate('visual_coming_soon');
+  String get viewReportsComingSoon => translate('view_reports_coming_soon');
+  String get retry => translate('retry');
+  String get logoutConfirmation => translate('logout_confirmation');
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

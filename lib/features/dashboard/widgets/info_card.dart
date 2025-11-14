@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/localization/app_localizations.dart';
 
 class InfoCard extends StatelessWidget {
   const InfoCard({Key? key}) : super(key: key);
@@ -6,6 +7,7 @@ class InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
     
     return Container(
       padding: const EdgeInsets.all(24),
@@ -51,9 +53,9 @@ class InfoCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'System Information',
-                style: TextStyle(
+              Text(
+                l10n?.systemInformation ?? 'System Information',
+                style: const TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1F2937),
@@ -73,22 +75,22 @@ class InfoCard extends StatelessWidget {
               children: [
                 _buildInfoRow(
                   Icons.verified_rounded,
-                  'Version',
+                  l10n?.version ?? 'Version',
                   '1.0.0',
                   const Color(0xFF3B82F6),
                 ),
                 const Divider(height: 24),
                 _buildInfoRow(
                   Icons.rocket_launch_rounded,
-                  'Status',
-                  'Pilot Mode',
+                  l10n?.status ?? 'Status',
+                  l10n?.pilotMode ?? 'Pilot Mode',
                   const Color(0xFF10B981),
                 ),
                 const Divider(height: 24),
                 _buildInfoRow(
                   Icons.cloud_done_rounded,
-                  'Mode',
-                  'Offline First',
+                  l10n?.mode ?? 'Mode',
+                  l10n?.offlineFirst ?? 'Offline First',
                   const Color(0xFF8B5CF6),
                 ),
               ],

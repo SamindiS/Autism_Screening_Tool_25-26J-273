@@ -61,6 +61,7 @@
   "export_pdf": "Export as PDF Report",
   "back_to_dashboard": "Back to Dashboard",
   "clinician_reflection": "Clinician Reflection",
+  "clinician_reflection_2_3": "Clinical Reflection (Ages 2-3.5)",
   "manual_tasks": "Manual Cognitive Flexibility Tasks",
   "behavioral_observations": "Behavioral Observations",
   "refresh": "Refresh",
@@ -353,6 +354,11 @@
   "mode": "Mode",
   "offline_first": "Offline First",
   "assess_children_info": "Assess children aged 2-6 years for cognitive flexibility and rule-switching abilities",
-  "no_children_found": "No children found matching \"{query}\""
+  "no_children_found": "No children found matching \"{query}\"",
+  "senseai_dashboard": "SenseAI Dashboard",
+  "add_new_child": "Add New Child",
+  "refreshed": "Refreshed",
+  "error": "Error",
+  "coming_soon": "Coming Soon"
 }
 

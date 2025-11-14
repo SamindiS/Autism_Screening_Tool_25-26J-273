@@ -76,3 +76,4 @@
 - Categories should be consistent across languages
 - Test UI layout with longer Sinhala/Tamil text
 
+

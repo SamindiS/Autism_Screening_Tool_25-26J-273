@@ -149,3 +149,4 @@ To verify fonts are working:
 
 If fonts change but text doesn't, it means translations are missing (which is the current situation).
 
+

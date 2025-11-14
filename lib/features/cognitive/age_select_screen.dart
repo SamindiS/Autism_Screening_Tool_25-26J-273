@@ -4,6 +4,7 @@ import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
 import '../../data/models/child.dart';
 import '../assessment/game_screen.dart';
+import '../assessment/ai_doctor_bot_screen.dart';
 
 class AgeSelectScreen extends StatefulWidget {
   final String childId;
@@ -75,8 +76,15 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
 
     // Route based on age
     if (age >= 2.0 && age < 3.5) {
-      // Age 2-3.4: Parent Interview Bot
-      _navigateToParentBot();
+      // Age 2-3.4: AI Doctor Bot (Parent Questionnaire)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AIDoctorBotScreen(
+            child: child,
+          ),
+        ),
+      );
     } else if (age >= 3.5 && age <= 5.5) {
       // Age 3.5-5.5: Frog Jump Game (Go/No-Go)
       Navigator.pushReplacement(
@@ -109,12 +117,6 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
     }
   }
 
-  void _navigateToParentBot() {
-    // TODO: Navigate to Parent Bot Screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Parent Bot Screen - Coming Soon')),
-    );
-  }
 
   @override
   void dispose() {

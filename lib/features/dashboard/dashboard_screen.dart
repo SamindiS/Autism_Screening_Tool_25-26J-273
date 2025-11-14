@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/storage_service.dart';
+// import '../../core/localization/app_localizations.dart';
+// import '../../widgets/language_selector.dart';
 import '../auth/login_screen.dart';
 import '../cognitive/cognitive_dashboard_screen.dart';
 import '../cognitive/add_child_screen.dart';
@@ -30,43 +32,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadData() async {
-    final info = await AuthService.getClinicianInfo();
-    
-    // Load statistics
-    final children = await StorageService.getAllChildren();
-    final sessions = await StorageService.getAllSessions();
-    
-    final today = DateTime.now();
-    final todayStart = DateTime(today.year, today.month, today.day);
-    
-    final completed = sessions.where((s) => s['end_time'] != null).length;
-    final pending = sessions.where((s) => s['end_time'] == null).length;
-    final todayCount = sessions.where((s) {
-      final sessionDate = DateTime.fromMillisecondsSinceEpoch(s['created_at'] as int);
-      return sessionDate.isAfter(todayStart);
-    }).length;
-    
-    if (mounted) {
-      setState(() {
-        _clinicianName = info['name'];
-        _hospitalName = info['hospital'];
-        _totalChildren = children.length;
-        _completedAssessments = completed;
-        _pendingAssessments = pending;
-        _todayAssessments = todayCount;
-        _loading = false;
-      });
+    print('Dashboard _loadData called');
+    try {
+      print('Loading clinician info...');
+      final info = await AuthService.getClinicianInfo();
+      print('Clinician info loaded: $info');
+      
+      // Load statistics
+      print('Loading children...');
+      final children = await StorageService.getAllChildren();
+      print('Children loaded: ${children.length}');
+      
+      print('Loading sessions...');
+      final sessions = await StorageService.getAllSessions();
+      print('Sessions loaded: ${sessions.length}');
+      
+      final today = DateTime.now();
+      final todayStart = DateTime(today.year, today.month, today.day);
+      
+      final completed = sessions.where((s) => s['end_time'] != null).length;
+      final pending = sessions.where((s) => s['end_time'] == null).length;
+      final todayCount = sessions.where((s) {
+        final sessionDate = DateTime.fromMillisecondsSinceEpoch(s['created_at'] as int);
+        return sessionDate.isAfter(todayStart);
+      }).length;
+      
+      print('Setting state with data...');
+      if (mounted) {
+        setState(() {
+          _clinicianName = info['name'];
+          _hospitalName = info['hospital'];
+          _totalChildren = children.length;
+          _completedAssessments = completed;
+          _pendingAssessments = pending;
+          _todayAssessments = todayCount;
+          _loading = false;
+        });
+        print('State updated, loading set to false');
+      }
+    } catch (e, stackTrace) {
+      print('Error in _loadData: $e');
+      print('Stack trace: $stackTrace');
+      // Handle error gracefully
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading dashboard: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
   
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh data when returning to this screen
-    _loadData();
+    // Only refresh if not already loading to avoid multiple calls
+    if (!_loading && _clinicianName == null) {
+      _loadData();
+    }
   }
 
   Future<void> _logout() async {
+    // final l10n = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -99,6 +131,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print('Dashboard build called, loading: $_loading');
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -109,6 +143,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          // const LanguageSelector(), // Commented out for now
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',
@@ -365,7 +400,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               icon: Icons.psychology,
               title: 'Cognitive\nFlexibility',
               subtitle: 'Rule Switching',
-              color: Colors.orange,
+              color: Colors.blue.shade600,
               onTap: () {
                 Navigator.push(
                   context,
@@ -506,11 +541,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          _buildInfoRow('Version', '1.0.0'),
-          const SizedBox(height: 8),
-          _buildInfoRow('Status', 'Pilot Mode'),
-          const SizedBox(height: 8),
-          _buildInfoRow('Mode', 'Offline First'),
+          Column(
+            children: [
+              _buildInfoRow('Version', '1.0.0'),
+              const SizedBox(height: 8),
+              _buildInfoRow('Status', 'Pilot Mode'),
+              const SizedBox(height: 8),
+              _buildInfoRow('Mode', 'Offline First'),
+            ],
+          ),
         ],
       ),
     );

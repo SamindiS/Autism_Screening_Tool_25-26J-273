@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -125,7 +126,7 @@ class StorageService {
       'age_group': ageGroup,
       'start_time': startTime.millisecondsSinceEpoch,
       'end_time': endTime?.millisecondsSinceEpoch,
-      'metrics': metrics?.toString(),
+      'metrics': metrics != null ? jsonEncode(metrics) : null,
       'created_at': DateTime.now().millisecondsSinceEpoch,
     });
   }
@@ -156,7 +157,7 @@ class StorageService {
       updates['end_time'] = endTime.millisecondsSinceEpoch;
     }
     if (metrics != null) {
-      updates['metrics'] = metrics.toString();
+      updates['metrics'] = jsonEncode(metrics);
     }
     if (updates.isNotEmpty) {
       await db.update('sessions', updates, where: 'id = ?', whereArgs: [id]);

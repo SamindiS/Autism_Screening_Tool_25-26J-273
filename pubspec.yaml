@@ -61,6 +61,7 @@ flutter:
     - assets/audio/
     - assets/images/
     - assets/games/
+    - assets/translations/
   fonts:
     - family: IskoolaPota
       fonts:

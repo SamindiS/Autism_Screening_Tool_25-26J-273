@@ -48,6 +48,7 @@ dependencies:
   pdf: ^3.6.0                  # For PDF reports
   printing: ^5.6.0             # For PDF printing
   pull_to_refresh: ^2.0.0      # Pull-to-refresh functionality
+  http: ^0.13.5                # HTTP client for API calls
 
 dev_dependencies:
   flutter_test:

@@ -1,0 +1,464 @@
+{
+  "info": {
+    "name": "SenseAI Backend API",
+    "description": "Complete API collection for SenseAI Autism Screening Tool Backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "senseai-backend"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Check if the server is running and database is connected"
+      },
+      "response": []
+    },
+    {
+      "name": "Clinicians",
+      "item": [
+        {
+          "name": "Register Clinician",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dr. Sarah Johnson\",\n  \"hospital\": \"General Hospital\",\n  \"pin\": \"1234\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/clinicians/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "clinicians", "register"]
+            },
+            "description": "Register or update a clinician. If a clinician already exists, it will be updated."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pin\": \"1234\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/clinicians/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "clinicians", "login"]
+            },
+            "description": "Login with PIN to authenticate"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current Clinician",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/clinicians/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "clinicians", "me"]
+            },
+            "description": "Get information about the currently registered clinician"
+          },
+          "response": []
+        }
+      ],
+      "description": "Clinician authentication and management endpoints"
+    },
+    {
+      "name": "Children",
+      "item": [
+        {
+          "name": "Create Child",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Smith\",\n  \"date_of_birth\": 946684800000,\n  \"gender\": \"female\",\n  \"language\": \"en\",\n  \"hospital_id\": \"H001\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/children",
+              "host": ["{{base_url}}"],
+              "path": ["api", "children"]
+            },
+            "description": "Create a new child profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Children",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/children",
+              "host": ["{{base_url}}"],
+              "path": ["api", "children"]
+            },
+            "description": "Get all children, sorted by creation date (newest first)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Child by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/children/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "children", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "550e8400-e29b-41d4-a716-446655440000",
+                  "description": "Child UUID"
+                }
+              ]
+            },
+            "description": "Get a specific child by their ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Child",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Smith Updated\",\n  \"date_of_birth\": 946684800000,\n  \"gender\": \"female\",\n  \"language\": \"en\",\n  \"hospital_id\": \"H001\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/children/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "children", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "550e8400-e29b-41d4-a716-446655440000",
+                  "description": "Child UUID"
+                }
+              ]
+            },
+            "description": "Update a child's information"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Child",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/children/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "children", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "550e8400-e29b-41d4-a716-446655440000",
+                  "description": "Child UUID"
+                }
+              ]
+            },
+            "description": "Delete a child and all related sessions and trials"
+          },
+          "response": []
+        }
+      ],
+      "description": "Child profile management endpoints"
+    },
+    {
+      "name": "Sessions",
+      "item": [
+        {
+          "name": "Create Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"child_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"session_type\": \"color_shape\",\n  \"age_group\": \"3.5-6\",\n  \"start_time\": 1704110400000,\n  \"end_time\": 1704110700000,\n  \"metrics\": {\n    \"total_trials\": 30,\n    \"correct_trials\": 25,\n    \"accuracy\": 0.83\n  },\n  \"game_results\": {\n    \"game_type\": \"color_shape\",\n    \"total_trials\": 30,\n    \"correct_trials\": 25,\n    \"accuracy\": 0.83,\n    \"average_reaction_time\": 1200,\n    \"switch_cost\": 150,\n    \"perseverative_errors\": 2\n  },\n  \"reflection_results\": {\n    \"attention\": 4,\n    \"engagement\": 5,\n    \"frustration\": 3,\n    \"instructions\": 4,\n    \"overall\": 4\n  },\n  \"risk_score\": 65.5,\n  \"risk_level\": \"moderate\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sessions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sessions"]
+            },
+            "description": "Create a new assessment session"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/sessions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sessions"]
+            },
+            "description": "Get all assessment sessions"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Session by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/sessions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sessions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "660e8400-e29b-41d4-a716-446655440001",
+                  "description": "Session UUID"
+                }
+              ]
+            },
+            "description": "Get a specific session by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Sessions by Child",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/sessions/child/:childId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sessions", "child", ":childId"],
+              "variable": [
+                {
+                  "key": "childId",
+                  "value": "550e8400-e29b-41d4-a716-446655440000",
+                  "description": "Child UUID"
+                }
+              ]
+            },
+            "description": "Get all sessions for a specific child"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Session",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"end_time\": 1704110800000,\n  \"risk_score\": 70.0,\n  \"risk_level\": \"high\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sessions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sessions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "660e8400-e29b-41d4-a716-446655440001",
+                  "description": "Session UUID"
+                }
+              ]
+            },
+            "description": "Update a session (partial updates supported)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Session",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/sessions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sessions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "660e8400-e29b-41d4-a716-446655440001",
+                  "description": "Session UUID"
+                }
+              ]
+            },
+            "description": "Delete a session and all related trials"
+          },
+          "response": []
+        }
+      ],
+      "description": "Assessment session management endpoints"
+    },
+    {
+      "name": "Trials",
+      "item": [
+        {
+          "name": "Create Trial",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"session_id\": \"660e8400-e29b-41d4-a716-446655440001\",\n  \"trial_number\": 1,\n  \"stimulus\": \"red_circle\",\n  \"rule\": \"color\",\n  \"response\": \"red\",\n  \"correct\": true,\n  \"reaction_time\": 1200,\n  \"timestamp\": 1704110401000,\n  \"is_post_switch\": false,\n  \"is_perseverative_error\": false,\n  \"additional_data\": {\n    \"rule_switched\": false,\n    \"previous_rule\": null\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trials",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trials"]
+            },
+            "description": "Create a single trial"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Trials (Batch)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trials\": [\n    {\n      \"session_id\": \"bc628152-e32e-4e1e-bb01-8a9000522b0d\",\n      \"trial_number\": 1,\n      \"stimulus\": \"red_circle\",\n      \"rule\": \"color\",\n      \"response\": \"red\",\n      \"correct\": true,\n      \"reaction_time\": 1200,\n      \"timestamp\": 1704110401000,\n      \"is_post_switch\": false,\n      \"is_perseverative_error\": false\n    },\n    {\n      \"session_id\": \"bc628152-e32e-4e1e-bb01-8a9000522b0d\",\n      \"trial_number\": 2,\n      \"stimulus\": \"blue_square\",\n      \"rule\": \"color\",\n      \"response\": \"blue\",\n      \"correct\": true,\n      \"reaction_time\": 1100,\n      \"timestamp\": 1704110402000,\n      \"is_post_switch\": false,\n      \"is_perseverative_error\": false\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trials/batch",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trials", "batch"]
+            },
+            "description": "Create multiple trials at once"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Trials by Session",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/trials/session/:sessionId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trials", "session", ":sessionId"],
+              "variable": [
+                {
+                  "key": "sessionId",
+                  "value": "660e8400-e29b-41d4-a716-446655440001",
+                  "description": "Session UUID"
+                }
+              ]
+            },
+            "description": "Get all trials for a specific session"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Trial by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/trials/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trials", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "770e8400-e29b-41d4-a716-446655440002",
+                  "description": "Trial UUID"
+                }
+              ]
+            },
+            "description": "Get a specific trial by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Trial",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/trials/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trials", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "770e8400-e29b-41d4-a716-446655440002",
+                  "description": "Trial UUID"
+                }
+              ]
+            },
+            "description": "Delete a trial"
+          },
+          "response": []
+        }
+      ],
+      "description": "Trial data management endpoints"
+    }
+  ]
+}
+

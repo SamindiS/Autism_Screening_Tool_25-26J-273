@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../data/models/child.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
@@ -187,14 +188,37 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
   }
 
   Future<void> _createSession() async {
-    _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
-    await StorageService.saveSession(
-      id: _sessionId!,
-      childId: widget.child.id,
-      sessionType: 'ai_bot_questionnaire',
-      ageGroup: '2-3.5',
-      startTime: _startTime!,
-    );
+    try {
+      // Create session via API - backend will generate UUID
+      final sessionData = await StorageService.saveSession(
+        childId: widget.child.id,
+        sessionType: 'ai_doctor_bot',
+        ageGroup: '2-3.5',
+        startTime: _startTime!,
+      );
+      
+      // Get the session ID from the response
+      if (sessionData != null && sessionData['id'] != null) {
+        _sessionId = sessionData['id'] as String;
+        debugPrint('Session created successfully: $_sessionId');
+      } else {
+        throw Exception('Session creation failed: No session ID returned');
+      }
+    } catch (e) {
+      debugPrint('Error creating session: $e');
+      // Show error but don't block - will try to create session later if needed
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Warning: Session creation failed. Error: $e'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      // Generate fallback ID - will try to create session when completing
+      _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+    }
   }
 
   void _animateQuestion() {
@@ -291,12 +315,57 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
         'completion_time': DateTime.now().millisecondsSinceEpoch,
       };
 
-      // Update session
-      await StorageService.updateSession(
-        id: _sessionId!,
-        endTime: DateTime.now(),
-        metrics: results,
-      );
+      // Update or create session with questionnaire results
+      if (_sessionId != null && !_sessionId!.contains('fallback')) {
+        try {
+          await StorageService.updateSession(
+            id: _sessionId!,
+            endTime: DateTime.now(),
+            questionnaireResults: results,
+            riskScore: riskScore,
+            riskLevel: riskLevel.toLowerCase(),
+          );
+        } catch (e) {
+          debugPrint('Error updating session, creating new one: $e');
+          // Session might not exist, create a new one
+          final sessionData = await StorageService.saveSession(
+            childId: widget.child.id,
+            sessionType: 'ai_doctor_bot',
+            ageGroup: '2-3.5',
+            startTime: _startTime!,
+            endTime: DateTime.now(),
+            questionnaireResults: results,
+            riskScore: riskScore,
+            riskLevel: riskLevel.toLowerCase(),
+          );
+          
+          if (sessionData != null && sessionData['id'] != null) {
+            _sessionId = sessionData['id'] as String;
+            debugPrint('Created new session: $_sessionId');
+          } else {
+            throw Exception('Failed to create session');
+          }
+        }
+      } else {
+        // Create new session if we don't have a valid one
+        final sessionData = await StorageService.saveSession(
+          childId: widget.child.id,
+          sessionType: 'ai_doctor_bot',
+          ageGroup: '2-3.5',
+          startTime: _startTime!,
+          endTime: DateTime.now(),
+          questionnaireResults: results,
+          riskScore: riskScore,
+          riskLevel: riskLevel.toLowerCase(),
+        );
+        
+        if (sessionData != null && sessionData['id'] != null) {
+          _sessionId = sessionData['id'] as String;
+          debugPrint('Created session: $_sessionId');
+        } else {
+          throw Exception('Failed to create session');
+        }
+      }
 
       // Log to console
       LoggerService.logSession({

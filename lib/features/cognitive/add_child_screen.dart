@@ -90,16 +90,27 @@ class _AddChildScreenState extends State<AddChildScreen> {
     }
 
     try {
-      final childId = DateTime.now().millisecondsSinceEpoch.toString();
-      
-      await StorageService.saveChild(
-        id: childId,
+      // Save child - backend will generate the ID
+      final childData = await StorageService.saveChild(
         name: _nameCtrl.text.trim(),
         dateOfBirth: _selectedDate!,
         gender: _selectedGender!,
         language: _selectedLanguage!,
         age: _calculatedAge!,
       );
+
+      // Get the child ID from the response (backend generates UUID)
+      String childId;
+      if (childData != null && childData['id'] != null) {
+        childId = childData['id'] as String;
+      } else {
+        // Fallback: try to get the most recent child
+        final allChildren = await StorageService.getAllChildren();
+        if (allChildren.isEmpty) {
+          throw Exception('Failed to create child');
+        }
+        childId = allChildren.first['id'] as String;
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

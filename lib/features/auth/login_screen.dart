@@ -179,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen>
         );
         message = success
             ? 'Registration successful! Welcome to SenseAI!'
-            : 'Registration failed. Please try again.';
+            : 'Registration failed. Please check your connection and try again.';
       }
 
       setState(() => _loading = false);

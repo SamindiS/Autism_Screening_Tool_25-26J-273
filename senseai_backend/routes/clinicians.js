@@ -125,7 +125,7 @@ router.post('/login', async (req, res, next) => {
 // GET /api/clinicians/me
 router.get('/me', async (req, res, next) => {
   try {
-    const clinician = await db.promisify.get('SELECT id, name, hospital, created_at FROM clinicians LIMIT 1');
+    const clinician = await db.promisify.get('SELECT id, name, hospital, created_at, updated_at FROM clinicians LIMIT 1');
 
     if (!clinician) {
       return res.status(404).json({
@@ -138,8 +138,82 @@ router.get('/me', async (req, res, next) => {
         id: clinician.id,
         name: clinician.name,
         hospital: clinician.hospital,
-        created_at: clinician.created_at
+        created_at: clinician.created_at,
+        updated_at: clinician.updated_at
       }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Update clinician
+// PUT /api/clinicians/:id
+router.put('/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { error, value } = registerSchema.validate(req.body);
+    
+    if (error) {
+      return res.status(400).json({
+        error: 'Validation error',
+        details: error.details[0].message
+      });
+    }
+
+    const { name, hospital, pin } = value;
+    
+    // Check if clinician exists
+    const existing = await db.promisify.get('SELECT * FROM clinicians WHERE id = ?', [id]);
+    
+    if (!existing) {
+      return res.status(404).json({
+        error: 'Clinician not found'
+      });
+    }
+
+    // Hash new PIN if provided
+    const pinHash = await bcrypt.hash(pin, 10);
+
+    // Update clinician
+    await db.promisify.run(
+      'UPDATE clinicians SET name = ?, hospital = ?, pin_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [name, hospital, pinHash, id]
+    );
+
+    res.json({
+      message: 'Clinician updated successfully',
+      clinician: {
+        id: id,
+        name: name,
+        hospital: hospital
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Delete clinician
+// DELETE /api/clinicians/:id
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Check if clinician exists
+    const existing = await db.promisify.get('SELECT * FROM clinicians WHERE id = ?', [id]);
+    
+    if (!existing) {
+      return res.status(404).json({
+        error: 'Clinician not found'
+      });
+    }
+
+    // Delete clinician
+    await db.promisify.run('DELETE FROM clinicians WHERE id = ?', [id]);
+
+    res.json({
+      message: 'Clinician deleted successfully'
     });
   } catch (err) {
     next(err);

@@ -69,7 +69,7 @@ class StorageService {
   }
 
   // Child operations - Now using API Service
-  static Future<void> saveChild({
+  static Future<Map<String, dynamic>?> saveChild({
     String? id, // Optional - backend generates UUID
     required String name,
     required DateTime dateOfBirth,
@@ -80,13 +80,16 @@ class StorageService {
   }) async {
     // Call API service instead of local database
     // Backend generates the ID, so we ignore the id parameter
-    await ApiService.createChild(
+    final childData = await ApiService.createChild(
       name: name,
       dateOfBirth: dateOfBirth,
       gender: gender,
       language: language,
       hospitalId: hospitalId,
     );
+    
+    // Return the child data with the generated ID
+    return childData;
   }
 
   static Future<List<Map<String, dynamic>>> getAllChildren() async {
@@ -129,8 +132,8 @@ class StorageService {
   }
 
   // Session operations - Now using API Service
-  static Future<void> saveSession({
-    required String id,
+  static Future<Map<String, dynamic>?> saveSession({
+    String? id, // Optional - backend generates UUID
     required String childId,
     required String sessionType,
     String? ageGroup,
@@ -143,8 +146,8 @@ class StorageService {
     double? riskScore,
     String? riskLevel,
   }) async {
-    // Call API service
-    await ApiService.createSession(
+    // Call API service - backend generates the ID
+    final sessionData = await ApiService.createSession(
       childId: childId,
       sessionType: sessionType,
       ageGroup: ageGroup,
@@ -157,6 +160,9 @@ class StorageService {
       riskScore: riskScore,
       riskLevel: riskLevel,
     );
+    
+    // Return the session data with the generated ID
+    return sessionData;
   }
 
   static Future<List<Map<String, dynamic>>> getAllSessions() async {

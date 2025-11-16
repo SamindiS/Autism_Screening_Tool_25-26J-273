@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../data/models/child.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
@@ -213,15 +214,39 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
       };
 
       // Update session with reflection data
-      await StorageService.updateSession(
-        id: widget.sessionId,
-        metrics: {
-          'questionnaire_results': widget.questionnaireResults,
-          'reflection_results': reflectionData,
-          'risk_score': enhancedRiskScore,
-          'risk_level': riskLevel,
-        },
-      );
+      try {
+        await StorageService.updateSession(
+          id: widget.sessionId,
+          reflectionResults: reflectionData,
+          riskScore: enhancedRiskScore,
+          riskLevel: riskLevel.toLowerCase(),
+        );
+      } catch (e) {
+        debugPrint('Error updating session: $e');
+        // Try to create session if it doesn't exist
+        try {
+          final sessionData = await StorageService.saveSession(
+            childId: widget.child.id,
+            sessionType: 'ai_doctor_bot',
+            ageGroup: '2-3.5',
+            startTime: DateTime.now().subtract(const Duration(minutes: 10)),
+            endTime: DateTime.now(),
+            questionnaireResults: widget.questionnaireResults,
+            reflectionResults: reflectionData,
+            riskScore: enhancedRiskScore,
+            riskLevel: riskLevel.toLowerCase(),
+          );
+          
+          if (sessionData != null && sessionData['id'] != null) {
+            // Use the new session ID
+            final newSessionId = sessionData['id'] as String;
+            debugPrint('Created new session: $newSessionId');
+          }
+        } catch (createError) {
+          debugPrint('Error creating session: $createError');
+          throw Exception('Failed to save reflection data: $createError');
+        }
+      }
 
       // Log to console
       LoggerService.logSession({

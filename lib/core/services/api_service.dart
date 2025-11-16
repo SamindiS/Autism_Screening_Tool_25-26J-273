@@ -22,10 +22,128 @@ class ApiService {
       final errorBody = response.body;
       try {
         final errorJson = jsonDecode(errorBody);
-        throw Exception(errorJson['error'] ?? 'Request failed');
+        final errorMessage = errorJson['error'] ?? 'Request failed';
+        final details = errorJson['details'];
+        throw Exception(details != null ? '$errorMessage: $details' : errorMessage);
       } catch (e) {
-        throw Exception('Request failed: ${response.statusCode}');
+        if (e is Exception) {
+          rethrow;
+        }
+        throw Exception('Request failed: ${response.statusCode} - ${response.body}');
       }
+    }
+  }
+
+  // ==================== CLINICIANS ====================
+
+  /// Register or update a clinician
+  static Future<Map<String, dynamic>> registerClinician({
+    required String name,
+    required String hospital,
+    required String pin,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/clinicians/register'),
+        headers: headers,
+        body: jsonEncode({
+          'name': name,
+          'hospital': hospital,
+          'pin': pin,
+        }),
+      );
+
+      _handleError(response);
+
+      final data = jsonDecode(response.body);
+      return data['clinician'] as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('Error registering clinician: $e');
+      rethrow;
+    }
+  }
+
+  /// Login with PIN
+  static Future<Map<String, dynamic>> loginClinician({
+    required String pin,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/clinicians/login'),
+        headers: headers,
+        body: jsonEncode({
+          'pin': pin,
+        }),
+      );
+
+      _handleError(response);
+
+      final data = jsonDecode(response.body);
+      return data['clinician'] as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('Error logging in clinician: $e');
+      rethrow;
+    }
+  }
+
+  /// Get current clinician info
+  static Future<Map<String, dynamic>> getClinicianInfo() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/clinicians/me'),
+        headers: headers,
+      );
+
+      _handleError(response);
+
+      final data = jsonDecode(response.body);
+      return data['clinician'] as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('Error getting clinician info: $e');
+      rethrow;
+    }
+  }
+
+  /// Update clinician
+  static Future<Map<String, dynamic>> updateClinician({
+    required String id,
+    required String name,
+    required String hospital,
+    required String pin,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/clinicians/$id'),
+        headers: headers,
+        body: jsonEncode({
+          'name': name,
+          'hospital': hospital,
+          'pin': pin,
+        }),
+      );
+
+      _handleError(response);
+
+      final data = jsonDecode(response.body);
+      return data['clinician'] as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('Error updating clinician: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete clinician
+  static Future<void> deleteClinician(String id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/clinicians/$id'),
+        headers: headers,
+      );
+
+      _handleError(response);
+    } catch (e) {
+      debugPrint('Error deleting clinician: $e');
+      rethrow;
     }
   }
 
@@ -40,13 +158,16 @@ class ApiService {
     String? hospitalId,
   }) async {
     try {
+      // Convert gender to lowercase to match backend validation
+      final normalizedGender = gender.toLowerCase();
+      
       final response = await http.post(
         Uri.parse('$baseUrl/api/children'),
         headers: headers,
         body: jsonEncode({
           'name': name,
           'date_of_birth': dateOfBirth.millisecondsSinceEpoch,
-          'gender': gender,
+          'gender': normalizedGender,
           'language': language,
           'hospital_id': hospitalId,
         }),
@@ -108,13 +229,16 @@ class ApiService {
     String? hospitalId,
   }) async {
     try {
+      // Convert gender to lowercase to match backend validation
+      final normalizedGender = gender.toLowerCase();
+      
       final response = await http.put(
         Uri.parse('$baseUrl/api/children/$id'),
         headers: headers,
         body: jsonEncode({
           'name': name,
           'date_of_birth': dateOfBirth.millisecondsSinceEpoch,
-          'gender': gender,
+          'gender': normalizedGender,
           'language': language,
           'hospital_id': hospitalId,
         }),
@@ -313,7 +437,7 @@ class ApiService {
     Map<String, dynamic>? additionalData,
   }) async {
     try {
-      final response = await http.post(
+      final httpResponse = await http.post(
         Uri.parse('$baseUrl/api/trials'),
         headers: headers,
         body: jsonEncode({
@@ -331,9 +455,9 @@ class ApiService {
         }),
       );
 
-      _handleError(response);
+      _handleError(httpResponse);
 
-      final data = jsonDecode(response.body);
+      final data = jsonDecode(httpResponse.body);
       return data['trial'] as Map<String, dynamic>;
     } catch (e) {
       debugPrint('Error creating trial: $e');

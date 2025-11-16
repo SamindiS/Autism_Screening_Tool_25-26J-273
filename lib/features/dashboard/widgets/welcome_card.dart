@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../auth/clinician_profile_screen.dart';
 
 class WelcomeCard extends StatelessWidget {
   final String? name;
@@ -14,7 +15,17 @@ class WelcomeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Container(
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const ClinicianProfileScreen(),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -135,12 +146,13 @@ class WelcomeCard extends StatelessWidget {
               ),
             ),
             child: const Icon(
-              Icons.health_and_safety,
+              Icons.person,
               color: Colors.white,
               size: 40,
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
 import '../../data/models/child.dart';
@@ -41,10 +42,10 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
   Future<void> _startAssessment() async {
     final age = double.tryParse(_ageController.text) ?? 0.0;
 
-    if (age < 2.0 || age > 6.0) {
+    if (age < 2.0 || age >= 6.9) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Age must be between 2.0 and 6.0 years'),
+          content: Text('Age must be between 2.0 and 6.9 years'),
           backgroundColor: Colors.red,
         ),
       );
@@ -59,12 +60,29 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
       'timestamp': DateTime.now().toIso8601String(),
     });
 
-    // Get child data
-    final childData = await StorageService.getChild(widget.childId);
+    // Get child data - try by ID first, if not found, get all and find by name
+    var childData = await StorageService.getChild(widget.childId);
+    
+    // If child not found by ID, try to get from all children
+    if (childData == null) {
+      try {
+        final allChildren = await StorageService.getAllChildren();
+        // Try to find by the ID or get the most recent child
+        if (allChildren.isNotEmpty) {
+          childData = allChildren.firstWhere(
+            (c) => c['id'] == widget.childId,
+            orElse: () => allChildren.first,
+          );
+        }
+      } catch (e) {
+        debugPrint('Error loading children: $e');
+      }
+    }
+    
     if (childData == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Child data not found'),
+          content: Text('Child data not found. Please add the child again.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -76,7 +94,7 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
 
     // Route based on age
     if (age >= 2.0 && age < 3.5) {
-      // Age 2-3.4: AI Doctor Bot (Parent Questionnaire)
+      // Age 2.0-3.4: Parent Questionnaire + Clinician Reflection
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -85,8 +103,8 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
           ),
         ),
       );
-    } else if (age >= 3.5 && age <= 5.5) {
-      // Age 3.5-5.5: Frog Jump Game (Go/No-Go)
+    } else if (age >= 3.5 && age < 5.5) {
+      // Age 3.5-5.4: Frog Jump Game + Clinician Reflection
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -96,8 +114,8 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
           ),
         ),
       );
-    } else if (age > 5.5 && age <= 6.0) {
-      // Age 5.6-6: Color-Shape Game (DCCS Rule-Switch)
+    } else if (age >= 5.5 && age < 6.9) {
+      // Age 5.5-6.8: Color-Shape Game + Clinician Reflection
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -110,7 +128,7 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Invalid age range. Please enter age between 2.0 and 6.0'),
+          content: Text('Invalid age range. Please enter age between 2.0 and 6.9'),
           backgroundColor: Colors.red,
         ),
       );
@@ -237,7 +255,7 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Age must be between 2.0 and 6.0 years',
+            'Age must be between 2.0 and 6.9 years',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade600,
@@ -318,11 +336,11 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          _buildAgeGroupItem('2.0 - 3.4 years', 'Parent Interview Bot', Colors.blue),
+          _buildAgeGroupItem('2.0 - 3.4 years', 'Parent Questionnaire + Clinician Reflection', Colors.blue),
           const SizedBox(height: 12),
-          _buildAgeGroupItem('3.5 - 5.5 years', 'Frog Jump Game (Go/No-Go)', Colors.green),
+          _buildAgeGroupItem('3.5 - 5.4 years', 'Frog Jump Game + Clinician Reflection', Colors.green),
           const SizedBox(height: 12),
-          _buildAgeGroupItem('5.6 - 6.0 years', 'Color-Shape Game (DCCS)', Colors.purple),
+          _buildAgeGroupItem('5.5 - 6.8 years', 'Color-Shape Game + Clinician Reflection', Colors.purple),
         ],
       ),
     );

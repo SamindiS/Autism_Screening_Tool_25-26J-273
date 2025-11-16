@@ -80,6 +80,7 @@ class AppLocalizations {
   String get backToDashboard => translate('back_to_dashboard');
   String get clinicianReflection => translate('clinician_reflection');
   String get clinicianReflection2_3 => translate('clinician_reflection_2_3');
+  String get clinicianProfile => translate('clinician_profile');
   String get manualTasks => translate('manual_tasks');
   String get behavioralObservations => translate('behavioral_observations');
   String get refresh => translate('refresh');

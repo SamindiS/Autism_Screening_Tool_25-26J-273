@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../data/models/child.dart';
 import '../../data/models/game_results.dart';
 import '../../core/services/storage_service.dart';
@@ -137,21 +138,52 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
       };
 
       // Update session with reflection data
-      await StorageService.updateSession(
-        id: widget.sessionId,
-        metrics: {
-          'game_results': widget.gameResults.toJson(),
-          'reflection_results': reflectionData,
-          'risk_score': enhancedRiskScore,
-          'risk_level': riskLevel,
-        },
-      );
+      String finalSessionId = widget.sessionId;
+      try {
+        await StorageService.updateSession(
+          id: widget.sessionId,
+          reflectionResults: reflectionData,
+          riskScore: enhancedRiskScore,
+          riskLevel: riskLevel.toLowerCase(),
+        );
+      } catch (e) {
+        debugPrint('Error updating session: $e');
+        // Try to create session if it doesn't exist
+        try {
+          final sessionData = await StorageService.saveSession(
+            childId: widget.child.id,
+            sessionType: widget.child.age >= 3.5 && widget.child.age < 5.5 
+                ? 'frog_jump' 
+                : 'color_shape',
+            ageGroup: widget.child.age >= 3.5 && widget.child.age < 5.5 
+                ? '3.5-5.5' 
+                : '5.5-6.9',
+            startTime: DateTime.now().subtract(const Duration(minutes: 10)),
+            endTime: DateTime.now(),
+            gameResults: widget.gameResults.toJson(),
+            reflectionResults: reflectionData,
+            riskScore: enhancedRiskScore,
+            riskLevel: riskLevel.toLowerCase(),
+          );
+          
+          if (sessionData != null && sessionData['id'] != null) {
+            // Use the new session ID
+            finalSessionId = sessionData['id'] as String;
+            debugPrint('Created new session: $finalSessionId');
+          } else {
+            throw Exception('Failed to create session: No session ID returned');
+          }
+        } catch (createError) {
+          debugPrint('Error creating session: $createError');
+          throw Exception('Failed to save reflection data: $createError');
+        }
+      }
 
       // Log to console
       LoggerService.logSession({
         'event': 'CLINICAL_REFLECTION_COMPLETED',
         'child_id': widget.child.id,
-        'session_id': widget.sessionId,
+        'session_id': finalSessionId,
         'reflection_data': reflectionData,
         'game_results': widget.gameResults.toJson(),
         'enhanced_risk_score': enhancedRiskScore,
@@ -164,7 +196,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
           MaterialPageRoute(
             builder: (_) => ResultScreen(
               child: widget.child,
-              sessionId: widget.sessionId,
+              sessionId: finalSessionId,
               gameResults: widget.gameResults,
               reflectionData: reflectionData,
               riskScore: enhancedRiskScore,

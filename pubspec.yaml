@@ -18,7 +18,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.16.2 <2.17.0"   # ← Locked for Dart 2.16 compatibility
+  sdk: ">=3.0.0 <4.0.0"   # Flutter 3.38+ compatible (Dart 3.0+)
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -31,31 +31,34 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  cupertino_icons: ^1.0.2
-  provider: ^6.0.5
-  sqflite: ^2.0.0+3
-  path: ^1.8.0
-  path_provider: ^2.0.11
-  intl: ^0.17.0
-  audioplayers: ^0.20.1
-  fl_chart: ^0.40.0
-  confetti: ^0.6.0
-  json_annotation: ^4.4.0
-  shared_preferences: ^2.0.11
-  simple_animations: ^4.0.2   # ← Fixed version for Dart 2.16
-  supercharged: ^2.1.1        # Works with Dart 2.16
-  webview_flutter: ^2.8.0     # For HTML games (Flutter 2.10.5 compatible)
-  pdf: ^3.6.0                  # For PDF reports
-  printing: ^5.6.0             # For PDF printing
-  pull_to_refresh: ^2.0.0      # Pull-to-refresh functionality
-  http: ^0.13.5                # HTTP client for API calls
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.2
+  sqflite: ^2.3.3+2
+  path: ^1.9.0
+  path_provider: ^2.1.4
+  intl: ^0.20.2
+  audioplayers: ^6.0.0
+  flutter_tts: ^4.0.2
+  fl_chart: ^0.69.0
+  confetti: ^0.7.0
+  json_annotation: ^4.9.0
+  shared_preferences: ^2.3.2
+  simple_animations: ^5.0.2
+  supercharged: ^2.1.1
+  webview_flutter: ^4.9.0
+  pdf: ^3.11.1
+  printing: ^5.13.3
+  pull_to_refresh: ^2.0.0
+  http: ^1.2.2
+  firebase_core: ^3.6.0
+  firebase_database: ^11.1.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^1.0.0
-  json_serializable: ^6.1.5
-  build_runner: ^2.1.7
+  flutter_lints: ^5.0.0
+  json_serializable: ^6.8.0
+  build_runner: ^2.4.13
 
 flutter:
   uses-material-design: true

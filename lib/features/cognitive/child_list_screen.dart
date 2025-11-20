@@ -125,8 +125,8 @@ class _ChildListScreenState extends State<ChildListScreen> {
               icon: const Icon(Icons.add),
               label: const Text('Add Child'),
               style: ElevatedButton.styleFrom(
-                primary: Colors.orange,
-                onPrimary: Colors.white,
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,

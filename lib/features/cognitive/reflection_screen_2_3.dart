@@ -3,8 +3,9 @@ import 'package:flutter/foundation.dart';
 import '../../data/models/child.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
-import '../../core/localization/app_localizations.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/language_selector.dart';
+import '../settings/settings_screen.dart';
 import '../assessment/result_screen.dart';
 
 class ClinicianReflectionScreen2_3 extends StatefulWidget {
@@ -291,10 +292,29 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)?.clinicianReflection2_3 ?? 'Clinical Reflection (Ages 2-3.5)'),
+        title: Text(AppLocalizations.of(context)!.clinicianReflection23),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.settings, color: Colors.white),
+              tooltip: 'Settings',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SettingsScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
@@ -813,8 +833,8 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
       child: ElevatedButton(
         onPressed: _loading ? null : _submitReflection,
         style: ElevatedButton.styleFrom(
-          primary: Colors.blue,
-          onPrimary: Colors.white,
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

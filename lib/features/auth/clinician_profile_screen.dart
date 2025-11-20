@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/api_service.dart';
-import '../../core/localization/app_localizations.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/language_selector.dart';
 import 'login_screen.dart';
 
@@ -131,7 +131,7 @@ class _ClinicianProfileScreenState extends State<ClinicianProfileScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(primary: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
           ),
         ],
@@ -191,7 +191,7 @@ class _ClinicianProfileScreenState extends State<ClinicianProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)?.clinicianProfile ?? 'Clinician Profile'),
+        title: Text(AppLocalizations.of(context)!.clinicianProfile),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
         actions: [
@@ -509,8 +509,8 @@ class _ClinicianProfileScreenState extends State<ClinicianProfileScreen> {
             child: ElevatedButton(
               onPressed: _loading ? null : _saveChanges,
               style: ElevatedButton.styleFrom(
-                primary: Colors.teal,
-                onPrimary: Colors.white,
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -549,7 +549,7 @@ class _ClinicianProfileScreenState extends State<ClinicianProfileScreen> {
                       });
                     },
               style: OutlinedButton.styleFrom(
-                primary: Colors.teal,
+                foregroundColor: Colors.teal,
                 side: const BorderSide(color: Colors.teal, width: 2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -579,8 +579,8 @@ class _ClinicianProfileScreenState extends State<ClinicianProfileScreen> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                primary: Colors.teal,
-                onPrimary: Colors.white,
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -602,7 +602,7 @@ class _ClinicianProfileScreenState extends State<ClinicianProfileScreen> {
                 ),
               ),
               style: OutlinedButton.styleFrom(
-                primary: Colors.red,
+                foregroundColor: Colors.red,
                 side: const BorderSide(color: Colors.red, width: 2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),

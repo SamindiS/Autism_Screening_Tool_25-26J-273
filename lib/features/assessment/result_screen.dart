@@ -534,8 +534,8 @@ class _ResultScreenState extends State<ResultScreen> {
             icon: const Icon(Icons.picture_as_pdf),
             label: const Text('Export PDF Report'),
             style: ElevatedButton.styleFrom(
-              primary: Colors.orange,
-              onPrimary: Colors.white,
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -553,7 +553,7 @@ class _ResultScreenState extends State<ResultScreen> {
             icon: const Icon(Icons.dashboard),
             label: const Text('Back to Dashboard'),
             style: OutlinedButton.styleFrom(
-              primary: Colors.orange,
+              foregroundColor: Colors.orange,
               side: const BorderSide(color: Colors.orange, width: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),

@@ -9,10 +9,17 @@ class AuthService {
   // Check if user is registered (check backend)
   static Future<bool> isRegistered() async {
     try {
+      // First check if backend is available
+      final isBackendAvailable = await ApiService.healthCheck();
+      if (!isBackendAvailable) {
+        debugPrint('Backend not available, assuming not registered');
+        return false;
+      }
+      
       final clinician = await ApiService.getClinicianInfo();
-      return clinician.isNotEmpty;
+      return clinician.isNotEmpty && clinician['id'] != null;
     } catch (e) {
-      debugPrint('No clinician registered: $e');
+      debugPrint('No clinician registered or backend unavailable: $e');
       return false;
     }
   }
@@ -24,12 +31,22 @@ class AuthService {
   }
 
   // Register new clinician (via API)
-  static Future<bool> register({
+  static Future<Map<String, dynamic>> register({
     required String name,
     required String hospital,
     required String pin,
   }) async {
     try {
+      // First check if backend is available
+      final isBackendAvailable = await ApiService.healthCheck();
+      if (!isBackendAvailable) {
+        return {
+          'success': false,
+          'error': 'Backend server is not available. Please ensure the backend server is running on port 3000.',
+          'errorType': 'backend_unavailable',
+        };
+      }
+
       // Register via API
       final clinician = await ApiService.registerClinician(
         name: name,
@@ -45,16 +62,60 @@ class AuthService {
       }
       
       debugPrint('Clinician registered successfully: ${clinician['id']}');
-      return true;
+      return {
+        'success': true,
+        'clinician': clinician,
+      };
     } catch (e) {
       debugPrint('Error registering clinician: $e');
-      return false;
+      
+      String errorMessage = 'Registration failed. Please try again.';
+      String errorType = 'unknown';
+      
+      if (e.toString().contains('SocketException') || 
+          e.toString().contains('Failed host lookup') ||
+          e.toString().contains('Connection refused')) {
+        errorMessage = 'Cannot connect to server. Please check:\n'
+            '1. Backend server is running on port 3000\n'
+            '2. You are connected to the correct network\n'
+            '3. For emulator: Use http://10.0.2.2:3000\n'
+            '4. For real device: Use your computer IP (e.g., http://192.168.1.100:3000)';
+        errorType = 'connection_error';
+      } else if (e.toString().contains('400') || e.toString().contains('Bad Request')) {
+        errorMessage = 'Invalid registration data. Please check your information and try again.';
+        errorType = 'validation_error';
+      } else if (e.toString().contains('409') || e.toString().contains('Conflict')) {
+        errorMessage = 'A clinician with this PIN already exists. Please use a different PIN.';
+        errorType = 'duplicate_error';
+      } else if (e.toString().contains('500') || e.toString().contains('Internal Server Error')) {
+        errorMessage = 'Server error occurred. Please try again later.';
+        errorType = 'server_error';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+        errorType = 'timeout_error';
+      }
+      
+      return {
+        'success': false,
+        'error': errorMessage,
+        'errorType': errorType,
+      };
     }
   }
 
   // Login with PIN (via API)
-  static Future<bool> login(String pin) async {
+  static Future<Map<String, dynamic>> login(String pin) async {
     try {
+      // First check if backend is available
+      final isBackendAvailable = await ApiService.healthCheck();
+      if (!isBackendAvailable) {
+        return {
+          'success': false,
+          'error': 'Backend server is not available. Please ensure the backend server is running on port 3000.',
+          'errorType': 'backend_unavailable',
+        };
+      }
+
       // Login via API
       final clinician = await ApiService.loginClinician(pin: pin);
 
@@ -66,10 +127,44 @@ class AuthService {
       }
       
       debugPrint('Clinician logged in successfully: ${clinician['id']}');
-      return true;
+      return {
+        'success': true,
+        'clinician': clinician,
+      };
     } catch (e) {
       debugPrint('Error logging in clinician: $e');
-      return false;
+      
+      String errorMessage = 'Login failed. Please check your PIN and try again.';
+      String errorType = 'unknown';
+      
+      if (e.toString().contains('SocketException') || 
+          e.toString().contains('Failed host lookup') ||
+          e.toString().contains('Connection refused')) {
+        errorMessage = 'Cannot connect to server. Please check:\n'
+            '1. Backend server is running on port 3000\n'
+            '2. You are connected to the correct network\n'
+            '3. For emulator: Use http://10.0.2.2:3000\n'
+            '4. For real device: Use your computer IP (e.g., http://192.168.1.100:3000)';
+        errorType = 'connection_error';
+      } else if (e.toString().contains('401') || e.toString().contains('Unauthorized')) {
+        errorMessage = 'Invalid PIN. Please check and try again.';
+        errorType = 'auth_error';
+      } else if (e.toString().contains('404') || e.toString().contains('Not Found')) {
+        errorMessage = 'Clinician not found. Please register first.';
+        errorType = 'not_found_error';
+      } else if (e.toString().contains('500') || e.toString().contains('Internal Server Error')) {
+        errorMessage = 'Server error occurred. Please try again later.';
+        errorType = 'server_error';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+        errorType = 'timeout_error';
+      }
+      
+      return {
+        'success': false,
+        'error': errorMessage,
+        'errorType': errorType,
+      };
     }
   }
 

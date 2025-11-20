@@ -386,8 +386,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
       child: ElevatedButton(
         onPressed: _saveChild,
         style: ElevatedButton.styleFrom(
-          primary: Colors.orange,
-          onPrimary: Colors.white,
+          backgroundColor: Colors.orange,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

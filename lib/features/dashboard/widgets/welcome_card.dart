@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/localization/app_localizations.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../auth/clinician_profile_screen.dart';
 
 class WelcomeCard extends StatelessWidget {
@@ -14,7 +14,7 @@ class WelcomeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -69,7 +69,7 @@ class WelcomeCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      l10n?.welcomeBack ?? 'Welcome Back!',
+                      AppLocalizations.of(context)!.welcomeBack,
                       style: const TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.bold,

@@ -390,8 +390,8 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
       child: ElevatedButton(
         onPressed: _startAssessment,
         style: ElevatedButton.styleFrom(
-          primary: Colors.orange,
-          onPrimary: Colors.white,
+          backgroundColor: Colors.orange,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

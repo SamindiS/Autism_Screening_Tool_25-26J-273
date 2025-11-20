@@ -717,8 +717,8 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                 },
               ),
               style: ElevatedButton.styleFrom(
-                primary: Colors.blue.shade600,
-                onPrimary: Colors.white,
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,

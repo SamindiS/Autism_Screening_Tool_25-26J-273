@@ -4,8 +4,9 @@ import '../../data/models/child.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
 import '../../core/services/translation_helper.dart';
-import '../../core/localization/app_localizations.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/language_selector.dart';
+import '../settings/settings_screen.dart';
 import '../cognitive/reflection_screen_2_3.dart';
 import 'result_screen.dart';
 
@@ -32,8 +33,8 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
   String? _sessionId;
   DateTime? _startTime;
 
-  List<Map<String, dynamic>> get _questions {
-    return TranslationHelper.getAIBotQuestions(widget.child.name);
+  List<Map<String, dynamic>> _getQuestions() {
+    return TranslationHelper.getAIBotQuestions(widget.child.name, context);
   }
   
   // Legacy hardcoded questions - kept for reference but not used
@@ -237,7 +238,8 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
       if (!mounted) return;
       
       // Check if this is the last question (0-indexed, so length - 1)
-      final isLastQuestion = _currentQuestion >= _questions.length - 1;
+      final questions = _getQuestions();
+      final isLastQuestion = _currentQuestion >= questions.length - 1;
       
       if (isLastQuestion) {
         // This is the last question, complete the assessment
@@ -265,14 +267,15 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
     );
 
     try {
+      final questions = _getQuestions();
       final totalScore = _answers.values.reduce((sum, val) => sum + val);
-      final maxScore = _questions.length * 5;
+      final maxScore = questions.length * 5;
       final percentageScore = (totalScore / maxScore) * 100;
 
       // Calculate category scores
       final categoryScores = <String, Map<String, dynamic>>{};
       
-      for (final q in _questions) {
+      for (final q in questions) {
         if (_answers[q['id']] != null) {
           final category = q['category'] as String;
           if (!categoryScores.containsKey(category)) {
@@ -427,8 +430,9 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
 
   @override
   Widget build(BuildContext context) {
-    final progress = ((_currentQuestion + 1) / _questions.length) * 100;
-    final question = _questions[_currentQuestion];
+    final questions = _getQuestions();
+    final progress = ((_currentQuestion + 1) / questions.length) * 100;
+    final question = questions[_currentQuestion];
     final questionText = (question['question'] as String).replaceAll(
       '{childName}',
       widget.child.name,
@@ -508,9 +512,10 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
                     const SizedBox(height: 8),
                     Builder(
                       builder: (context) {
-                        final l10n = AppLocalizations.of(context);
+                        final l10n = AppLocalizations.of(context)!;
+                        final questions = _getQuestions();
                         return Text(
-                          '${l10n?.question ?? "Question"} ${_currentQuestion + 1} ${l10n?.ofText ?? "of"} ${_questions.length}',
+                          '${l10n.question} ${_currentQuestion + 1} ${l10n.ofText} ${questions.length}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
@@ -522,6 +527,26 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
                   ],
                 ),
               ),
+              Container(
+                margin: const EdgeInsets.only(left: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.settings, color: Colors.white),
+                  tooltip: 'Settings',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SettingsScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
               Container(
                 margin: const EdgeInsets.only(left: 8),
                 decoration: BoxDecoration(

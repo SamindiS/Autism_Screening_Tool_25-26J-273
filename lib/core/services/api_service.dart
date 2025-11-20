@@ -2,15 +2,51 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  // For Android Emulator: use 10.0.2.2
-  // For iOS Simulator: use localhost
-  // For real device: use your computer's IP address (e.g., 192.168.1.100)
-  static const String baseUrl = 'http://10.0.2.2:3000';
+  // Default URLs for different platforms
+  static const String _defaultEmulatorUrl = 'http://10.0.2.2:3000'; // Android emulator
+  static const String _defaultSimulatorUrl = 'http://localhost:3000'; // iOS simulator
+  static const String _defaultRealDeviceUrl = 'http://192.168.1.100:3000'; // Real device (needs to be configured)
   
-  // Uncomment and set your computer's IP for real device testing:
-  // static const String baseUrl = 'http://192.168.1.100:3000';
+  // SharedPreferences key for storing backend URL
+  static const String _backendUrlKey = 'backend_url';
+  
+  /// Get the base URL for API calls
+  /// Checks SharedPreferences first, then falls back to defaults
+  static Future<String> get baseUrl async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedUrl = prefs.getString(_backendUrlKey);
+    
+    if (savedUrl != null && savedUrl.isNotEmpty) {
+      return savedUrl;
+    }
+    
+    // Return default based on platform
+    // For now, default to emulator URL (most common during development)
+    return _defaultEmulatorUrl;
+  }
+  
+  /// Set the backend URL (for real device configuration)
+  static Future<void> setBackendUrl(String url) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Remove trailing slash if present
+    final cleanUrl = url.trim().replaceAll(RegExp(r'/$'), '');
+    await prefs.setString(_backendUrlKey, cleanUrl);
+    debugPrint('Backend URL set to: $cleanUrl');
+  }
+  
+  /// Get the current backend URL
+  static Future<String> getBackendUrl() async {
+    return await baseUrl;
+  }
+  
+  /// Reset to default URL
+  static Future<void> resetBackendUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_backendUrlKey);
+  }
   
   static const Map<String, String> headers = {
     'Content-Type': 'application/json',
@@ -43,8 +79,9 @@ class ApiService {
     required String pin,
   }) async {
     try {
+      final url = await baseUrl;
       final response = await http.post(
-        Uri.parse('$baseUrl/api/clinicians/register'),
+        Uri.parse('$url/api/clinicians/register'),
         headers: headers,
         body: jsonEncode({
           'name': name,
@@ -68,8 +105,9 @@ class ApiService {
     required String pin,
   }) async {
     try {
+      final url = await baseUrl;
       final response = await http.post(
-        Uri.parse('$baseUrl/api/clinicians/login'),
+        Uri.parse('$url/api/clinicians/login'),
         headers: headers,
         body: jsonEncode({
           'pin': pin,
@@ -89,8 +127,9 @@ class ApiService {
   /// Get current clinician info
   static Future<Map<String, dynamic>> getClinicianInfo() async {
     try {
+      final url = await baseUrl;
       final response = await http.get(
-        Uri.parse('$baseUrl/api/clinicians/me'),
+        Uri.parse('$url/api/clinicians/me'),
         headers: headers,
       );
 
@@ -112,8 +151,9 @@ class ApiService {
     required String pin,
   }) async {
     try {
+      final url = await baseUrl;
       final response = await http.put(
-        Uri.parse('$baseUrl/api/clinicians/$id'),
+        Uri.parse('$url/api/clinicians/$id'),
         headers: headers,
         body: jsonEncode({
           'name': name,
@@ -135,8 +175,9 @@ class ApiService {
   /// Delete clinician
   static Future<void> deleteClinician(String id) async {
     try {
+      final url = await baseUrl;
       final response = await http.delete(
-        Uri.parse('$baseUrl/api/clinicians/$id'),
+        Uri.parse('$url/api/clinicians/$id'),
         headers: headers,
       );
 
@@ -161,8 +202,9 @@ class ApiService {
       // Convert gender to lowercase to match backend validation
       final normalizedGender = gender.toLowerCase();
       
+      final url = await baseUrl;
       final response = await http.post(
-        Uri.parse('$baseUrl/api/children'),
+        Uri.parse('$url/api/children'),
         headers: headers,
         body: jsonEncode({
           'name': name,
@@ -186,8 +228,9 @@ class ApiService {
   /// Get all children
   static Future<List<Map<String, dynamic>>> getAllChildren() async {
     try {
+      final url = await baseUrl;
       final response = await http.get(
-        Uri.parse('$baseUrl/api/children'),
+        Uri.parse('$url/api/children'),
         headers: headers,
       );
 
@@ -204,8 +247,9 @@ class ApiService {
   /// Get child by ID
   static Future<Map<String, dynamic>> getChild(String id) async {
     try {
+      final url = await baseUrl;
       final response = await http.get(
-        Uri.parse('$baseUrl/api/children/$id'),
+        Uri.parse('$url/api/children/$id'),
         headers: headers,
       );
 
@@ -232,8 +276,9 @@ class ApiService {
       // Convert gender to lowercase to match backend validation
       final normalizedGender = gender.toLowerCase();
       
+      final url = await baseUrl;
       final response = await http.put(
-        Uri.parse('$baseUrl/api/children/$id'),
+        Uri.parse('$url/api/children/$id'),
         headers: headers,
         body: jsonEncode({
           'name': name,
@@ -257,8 +302,9 @@ class ApiService {
   /// Delete child
   static Future<void> deleteChild(String id) async {
     try {
+      final url = await baseUrl;
       final response = await http.delete(
-        Uri.parse('$baseUrl/api/children/$id'),
+        Uri.parse('$url/api/children/$id'),
         headers: headers,
       );
 
@@ -286,8 +332,9 @@ class ApiService {
     String? riskLevel,
   }) async {
     try {
+      final url = await baseUrl;
       final response = await http.post(
-        Uri.parse('$baseUrl/api/sessions'),
+        Uri.parse('$url/api/sessions'),
         headers: headers,
         body: jsonEncode({
           'child_id': childId,
@@ -317,8 +364,9 @@ class ApiService {
   /// Get all sessions
   static Future<List<Map<String, dynamic>>> getAllSessions() async {
     try {
+      final url = await baseUrl;
       final response = await http.get(
-        Uri.parse('$baseUrl/api/sessions'),
+        Uri.parse('$url/api/sessions'),
         headers: headers,
       );
 
@@ -335,8 +383,9 @@ class ApiService {
   /// Get session by ID
   static Future<Map<String, dynamic>> getSession(String id) async {
     try {
+      final url = await baseUrl;
       final response = await http.get(
-        Uri.parse('$baseUrl/api/sessions/$id'),
+        Uri.parse('$url/api/sessions/$id'),
         headers: headers,
       );
 
@@ -353,8 +402,9 @@ class ApiService {
   /// Get sessions by child ID
   static Future<List<Map<String, dynamic>>> getSessionsByChild(String childId) async {
     try {
+      final url = await baseUrl;
       final response = await http.get(
-        Uri.parse('$baseUrl/api/sessions/child/$childId'),
+        Uri.parse('$url/api/sessions/child/$childId'),
         headers: headers,
       );
 
@@ -389,8 +439,9 @@ class ApiService {
       if (riskScore != null) body['risk_score'] = riskScore;
       if (riskLevel != null) body['risk_level'] = riskLevel;
 
+      final url = await baseUrl;
       final response = await http.put(
-        Uri.parse('$baseUrl/api/sessions/$id'),
+        Uri.parse('$url/api/sessions/$id'),
         headers: headers,
         body: jsonEncode(body),
       );
@@ -408,8 +459,9 @@ class ApiService {
   /// Delete session
   static Future<void> deleteSession(String id) async {
     try {
+      final url = await baseUrl;
       final response = await http.delete(
-        Uri.parse('$baseUrl/api/sessions/$id'),
+        Uri.parse('$url/api/sessions/$id'),
         headers: headers,
       );
 
@@ -437,8 +489,9 @@ class ApiService {
     Map<String, dynamic>? additionalData,
   }) async {
     try {
+      final url = await baseUrl;
       final httpResponse = await http.post(
-        Uri.parse('$baseUrl/api/trials'),
+        Uri.parse('$url/api/trials'),
         headers: headers,
         body: jsonEncode({
           'session_id': sessionId,
@@ -470,8 +523,9 @@ class ApiService {
     required List<Map<String, dynamic>> trials,
   }) async {
     try {
+      final url = await baseUrl;
       final response = await http.post(
-        Uri.parse('$baseUrl/api/trials/batch'),
+        Uri.parse('$url/api/trials/batch'),
         headers: headers,
         body: jsonEncode({
           'trials': trials.map((trial) => {
@@ -496,8 +550,9 @@ class ApiService {
   /// Get trials by session ID
   static Future<List<Map<String, dynamic>>> getTrialsBySession(String sessionId) async {
     try {
+      final url = await baseUrl;
       final response = await http.get(
-        Uri.parse('$baseUrl/api/trials/session/$sessionId'),
+        Uri.parse('$url/api/trials/session/$sessionId'),
         headers: headers,
       );
 
@@ -514,8 +569,9 @@ class ApiService {
   /// Get trial by ID
   static Future<Map<String, dynamic>> getTrial(String id) async {
     try {
+      final url = await baseUrl;
       final response = await http.get(
-        Uri.parse('$baseUrl/api/trials/$id'),
+        Uri.parse('$url/api/trials/$id'),
         headers: headers,
       );
 
@@ -532,8 +588,9 @@ class ApiService {
   /// Delete trial
   static Future<void> deleteTrial(String id) async {
     try {
+      final url = await baseUrl;
       final response = await http.delete(
-        Uri.parse('$baseUrl/api/trials/$id'),
+        Uri.parse('$url/api/trials/$id'),
         headers: headers,
       );
 
@@ -549,8 +606,9 @@ class ApiService {
   /// Check if backend is available
   static Future<bool> healthCheck() async {
     try {
+      final url = await baseUrl;
       final response = await http.get(
-        Uri.parse('$baseUrl/health'),
+        Uri.parse('$url/health'),
         headers: headers,
       );
       return response.statusCode == 200;

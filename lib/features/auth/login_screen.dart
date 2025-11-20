@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supercharged/supercharged.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/api_service.dart';
 import '../dashboard/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -159,10 +160,11 @@ class _LoginScreenState extends State<LoginScreen>
     try {
       if (_isLogin) {
         // LOGIN
-        success = await AuthService.login(_pinCtrl.text);
+        final result = await AuthService.login(_pinCtrl.text);
+        success = result['success'] as bool? ?? false;
         message = success
             ? 'Welcome back!'
-            : 'Invalid PIN. Please check and try again.';
+            : (result['error'] as String? ?? 'Invalid PIN. Please check and try again.');
       } else {
         // REGISTER
         if (_pinCtrl.text != _confirmPinCtrl.text) {
@@ -172,14 +174,15 @@ class _LoginScreenState extends State<LoginScreen>
           return;
         }
 
-        success = await AuthService.register(
+        final result = await AuthService.register(
           name: _nameCtrl.text.trim(),
           hospital: _hospitalCtrl.text.trim(),
           pin: _pinCtrl.text,
         );
+        success = result['success'] as bool? ?? false;
         message = success
             ? 'Registration successful! Welcome to SenseAI!'
-            : 'Registration failed. Please check your connection and try again.';
+            : (result['error'] as String? ?? 'Registration failed. Please check your connection and try again.');
       }
 
       setState(() => _loading = false);
@@ -217,30 +220,132 @@ class _LoginScreenState extends State<LoginScreen>
     } catch (e) {
       setState(() => _loading = false);
       HapticFeedback.heavyImpact();
-      _showError('An error occurred. Please try again.');
+      _showError('An unexpected error occurred: ${e.toString()}');
     }
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
+    // Show as dialog for connection errors (they're longer)
+    if (message.contains('Cannot connect to server') || 
+        message.contains('Backend server is not available')) {
+      _showBackendConfigDialog(message);
+    } else {
+      // Show as snackbar for shorter errors
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(child: Text(message)),
+            ],
+          ),
+          backgroundColor: Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Dismiss',
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
+        ),
+      );
+    }
+  }
+
+  void _showBackendConfigDialog(String message) async {
+    final urlController = TextEditingController();
+    final currentUrl = await ApiService.getBackendUrl();
+    urlController.text = currentUrl;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.wifi_off, color: Colors.red),
+            SizedBox(width: 12),
+            Text('Backend Server Configuration'),
           ],
         ),
-        backgroundColor: Colors.red.shade600,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 3),
-        action: SnackBarAction(
-          label: 'Dismiss',
-          textColor: Colors.white,
-          onPressed: () {},
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(message),
+              const SizedBox(height: 16),
+              const Text(
+                'Configure Backend URL:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: urlController,
+                decoration: InputDecoration(
+                  labelText: 'Backend URL',
+                  hintText: 'http://192.168.1.100:3000',
+                  border: const OutlineInputBorder(),
+                  helperText: 'For real device: Use your computer\'s IP address\nFor emulator: Use http://10.0.2.2:3000',
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Instructions:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text('1. Find your computer\'s IP address:'),
+              const Text('   Windows: ipconfig'),
+              const Text('   Mac/Linux: ifconfig'),
+              const SizedBox(height: 8),
+              const Text('2. Format: http://YOUR_IP:3000'),
+              const Text('   Example: http://192.168.1.100:3000'),
+              const SizedBox(height: 8),
+              const Text('3. Ensure backend server is running'),
+            ],
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final url = urlController.text.trim();
+              if (url.isNotEmpty) {
+                // Test the connection
+                await ApiService.setBackendUrl(url);
+                final isAvailable = await ApiService.healthCheck();
+                if (isAvailable) {
+                  Navigator.of(context).pop();
+                  _showSuccess('✓ Connection successful! Backend URL saved.');
+                } else {
+                  _showError('Connection failed. Please check:\n'
+                      '1. Backend server is running on port 3000\n'
+                      '2. Your computer and tablet are on the same Wi-Fi\n'
+                      '3. Windows Firewall allows port 3000\n'
+                      '4. IP address is correct: $url');
+                }
+              }
+            },
+            child: const Text('Test Connection'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final url = urlController.text.trim();
+              if (url.isNotEmpty) {
+                await ApiService.setBackendUrl(url);
+                Navigator.of(context).pop();
+                _showSuccess('Backend URL configured! Try logging in again.');
+              }
+            },
+            child: const Text('Save & Retry'),
+          ),
+        ],
       ),
     );
   }
@@ -300,6 +405,21 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            tooltip: 'Backend Configuration',
+            onPressed: () {
+              _showBackendConfigDialog(
+                'Configure your backend server URL to connect to the server.',
+              );
+            },
+          ),
+        ],
+      ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -763,8 +883,8 @@ class _LoginScreenState extends State<LoginScreen>
       child: ElevatedButton(
         onPressed: _loading ? null : _submit,
         style: ElevatedButton.styleFrom(
-          primary: Colors.white,
-          onPrimary: const Color(0xFF6366F1),
+          backgroundColor: Colors.white,
+          foregroundColor: const Color(0xFF6366F1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),

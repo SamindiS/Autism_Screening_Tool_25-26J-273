@@ -277,5 +277,20 @@
   "dontTap": "❌ தூங்கும் ஆமை தட்ட வேண்டாம்!",
   "getReady": "தயாராகுங்கள்!",
   "tapHappyFrog": "மகிழ்ச்சியான தவளை தட்டவும்! 🐸",
-  "dontTapSleepyTurtle": "தட்ட வேண்டாம்! அது தூங்குகிறது! 🐢"
+  "dontTapSleepyTurtle": "தட்ட வேண்டாம்! அது தூங்குகிறது! 🐢",
+  "settingsTitle": "Settings",
+  "backendConfiguration": "Backend configuration",
+  "backendUrl": "Backend URL",
+  "backendHelper": "Use your laptop IP from ipconfig (Wi-Fi adapter) for real devices.",
+  "testing": "Testing...",
+  "testConnection": "Test connection",
+  "resetToDefault": "Reset to default",
+  "networkChecklist": "Network checklist",
+  "networkTipSameWifi": "Laptop and tablet must be on the same Wi-Fi network.",
+  "networkTipBackend": "Run `npm start` (backend) before opening the app.",
+  "networkTipBrowser": "Open http://<your-ip>:3000/health in a mobile browser to verify access.",
+  "networkTipFirewall": "Allow inbound TCP port 3000 in Windows Defender Firewall.",
+  "networkTipUpdate": "Update the URL here whenever your laptop IP changes.",
+  "aboutThisBuild": "About this build",
+  "dataMode": "Data mode"
 }

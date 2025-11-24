@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/storage_service.dart';
-import '../../l10n/app_localizations.dart';
+import 'package:senseai/l10n/app_localizations.dart';
 import '../../widgets/language_selector.dart';
 import '../auth/login_screen.dart';
 import '../cognitive/cognitive_dashboard_screen.dart';
@@ -27,7 +27,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   String? _hospitalName;
   bool _loading = true;
   String? _errorMessage;
-  
+
   // Statistics
   int _totalChildren = 0;
   int _completedAssessments = 0;
@@ -77,24 +77,25 @@ class _DashboardScreenState extends State<DashboardScreen>
         _errorMessage = null;
       });
     }
-    
+
     try {
       final info = await AuthService.getClinicianInfo();
-      
+
       // Load statistics
       final children = await StorageService.getAllChildren();
       final sessions = await StorageService.getAllSessions();
-      
+
       final today = DateTime.now();
       final todayStart = DateTime(today.year, today.month, today.day);
-      
+
       final completed = sessions.where((s) => s['end_time'] != null).length;
       final pending = sessions.where((s) => s['end_time'] == null).length;
       final todayCount = sessions.where((s) {
-        final sessionDate = DateTime.fromMillisecondsSinceEpoch(s['created_at'] as int);
+        final sessionDate =
+            DateTime.fromMillisecondsSinceEpoch(s['created_at'] as int);
         return sessionDate.isAfter(todayStart);
       }).length;
-      
+
       if (mounted) {
         setState(() {
           _clinicianName = info['name'];
@@ -106,31 +107,31 @@ class _DashboardScreenState extends State<DashboardScreen>
           _loading = false;
           _errorMessage = null;
         });
-        
+
         if (!isRefresh) {
           // Start animations only on initial load
           _fadeController.forward();
           _slideController.forward();
         }
       }
-      
+
       if (isRefresh) {
         _refreshController.refreshCompleted();
       }
     } catch (e, stackTrace) {
       print('Error in _loadData: $e');
       print('Stack trace: $stackTrace');
-      
+
       if (mounted) {
         setState(() {
           _loading = false;
           _errorMessage = e.toString();
         });
-        
+
         if (isRefresh) {
           _refreshController.refreshFailed();
         }
-        
+
         if (!isRefresh) {
           final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -152,7 +153,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _onRefresh() async {
     await _loadData(isRefresh: true);
   }
-  
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -200,7 +201,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       backgroundColor: isDark ? Colors.grey[900] : const Color(0xFFF5F7FA),
       appBar: AppBar(
@@ -388,9 +389,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 value: _totalChildren,
                 icon: Icons.child_care_rounded,
                 color: const Color(0xFF3B82F6),
-                bgColor: isDark
-                    ? Colors.blue[900]!
-                    : const Color(0xFFDBEAFE),
+                bgColor: isDark ? Colors.blue[900]! : const Color(0xFFDBEAFE),
               ),
             ),
             const SizedBox(width: 12),
@@ -400,9 +399,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 value: _completedAssessments,
                 icon: Icons.check_circle_rounded,
                 color: const Color(0xFF10B981),
-                bgColor: isDark
-                    ? Colors.green[900]!
-                    : const Color(0xFFD1FAE5),
+                bgColor: isDark ? Colors.green[900]! : const Color(0xFFD1FAE5),
               ),
             ),
           ],
@@ -416,9 +413,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 value: _pendingAssessments,
                 icon: Icons.pending_actions_rounded,
                 color: const Color(0xFFF59E0B),
-                bgColor: isDark
-                    ? Colors.orange[900]!
-                    : const Color(0xFFFEF3C7),
+                bgColor: isDark ? Colors.orange[900]! : const Color(0xFFFEF3C7),
               ),
             ),
             const SizedBox(width: 12),
@@ -428,9 +423,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 value: _todayAssessments,
                 icon: Icons.today_rounded,
                 color: const Color(0xFF8B5CF6),
-                bgColor: isDark
-                    ? Colors.purple[900]!
-                    : const Color(0xFFEDE9FE),
+                bgColor: isDark ? Colors.purple[900]! : const Color(0xFFEDE9FE),
               ),
             ),
           ],

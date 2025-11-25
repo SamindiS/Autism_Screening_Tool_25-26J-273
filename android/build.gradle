@@ -13,8 +13,8 @@ buildscript {
 
 // Android 10 compatibility settings
 ext {
-    compileSdkVersion = 36  // Compile against latest SDK for plugin compatibility
-    targetSdkVersion = 29  // Target Android 10 (API 29) - app runs on Android 10 devices
+    compileSdkVersion = 34  // Compile against latest SDK for plugin compatibility
+    targetSdkVersion = 34  // Target Android 10 (API 29) - app runs on Android 10 devices
     minSdkVersion = 21
 }
 

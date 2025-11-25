@@ -24,7 +24,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.example.my_autism_app"  // Required for AGP 8.0+
-    compileSdkVersion 36  // Compile against latest SDK for plugin compatibility
+    compileSdkVersion 34  // Compile against latest SDK for plugin compatibility
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -43,7 +43,7 @@ android {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "com.example.my_autism_app"
         minSdkVersion flutter.minSdkVersion  // Android 5.0 (Lollipop) - supports Android 10
-        targetSdkVersion 29  // Target Android 10 (API 29) - app runs on Android 10 devices
+        targetSdkVersion 34  // Target Android 10 (API 29) - app runs on Android 10 devices
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true  // Required for Android 10 compatibility

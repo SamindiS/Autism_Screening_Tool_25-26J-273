@@ -60,8 +60,8 @@ dev_dependencies:
   build_runner: ^2.4.13
 
 flutter:
-  generate: true                     # ← This must be here
   uses-material-design: true
+  generate: true
   assets:
     - assets/audio/
     - assets/images/

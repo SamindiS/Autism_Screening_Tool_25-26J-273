@@ -1,99 +1,35 @@
-// server.js - Main Express Server
+// server.js - SenseAI Backend bridged to Firebase
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
-const db = require('./db');
 
-// Import routes
-const clinicianRoutes = require('./routes/clinicians');
-const childRoutes = require('./routes/children');
-const sessionRoutes = require('./routes/sessions');
-const trialRoutes = require('./routes/trials');
+require('./firebase'); // Initialize Firebase Admin SDK / Firestore
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Core middleware
 app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
+// API routes
+app.use('/api/children', require('./routes/children'));
+app.use('/api/sessions', require('./routes/sessions'));
+app.use('/api/trials', require('./routes/trials'));
+app.use('/api/clinicians', require('./routes/clinicians'));
 
-// Routes
-app.use('/api/clinicians', clinicianRoutes);
-app.use('/api/children', childRoutes);
-app.use('/api/sessions', sessionRoutes);
-app.use('/api/trials', trialRoutes);
-
-// Health check endpoint
+// Health check (required for tablet sync)
 app.get('/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    database: 'connected'
-  });
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({
-    message: 'SenseAI Local Backend API',
-    version: '1.0.0',
-    endpoints: {
-      health: '/health',
-      clinicians: '/api/clinicians',
-      children: '/api/children',
-      sessions: '/api/sessions',
-      trials: '/api/trials'
-    }
-  });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal server error',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Route not found',
-    path: req.path,
-    method: req.method
-  });
-});
-
-// Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log('='.repeat(50));
-  console.log('SenseAI Local Backend Server');
+  console.log('SenseAI Backend + Firebase running');
   console.log('='.repeat(50));
-  console.log(`✓ Server running on http://localhost:${PORT}`);
-  console.log(`✓ API available at http://0.0.0.0:${PORT}/api`);
-  console.log(`✓ Health check: http://localhost:${PORT}/health`);
+  console.log(`→ Listening on http://0.0.0.0:${PORT}`);
+  console.log(`→ Health check: http://YOUR_LAPTOP_IP:${PORT}/health`);
   console.log('='.repeat(50));
-});
-
-// Graceful shutdown
-process.on('SIGINT', () => {
-  console.log('\nShutting down server...');
-  db.close((err) => {
-    if (err) {
-      console.error('Error closing database:', err.message);
-    } else {
-      console.log('✓ Database connection closed');
-    }
-    process.exit(0);
-  });
 });
 
 module.exports = app;

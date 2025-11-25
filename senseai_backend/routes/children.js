@@ -1,228 +1,146 @@
-// routes/children.js - Children CRUD Routes
 const express = require('express');
 const Joi = require('joi');
-const db = require('../db');
-const crypto = require('crypto');
-
-// UUID generation with fallback for older Node.js versions
-const generateUUID = () => {
-  try {
-    if (typeof crypto.randomUUID === 'function') {
-      return crypto.randomUUID();
-    }
-  } catch (e) {
-    // Fall through to fallback
-  }
-  // Fallback for Node.js < 14.17.0
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-};
+const { db } = require('../firebase');
 
 const router = express.Router();
+const childrenCollection = db.collection('children');
+const sessionsCollection = db.collection('sessions');
+const trialsCollection = db.collection('trials');
 
-// Validation schema
 const childSchema = Joi.object({
   name: Joi.string().min(2).max(100).required(),
   date_of_birth: Joi.number().integer().positive().required(),
   gender: Joi.string().valid('male', 'female', 'other').required(),
   language: Joi.string().valid('en', 'si', 'ta').required(),
-  hospital_id: Joi.string().allow(null, '').optional()
+  hospital_id: Joi.string().allow(null, '').optional(),
+  clinician_id: Joi.string().allow(null, '').optional(),
 });
 
-// Create a new child
-// POST /api/children
-router.post('/', async (req, res, next) => {
+const calculateAge = (dobMs) => {
+  const now = Date.now();
+  return (now - dobMs) / (1000 * 60 * 60 * 24 * 365.25);
+};
+
+const toChild = (doc) => ({
+  id: doc.id,
+  ...doc.data(),
+});
+
+const deleteTrialsForSession = async (sessionId) => {
+  const trialsSnap = await trialsCollection.where('session_id', '==', sessionId).get();
+  if (trialsSnap.empty) return;
+  const batch = db.batch();
+  trialsSnap.docs.forEach((trial) => batch.delete(trial.ref));
+  await batch.commit();
+};
+
+const deleteSessionsForChild = async (childId) => {
+  const sessionsSnap = await sessionsCollection.where('child_id', '==', childId).get();
+  if (sessionsSnap.empty) return;
+  for (const sessionDoc of sessionsSnap.docs) {
+    await deleteTrialsForSession(sessionDoc.id);
+    await sessionDoc.ref.delete();
+  }
+};
+
+router.post('/', async (req, res) => {
   try {
     const { error, value } = childSchema.validate(req.body);
     if (error) {
-      return res.status(400).json({
-        error: 'Validation error',
-        details: error.details[0].message
-      });
+      return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { name, date_of_birth, gender, language, hospital_id } = value;
-    
-    // Calculate age in years
-    const dob = new Date(date_of_birth);
-    const now = new Date();
-    const ageInMs = now - dob;
-    const ageInYears = ageInMs / (1000 * 60 * 60 * 24 * 365.25);
-    
-    // Generate unique ID
-    const id = generateUUID();
-    const createdAt = Date.now();
+    const now = Date.now();
+    const child = {
+      ...value,
+      age: value.date_of_birth ? calculateAge(value.date_of_birth) : null,
+      created_at: now,
+      updated_at: now,
+    };
 
-    await db.promisify.run(
-      `INSERT INTO children (id, name, date_of_birth, gender, language, age, hospital_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, name, date_of_birth, gender, language, ageInYears, hospital_id || null, createdAt]
-    );
-
-    res.status(201).json({
-      message: 'Child created successfully',
-      child: {
-        id: id,
-        name: name,
-        date_of_birth: date_of_birth,
-        gender: gender,
-        language: language,
-        age: ageInYears,
-        hospital_id: hospital_id,
-        created_at: createdAt
-      }
-    });
+    const ref = await childrenCollection.add(child);
+    const snapshot = await ref.get();
+    res.status(201).json({ child: toChild(snapshot) });
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Get all children
-// GET /api/children
-router.get('/', async (req, res, next) => {
+router.get('/clinician/:clinicianId', async (req, res) => {
   try {
-    const children = await db.promisify.all(
-      'SELECT * FROM children ORDER BY created_at DESC'
-    );
-
-    res.json({
-      count: children.length,
-      children: children
-    });
+    const snap = await childrenCollection
+      .where('clinician_id', '==', req.params.clinicianId)
+      .orderBy('created_at', 'desc')
+      .get();
+    const children = snap.docs.map(toChild);
+    res.json({ count: children.length, children });
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Get child by ID
-// GET /api/children/:id
-router.get('/:id', async (req, res, next) => {
+router.get('/', async (_req, res) => {
   try {
-    const { id } = req.params;
-    
-    const child = await db.promisify.get(
-      'SELECT * FROM children WHERE id = ?',
-      [id]
-    );
+    const snap = await childrenCollection.orderBy('created_at', 'desc').get();
+    const children = snap.docs.map(toChild);
+    res.json({ count: children.length, children });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    if (!child) {
-      return res.status(404).json({
-        error: 'Child not found'
-      });
+router.get('/:id', async (req, res) => {
+  try {
+    const doc = await childrenCollection.doc(req.params.id).get();
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Child not found' });
     }
-
-    res.json({ child });
+    res.json({ child: toChild(doc) });
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Update child
-// PUT /api/children/:id
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
     const { error, value } = childSchema.validate(req.body);
-    
     if (error) {
-      return res.status(400).json({
-        error: 'Validation error',
-        details: error.details[0].message
-      });
+      return res.status(400).json({ error: error.details[0].message });
     }
 
-    // Check if child exists
-    const existing = await db.promisify.get(
-      'SELECT * FROM children WHERE id = ?',
-      [id]
-    );
-
-    if (!existing) {
-      return res.status(404).json({
-        error: 'Child not found'
-      });
+    const docRef = childrenCollection.doc(req.params.id);
+    const existing = await docRef.get();
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Child not found' });
     }
 
-    const { name, date_of_birth, gender, language, hospital_id } = value;
-    
-    // Recalculate age
-    const dob = new Date(date_of_birth);
-    const now = new Date();
-    const ageInYears = (now - dob) / (1000 * 60 * 60 * 24 * 365.25);
+    const update = {
+      ...value,
+      age: value.date_of_birth ? calculateAge(value.date_of_birth) : null,
+      updated_at: Date.now(),
+    };
 
-    await db.promisify.run(
-      `UPDATE children 
-       SET name = ?, date_of_birth = ?, gender = ?, language = ?, age = ?, hospital_id = ?
-       WHERE id = ?`,
-      [name, date_of_birth, gender, language, ageInYears, hospital_id || null, id]
-    );
-
-    res.json({
-      message: 'Child updated successfully',
-      child: {
-        id: id,
-        name: name,
-        date_of_birth: date_of_birth,
-        gender: gender,
-        language: language,
-        age: ageInYears,
-        hospital_id: hospital_id
-      }
-    });
+    await docRef.update(update);
+    const updated = await docRef.get();
+    res.json({ child: toChild(updated) });
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Delete child
-// DELETE /api/children/:id
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-
-    // Check if child exists
-    const existing = await db.promisify.get(
-      'SELECT * FROM children WHERE id = ?',
-      [id]
-    );
-
-    if (!existing) {
-      return res.status(404).json({
-        error: 'Child not found'
-      });
+    const docRef = childrenCollection.doc(req.params.id);
+    const existing = await docRef.get();
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Child not found' });
     }
 
-    // Delete child (cascade will delete related sessions and trials)
-    await db.promisify.run('DELETE FROM children WHERE id = ?', [id]);
-
-    res.json({
-      message: 'Child deleted successfully'
-    });
+    await deleteSessionsForChild(req.params.id);
+    await docRef.delete();
+    res.json({ message: 'Child deleted successfully' });
   } catch (err) {
-    next(err);
-  }
-});
-
-// Get children by clinician
-// GET /api/children/clinician/:clinicianId
-router.get('/clinician/:clinicianId', async (req, res, next) => {
-  try {
-    const { clinicianId } = req.params;
-    
-    const children = await db.promisify.all(
-      'SELECT * FROM children WHERE clinician_id = ? ORDER BY created_at DESC',
-      [clinicianId]
-    );
-
-    res.json({
-      count: children.length,
-      children: children
-    });
-  } catch (err) {
-    next(err);
+    res.status(500).json({ error: err.message });
   }
 });
 

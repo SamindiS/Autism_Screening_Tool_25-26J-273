@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/services/storage_service.dart';
 import 'add_child_screen.dart';
-import 'age_select_screen.dart';
+import 'child_detail_screen.dart';
 
 class ChildListScreen extends StatefulWidget {
   const ChildListScreen({Key? key}) : super(key: key);
@@ -165,13 +165,16 @@ class _ChildListScreenState extends State<ChildListScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: () {
-          Navigator.push(
+        onTap: () async {
+          final updated = await Navigator.push<bool>(
             context,
             MaterialPageRoute(
-              builder: (_) => AgeSelectScreen(childId: child['id'] as String),
+              builder: (_) => ChildDetailScreen(child: child),
             ),
           );
+          if (updated == true) {
+            _loadChildren();
+          }
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(

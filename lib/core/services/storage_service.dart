@@ -79,6 +79,11 @@ class StorageService {
   static String _offlineId(String prefix) =>
       '${prefix}_${DateTime.now().millisecondsSinceEpoch}';
 
+  static double _calculateAge(DateTime dob) {
+    final now = DateTime.now();
+    return now.difference(dob).inDays / 365.25;
+  }
+
   // ---------------- CHILDREN ----------------
   static Future<Map<String, dynamic>?> saveChild({
     String? id,
@@ -133,6 +138,65 @@ class StorageService {
       await OfflineSyncService.enqueueRequest(
         endpoint: '/api/children',
         method: 'POST',
+        payload: payload,
+      );
+      return localChild;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> updateChild({
+    required String id,
+    required String name,
+    required DateTime dateOfBirth,
+    required String gender,
+    required String language,
+    double? age,
+    String? hospitalId,
+  }) async {
+    final payload = {
+      'name': name,
+      'date_of_birth': dateOfBirth.millisecondsSinceEpoch,
+      'gender': gender.toLowerCase(),
+      'language': language,
+      'hospital_id': hospitalId,
+    };
+
+    try {
+      final updated = await ApiService.updateChild(
+        id: id,
+        name: name,
+        dateOfBirth: dateOfBirth,
+        gender: gender,
+        language: language,
+        hospitalId: hospitalId,
+      );
+      await _upsertChildLocal({
+        'id': updated['id'],
+        'name': updated['name'],
+        'date_of_birth': updated['date_of_birth'],
+        'gender': updated['gender'],
+        'language': updated['language'],
+        'age': updated['age'] ?? age ?? _calculateAge(dateOfBirth),
+        'hospital_id': updated['hospital_id'],
+        'created_at':
+            updated['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
+      });
+      return updated;
+    } catch (_) {
+      final localChild = {
+        'id': id,
+        'name': name,
+        'date_of_birth': dateOfBirth.millisecondsSinceEpoch,
+        'gender': gender,
+        'language': language,
+        'age': age ?? _calculateAge(dateOfBirth),
+        'hospital_id': hospitalId,
+        'created_at': DateTime.now().millisecondsSinceEpoch,
+      };
+      await _upsertChildLocal(localChild);
+      await OfflineSyncService.enqueueRequest(
+        endpoint: '/api/children/$id',
+        method: 'PUT',
         payload: payload,
       );
       return localChild;

@@ -4,7 +4,9 @@ import '../../core/services/storage_service.dart';
 import 'age_select_screen.dart';
 
 class AddChildScreen extends StatefulWidget {
-  const AddChildScreen({Key? key}) : super(key: key);
+  final Map<String, dynamic>? child;
+
+  const AddChildScreen({Key? key, this.child}) : super(key: key);
 
   @override
   State<AddChildScreen> createState() => _AddChildScreenState();
@@ -31,6 +33,41 @@ class _AddChildScreenState extends State<AddChildScreen> {
     _nameCtrl.dispose();
     _dobCtrl.dispose();
     super.dispose();
+  }
+
+  bool get _isEditing => widget.child != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isEditing) {
+      _prefillChildData();
+    }
+  }
+
+  void _prefillChildData() {
+    final child = widget.child!;
+    _nameCtrl.text = child['name'] as String? ?? '';
+
+    final dobMillis = child['date_of_birth'];
+    if (dobMillis is int) {
+      final dob = DateTime.fromMillisecondsSinceEpoch(dobMillis);
+      _selectedDate = dob;
+      _dobCtrl.text = DateFormat('yyyy-MM-dd').format(dob);
+      _calculatedAge = (child['age'] is num)
+          ? (child['age'] as num).toDouble()
+          : _calculateAgeFromDate(dob);
+    }
+
+    final gender = (child['gender'] as String?) ?? '';
+    final match = _genders.firstWhere(
+      (value) => value.toLowerCase() == gender.toLowerCase(),
+      orElse: () => '',
+    );
+    _selectedGender =
+        match.isNotEmpty ? match : (gender.isEmpty ? null : gender);
+
+    _selectedLanguage = (child['language'] as String?) ?? 'en';
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -70,6 +107,11 @@ class _AddChildScreenState extends State<AddChildScreen> {
     }
   }
 
+  double _calculateAgeFromDate(DateTime date) {
+    final now = DateTime.now();
+    return now.difference(date).inDays / 365.25;
+  }
+
   Future<void> _saveChild() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -89,8 +131,15 @@ class _AddChildScreenState extends State<AddChildScreen> {
       return;
     }
 
+    if (_isEditing) {
+      await _updateChild();
+    } else {
+      await _createChild();
+    }
+  }
+
+  Future<void> _createChild() async {
     try {
-      // Save child - backend will generate the ID
       final childData = await StorageService.saveChild(
         name: _nameCtrl.text.trim(),
         dateOfBirth: _selectedDate!,
@@ -99,44 +148,72 @@ class _AddChildScreenState extends State<AddChildScreen> {
         age: _calculatedAge!,
       );
 
-      // Get the child ID from the response (backend generates UUID)
-      String childId;
-      if (childData != null && childData['id'] != null) {
-        childId = childData['id'] as String;
-      } else {
-        // Fallback: try to get the most recent child
-        final allChildren = await StorageService.getAllChildren();
-        if (allChildren.isEmpty) {
-          throw Exception('Failed to create child');
-        }
-        childId = allChildren.first['id'] as String;
-      }
+      final childId = (childData?['id'] as String?) ??
+          (await StorageService.getAllChildren()).first['id'] as String;
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Child added successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // Navigate to age selection screen
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AgeSelectScreen(childId: childId),
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Child added successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AgeSelectScreen(childId: childId),
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _updateChild() async {
+    final childId = widget.child?['id'] as String?;
+    if (childId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Missing child reference'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await StorageService.updateChild(
+        id: childId,
+        name: _nameCtrl.text.trim(),
+        dateOfBirth: _selectedDate!,
+        gender: _selectedGender!,
+        language: _selectedLanguage!,
+        age: _calculatedAge,
+        hospitalId: widget.child?['hospital_id'] as String?,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Child updated successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -144,7 +221,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add New Child'),
+        title: Text(_isEditing ? 'Edit Child' : 'Add New Child'),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
       ),
@@ -270,9 +347,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
         child: Text(
           _dobCtrl.text.isEmpty ? 'Select Date of Birth' : _dobCtrl.text,
           style: TextStyle(
-            color: _dobCtrl.text.isEmpty
-                ? Colors.grey.shade400
-                : Colors.black87,
+            color:
+                _dobCtrl.text.isEmpty ? Colors.grey.shade400 : Colors.black87,
           ),
         ),
       ),
@@ -400,4 +476,3 @@ class _AddChildScreenState extends State<AddChildScreen> {
     );
   }
 }
-

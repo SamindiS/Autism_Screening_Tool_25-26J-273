@@ -16,15 +16,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
-    "sqlite3": "^5.1.6",
-    "cors": "^2.8.5",
-    "body-parser": "^1.20.2",
     "bcrypt": "^5.1.0",
-    "joi": "^17.9.2"
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "firebase-admin": "^13.6.0",
+    "joi": "^17.9.2",
+    "sqlite3": "^5.1.6"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
   }
 }
-

@@ -6,28 +6,31 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   // Default URLs for different platforms
-  static const String _defaultEmulatorUrl = 'http://10.0.2.2:3000'; // Android emulator
-  static const String _defaultSimulatorUrl = 'http://localhost:3000'; // iOS simulator
-  static const String _defaultRealDeviceUrl = 'http://192.168.1.100:3000'; // Real device (needs to be configured)
-  
+  static const String _defaultEmulatorUrl =
+      'http://10.0.2.2:3000'; // Android emulator
+  static const String _defaultSimulatorUrl =
+      'http://localhost:3000'; // iOS simulator
+  static const String _defaultRealDeviceUrl =
+      'http://192.168.1.100:3000'; // Real device (needs to be configured)
+
   // SharedPreferences key for storing backend URL
   static const String _backendUrlKey = 'backend_url';
-  
+
   /// Get the base URL for API calls
   /// Checks SharedPreferences first, then falls back to defaults
   static Future<String> get baseUrl async {
     final prefs = await SharedPreferences.getInstance();
     final savedUrl = prefs.getString(_backendUrlKey);
-    
+
     if (savedUrl != null && savedUrl.isNotEmpty) {
       return savedUrl;
     }
-    
+
     // Return default based on platform
     // For now, default to emulator URL (most common during development)
     return _defaultEmulatorUrl;
   }
-  
+
   /// Set the backend URL (for real device configuration)
   static Future<void> setBackendUrl(String url) async {
     final prefs = await SharedPreferences.getInstance();
@@ -36,18 +39,18 @@ class ApiService {
     await prefs.setString(_backendUrlKey, cleanUrl);
     debugPrint('Backend URL set to: $cleanUrl');
   }
-  
+
   /// Get the current backend URL
   static Future<String> getBackendUrl() async {
     return await baseUrl;
   }
-  
+
   /// Reset to default URL
   static Future<void> resetBackendUrl() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_backendUrlKey);
   }
-  
+
   static const Map<String, String> headers = {
     'Content-Type': 'application/json',
   };
@@ -60,12 +63,14 @@ class ApiService {
         final errorJson = jsonDecode(errorBody);
         final errorMessage = errorJson['error'] ?? 'Request failed';
         final details = errorJson['details'];
-        throw Exception(details != null ? '$errorMessage: $details' : errorMessage);
+        throw Exception(
+            details != null ? '$errorMessage: $details' : errorMessage);
       } catch (e) {
         if (e is Exception) {
           rethrow;
         }
-        throw Exception('Request failed: ${response.statusCode} - ${response.body}');
+        throw Exception(
+            'Request failed: ${response.statusCode} - ${response.body}');
       }
     }
   }
@@ -201,7 +206,7 @@ class ApiService {
     try {
       // Convert gender to lowercase to match backend validation
       final normalizedGender = gender.toLowerCase();
-      
+
       final url = await baseUrl;
       final response = await http.post(
         Uri.parse('$url/api/children'),
@@ -275,7 +280,7 @@ class ApiService {
     try {
       // Convert gender to lowercase to match backend validation
       final normalizedGender = gender.toLowerCase();
-      
+
       final url = await baseUrl;
       final response = await http.put(
         Uri.parse('$url/api/children/$id'),
@@ -400,7 +405,8 @@ class ApiService {
   }
 
   /// Get sessions by child ID
-  static Future<List<Map<String, dynamic>>> getSessionsByChild(String childId) async {
+  static Future<List<Map<String, dynamic>>> getSessionsByChild(
+      String childId) async {
     try {
       final url = await baseUrl;
       final response = await http.get(
@@ -434,8 +440,10 @@ class ApiService {
       if (endTime != null) body['end_time'] = endTime.millisecondsSinceEpoch;
       if (metrics != null) body['metrics'] = metrics;
       if (gameResults != null) body['game_results'] = gameResults;
-      if (questionnaireResults != null) body['questionnaire_results'] = questionnaireResults;
-      if (reflectionResults != null) body['reflection_results'] = reflectionResults;
+      if (questionnaireResults != null)
+        body['questionnaire_results'] = questionnaireResults;
+      if (reflectionResults != null)
+        body['reflection_results'] = reflectionResults;
       if (riskScore != null) body['risk_score'] = riskScore;
       if (riskLevel != null) body['risk_level'] = riskLevel;
 
@@ -528,12 +536,15 @@ class ApiService {
         Uri.parse('$url/api/trials/batch'),
         headers: headers,
         body: jsonEncode({
-          'trials': trials.map((trial) => {
-            ...trial,
-            'timestamp': trial['timestamp'] is DateTime
-                ? (trial['timestamp'] as DateTime).millisecondsSinceEpoch
-                : trial['timestamp'],
-          }).toList(),
+          'trials': trials
+              .map((trial) => {
+                    ...trial,
+                    'timestamp': trial['timestamp'] is DateTime
+                        ? (trial['timestamp'] as DateTime)
+                            .millisecondsSinceEpoch
+                        : trial['timestamp'],
+                  })
+              .toList(),
         }),
       );
 
@@ -548,7 +559,8 @@ class ApiService {
   }
 
   /// Get trials by session ID
-  static Future<List<Map<String, dynamic>>> getTrialsBySession(String sessionId) async {
+  static Future<List<Map<String, dynamic>>> getTrialsBySession(
+      String sessionId) async {
     try {
       final url = await baseUrl;
       final response = await http.get(
@@ -618,4 +630,3 @@ class ApiService {
     }
   }
 }
-

@@ -3,11 +3,14 @@ import 'package:provider/provider.dart';
 import 'package:senseai/l10n/app_localizations.dart';
 
 import 'core/providers/language_provider.dart';
+import 'core/services/offline_sync_service.dart';
 import 'core/services/storage_service.dart';
 import 'features/common/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await OfflineSyncService.init();
+  OfflineSyncService.startSyncLoop();
   await StorageService.database;
   runApp(const SenseAIApp());
 }

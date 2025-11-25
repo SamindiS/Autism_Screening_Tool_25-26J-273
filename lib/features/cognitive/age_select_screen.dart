@@ -32,7 +32,13 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
       setState(() {
         _childData = child;
         if (child != null && child['age'] != null) {
-          _ageController.text = (child['age'] as double).toStringAsFixed(1);
+          final ageValue = child['age'];
+          final ageDouble = ageValue is num
+              ? ageValue.toDouble()
+              : double.tryParse(ageValue.toString()) ?? 0;
+          if (ageDouble > 0) {
+            _ageController.text = ageDouble.toStringAsFixed(1);
+          }
         }
         _loading = false;
       });
@@ -62,7 +68,7 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
 
     // Get child data - try by ID first, if not found, get all and find by name
     var childData = await StorageService.getChild(widget.childId);
-    
+
     // If child not found by ID, try to get from all children
     if (childData == null) {
       try {
@@ -78,7 +84,7 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
         debugPrint('Error loading children: $e');
       }
     }
-    
+
     if (childData == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -128,13 +134,13 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Invalid age range. Please enter age between 2.0 and 6.9'),
+          content:
+              Text('Invalid age range. Please enter age between 2.0 and 6.9'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
-
 
   @override
   void dispose() {
@@ -336,11 +342,14 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          _buildAgeGroupItem('2.0 - 3.4 years', 'Parent Questionnaire + Clinician Reflection', Colors.blue),
+          _buildAgeGroupItem('2.0 - 3.4 years',
+              'Parent Questionnaire + Clinician Reflection', Colors.blue),
           const SizedBox(height: 12),
-          _buildAgeGroupItem('3.5 - 5.4 years', 'Frog Jump Game + Clinician Reflection', Colors.green),
+          _buildAgeGroupItem('3.5 - 5.4 years',
+              'Frog Jump Game + Clinician Reflection', Colors.green),
           const SizedBox(height: 12),
-          _buildAgeGroupItem('5.5 - 6.8 years', 'Color-Shape Game + Clinician Reflection', Colors.purple),
+          _buildAgeGroupItem('5.5 - 6.8 years',
+              'Color-Shape Game + Clinician Reflection', Colors.purple),
         ],
       ),
     );

@@ -1,138 +1,182 @@
+// lib/core/services/game_speech_service.dart
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 
 class GameSpeechService {
   static final FlutterTts _tts = FlutterTts();
   static bool _initialized = false;
   static bool _speechEnabled = true;
-  static String _currentLanguage = 'en';
 
+  /// Initializes the cutest, calmest voice possible
   static Future<void> initialize({String language = 'en'}) async {
-    _currentLanguage = language;
-    
     try {
-      // Map language codes to TTS language codes
+      // === BEST VOICE SETTINGS FOR CHILDREN WITH AUTISM ===
+      await _tts.setSpeechRate(0.45); // Very slow and calm
+      await _tts.setPitch(1.3); // High, cute, child-like voice
+      await _tts.setVolume(1.0); // Full volume but sounds soft with high pitch
+
+      // Try to use the best available voice (Google or Samsung)
+      await _tts
+          .setEngine('com.google.android.tts'); // Best quality on most devices
+
+      // Set language
       String ttsLanguage;
       switch (language) {
         case 'si':
-          ttsLanguage = 'si-LK'; // Sinhala
+          ttsLanguage = 'si-LK';
           break;
         case 'ta':
-          ttsLanguage = 'ta-IN'; // Tamil
+          ttsLanguage = 'ta-IN';
           break;
         case 'en':
         default:
-          ttsLanguage = 'en-US'; // English
+          ttsLanguage = 'en-US';
           break;
       }
-      
-      // Try to set language, fallback to English if not available
+
       final languages = await _tts.getLanguages;
       if (languages.contains(ttsLanguage)) {
         await _tts.setLanguage(ttsLanguage);
       } else {
-        debugPrint('Language $ttsLanguage not available, using en-US');
+        debugPrint(
+            'Language $ttsLanguage not available, falling back to en-US');
         await _tts.setLanguage('en-US');
+        await _tts.setPitch(1.3); // Keep cute voice even in English
       }
-      
-      await _tts.setSpeechRate(0.7); // Slower for children
-      await _tts.setPitch(1.0);
-      await _tts.setVolume(1.0);
+
       _initialized = true;
-      debugPrint('Speech service initialized with language: $ttsLanguage');
+      debugPrint('Cute calm voice ready! Language: $ttsLanguage');
     } catch (e) {
-      debugPrint('Error initializing speech service: $e');
+      debugPrint('Speech init failed: $e');
       _speechEnabled = false;
     }
   }
 
   static Future<void> setLanguage(String language) async {
-    _currentLanguage = language;
     await initialize(language: language);
   }
 
-  static Future<void> speak(String text) async {
-    if (!_speechEnabled || !_initialized) return;
-    
-    try {
-      await _tts.stop(); // Stop any ongoing speech
-      await _tts.speak(text);
-    } catch (e) {
-      debugPrint('Error speaking: $e');
-    }
-  }
-
+  // ================================================
+  // SUPER CALM & CUTE INSTRUCTIONS
+  // ================================================
   static Future<void> speakInstructions(String language) async {
+    if (!_speechEnabled || !_initialized) return;
+    await _tts.stop();
+
     String text;
     switch (language) {
       case 'si':
-        text = "මල් දිහා බලන්න! පාට හරි හැඩය හරි තෝරන්න. විනෝද වන්න!";
+        text =
+            "හායි  පුංචි  යාළුවා... මල් බලමුද? පාට හෝ හැඩයෙන් තෝරමු... ඔයාට පුළුවන්!";
         break;
       case 'ta':
-        text = "மலர்களைப் பாருங்கள்! நிறம் அல்லது வடிவத்தைத் தேர்ந்தெடுங்கள். வேடிக்கையாக விளையாடுங்கள்!";
+        text =
+            "வணக்கம் சின்னஞ்சிறிய நண்பனே... மலர்களைப் பார்ப்போமா? நிறம் அல்லது வடிவம் தேர்ந்தெடுப்போம்... நீ ரொம்ப அழகாக செய்வாய்!";
         break;
       case 'en':
       default:
-        text = "Look at the flowers! Choose COLOR or SHAPE. Have fun!";
+        text =
+            "Hello little friend... Shall we look at the flowers? We can choose by color or by shape... You're going to do so well!";
         break;
     }
-    await speak(text);
+    await _speakSlowly(text);
   }
 
   static Future<void> speakRuleChange(String newRule, String language) async {
+    if (!_speechEnabled || !_initialized) return;
+    await _tts.stop();
+
     String text;
     switch (language) {
       case 'si':
-        text = newRule == 'color' 
-            ? "දැන් පාට තෝරන්න! පාට මල් තෝරන්න!" 
-            : "දැන් හැඩය තෝරන්න! වටකුරු මල් තෝරන්න!";
+        text = newRule == 'color'
+            ? "දැන් අපි පාට තෝරමු? ඔයාගේ කැමතිම  පාට මල තෝරමු."
+            : "දැන් හැඩය තෝරමු... රවුම්  මල් තෝරමු... ";
         break;
       case 'ta':
         text = newRule == 'color'
-            ? "இப்போது நிறம் தேர்ந்தெடுங்கள்! நிற மலர்களைத் தேர்ந்தெடுங்கள்!"
-            : "இப்போது வடிவம் தேர்ந்தெடுங்கள்! வட்ட மலர்களைத் தேர்ந்தெடுங்கள்!";
+            ? "இப்போது நிறத்தால் தேர்ந்தெடுப்போம் சரியா? உனக்குப் பிடித்த நிற மலரைத் தேர்ந்தெடு..."
+            : "இப்போது வடிவத்தால் தேர்ந்தெடுப்போம்... வட்ட மலர்களைத் தேர்ந்தெடு... நீ ரொம்ப அற்புதமாக செய்கிறாய்!";
         break;
       case 'en':
       default:
         text = newRule == 'color'
-            ? "Now choose COLOR! Pick the COLOR flowers!"
-            : "Now choose SHAPE! Pick the round flowers!";
+            ? "Now we're choosing by color, okay? Pick your favorite color flower..."
+            : "Now we're choosing by shape... Let's pick the round flowers... You're so clever!";
         break;
     }
-    await speak(text);
+    await _speakSlowly(text);
   }
 
   static Future<void> speakFeedback(bool isCorrect, String language) async {
+    if (!_speechEnabled || !_initialized) return;
+    await _tts.stop();
+
     String text;
     if (isCorrect) {
       switch (language) {
         case 'si':
-          text = "හරි! හොඳයි! ඔබ හොඳයි!";
+          text = [
+            "වාහ්! ඔයා ගොඩක් දක්ෂයි!",
+            "හරිම හොඳයි පුංචි යාළුවා!"
+          ][DateTime.now().millisecond % 3];
           break;
         case 'ta':
-          text = "சரி! நன்றாக! நீங்கள் நன்றாக செய்கிறீர்கள்!";
+          text = [
+            "வாவ்! நீ ரொம்ப சூப்பர்!",
+            "மிகவும் நன்றாக செய்தாய்!",
+            "உன்னால் ரொம்ப நன்றாக முடியும்!"
+          ][DateTime.now().millisecond % 3];
           break;
         case 'en':
         default:
-          text = "Yes! Good job! You're doing great!";
+          text = [
+            "Wow! You're so smart!",
+            "Amazing job, little friend!",
+            "You did it! Well done!"
+          ][DateTime.now().millisecond % 3];
           break;
       }
     } else {
       switch (language) {
         case 'si':
-          text = "කමක් නැහැ! නැවත උත්සාහ කරන්න!";
+          text = "කමක් නැහැ ...අපි නැවත උත්සාහ කරමු..";
           break;
         case 'ta':
-          text = "பரவாயில்லை! மீண்டும் முயற்சிக்கவும்!";
+          text =
+              "பரவாயில்லை சின்ன நண்பா... மீண்டும் முயற்சி செய்வோம்... உன்னால் முடியும்!";
           break;
         case 'en':
         default:
-          text = "That's okay! Try again!";
+          text =
+              "It's okay, little friend... Let's try again... You can do it!";
           break;
       }
     }
-    await speak(text);
+    await _speakSlowly(text);
+  }
+
+  // Helper: speak slowly with small pauses for warmth
+  static Future<void> _speakSlowly(String text) async {
+    final sentences = text.split('...');
+    for (int i = 0; i < sentences.length; i++) {
+      if (sentences[i].trim().isNotEmpty) {
+        await _tts.speak(sentences[i].trim());
+        if (i < sentences.length - 1) {
+          await Future.delayed(
+              const Duration(milliseconds: 800)); // gentle pause
+        }
+      }
+    }
+  }
+
+  // ================================================
+  // CONTROLS
+  // ================================================
+  static Future<void> speak(String text) async {
+    if (!_speechEnabled || !_initialized) return;
+    await _tts.stop();
+    await _tts.speak(text);
   }
 
   static void setSpeechEnabled(bool enabled) {
@@ -142,12 +186,6 @@ class GameSpeechService {
   static bool get speechEnabled => _speechEnabled;
 
   static Future<void> stop() async {
-    try {
-      await _tts.stop();
-    } catch (e) {
-      debugPrint('Error stopping speech: $e');
-    }
+    await _tts.stop();
   }
 }
-
-

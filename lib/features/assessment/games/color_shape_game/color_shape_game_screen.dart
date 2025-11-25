@@ -65,6 +65,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
   @override
   void initState() {
     super.initState();
+    GameAudioService.startBackgroundMusic();
     // Reset all game state to ensure fresh start
     _currentTrial = 1;
     _score = 0;
@@ -517,6 +518,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
     _timer?.cancel();
     _notificationController.dispose();
     GameSpeechService.stop();
+    GameAudioService.stopBackgroundMusic();
     // Reset processing flag on dispose
     _isProcessing = false;
     super.dispose();

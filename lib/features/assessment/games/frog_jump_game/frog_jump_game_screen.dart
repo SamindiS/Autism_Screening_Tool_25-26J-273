@@ -69,6 +69,7 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
   Future<void> _initializeServices() async {
     await GameSpeechService.initialize();
     await GameAudioService.initialize();
+    await GameAudioService.startBackgroundMusic();
   }
 
   Future<void> _createSession() async {
@@ -361,6 +362,7 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
     _responseTimeout?.cancel();
     _feedbackTimer?.cancel();
     GameSpeechService.stop();
+    GameAudioService.stopBackgroundMusic();
     super.dispose();
   }
 

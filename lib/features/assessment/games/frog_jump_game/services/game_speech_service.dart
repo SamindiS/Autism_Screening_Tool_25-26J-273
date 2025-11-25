@@ -10,14 +10,15 @@ class GameSpeechService {
     if (_initialized) return;
 
     try {
-      await _tts.setSpeechRate(0.85);
-      await _tts.setVolume(0.9);
-      await _tts.setPitch(1.1);
-      _tts.setErrorHandler((msg) {
-        debugPrint('FlutterTts error: $msg');
-      });
+      // THE SWEETEST VOICE POSSIBLE
+      await _tts.setSpeechRate(0.42); // Super slow & calm
+      await _tts.setPitch(1.35); // High, cute, child-like voice
+      await _tts.setVolume(1.0); // Full but sounds soft with high pitch
+
+      await _tts.setEngine('com.google.android.tts'); // Best quality
+
       _initialized = true;
-      debugPrint('Frog Jump Speech service initialized');
+      debugPrint('Frog Jump Speech: Loving big-sister voice ready!');
     } catch (e) {
       debugPrint('Error initializing speech service: $e');
       _speechEnabled = false;
@@ -131,4 +132,3 @@ class GameSpeechService {
     }
   }
 }
-

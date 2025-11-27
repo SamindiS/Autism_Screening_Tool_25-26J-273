@@ -8,6 +8,7 @@ import '../../l10n/app_localizations.dart';
 import '../../widgets/language_selector.dart';
 import '../settings/settings_screen.dart';
 import '../cognitive/reflection_screen_2_3.dart';
+import 'models/questionnaire_summary.dart';
 import 'result_screen.dart';
 
 class AIDoctorBotScreen extends StatefulWidget {
@@ -268,32 +269,21 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
 
     try {
       final questions = _getQuestions();
-      final totalScore = _answers.values.reduce((sum, val) => sum + val);
-      final maxScore = questions.length * 5;
-      final percentageScore = (totalScore / maxScore) * 100;
-
-      // Calculate category scores
-      final categoryScores = <String, Map<String, dynamic>>{};
+      final endTime = DateTime.now();
+      final completionTimeSec = _startTime != null 
+          ? endTime.difference(_startTime!).inSeconds 
+          : 0;
       
-      for (final q in questions) {
-        if (_answers[q['id']] != null) {
-          final category = q['category'] as String;
-          if (!categoryScores.containsKey(category)) {
-            categoryScores[category] = {'total': 0, 'count': 0};
-          }
-        categoryScores[category]!['total'] += _answers[q['id']]!;
-        categoryScores[category]!['count'] += 1;
-        }
-      }
-
-      final categoryAverages = <String, double>{};
-      categoryScores.forEach((category, data) {
-        categoryAverages[category] = (data['total'] / (data['count'] * 5)) * 100;
-      });
-
-      // Calculate risk score (inverted - lower behavioral score = higher risk)
-      final riskScore = 100 - percentageScore;
-      final riskLevel = riskScore < 30 ? 'Low' : riskScore < 60 ? 'Moderate' : 'High';
+      // Generate comprehensive ML summary using QuestionnaireSummary
+      final summary = QuestionnaireSummary.fromResponses(
+        responses: _answers,
+        questions: questions,
+        completionTimeSec: completionTimeSec,
+      );
+      
+      // Use ML-enhanced risk level
+      final riskScore = summary.riskScore;
+      final riskLevel = summary.riskLevel;
 
       // Convert _answers Map<int, int> to Map<String, int> for JSON encoding
       final responsesMap = <String, int>{};
@@ -301,6 +291,7 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
         responsesMap[key.toString()] = value;
       });
 
+      // Build results with ML features
       final results = {
         'id': _sessionId,
         'child_id': widget.child.id,
@@ -309,13 +300,34 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
         'child_gender': widget.child.gender,
         'session_date': DateTime.now().toIso8601String(),
         'assessment_type': 'ai_bot_questionnaire',
-        'responses': responsesMap, // Use converted map
-        'total_score': totalScore,
-        'percentage_score': percentageScore,
+        'responses': responsesMap,
+        'total_score': summary.totalScore,
+        'percentage_score': summary.percentageScore,
         'risk_score': riskScore,
         'risk_level': riskLevel,
-        'category_scores': categoryAverages,
+        'category_scores': summary.categoryScores.map((k, v) => MapEntry(k, v.percentage)),
         'completion_time': DateTime.now().millisecondsSinceEpoch,
+        'completion_time_sec': completionTimeSec,
+        // ML Features for ASD detection
+        'ml_features': summary.mlFeatures,
+        // M-CHAT-R/F style critical items
+        'critical_items_failed': summary.criticalItemsFailed,
+        'critical_items_fail_rate': summary.criticalItemsFailRate,
+        'failed_items_total': summary.failedItemsTotal,
+        'failed_items_rate': summary.failedItemsRate,
+        // Domain-specific scores
+        'domain_scores': {
+          'social_responsiveness': summary.socialResponsivenessScore,
+          'cognitive_flexibility': summary.cognitiveFlexibilityScore,
+          'joint_attention': summary.jointAttentionScore,
+          'social_communication': summary.socialCommunicationScore,
+          'sensory_processing': summary.sensoryProcessingScore,
+          'communication': summary.communicationScore,
+        },
+        // Interpretation
+        'interpretation': summary.interpretation,
+        // Full summary for detailed analysis
+        'summary': summary.toJson(),
       };
 
       // Update or create session with questionnaire results

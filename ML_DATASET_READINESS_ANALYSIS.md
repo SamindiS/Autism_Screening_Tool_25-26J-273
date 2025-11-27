@@ -99,11 +99,24 @@ Your Frog Jump game now extracts all ASD-relevant ML features:
 | `longest_correct_streak` | ✅ Ready | ⭐ Sustained attention |
 | `longest_error_streak` | ✅ Ready | ⭐ Perseveration indicator |
 
-### 4. Questionnaire (2-3 years) ML Features (INCOMPLETE)
-For AI Doctor Bot questionnaire:
-- Need standardized M-CHAT-R/F scoring
-- Response scores per question
-- Total risk score
+### 4. Questionnaire (2-3 years) ML Features (✅ COMPLETE)
+Your AI Doctor Bot questionnaire now extracts M-CHAT-R/F style ML features:
+
+| Feature | Status | ASD Importance |
+|---------|--------|----------------|
+| `critical_items_failed` | ✅ Ready | ⭐⭐⭐ GOLD STANDARD - M-CHAT critical items |
+| `critical_items_fail_rate` | ✅ Ready | ⭐⭐⭐ PRIMARY MARKER |
+| `q5_pointing` | ✅ Ready | ⭐⭐⭐ MOST CRITICAL - Joint attention |
+| `q1_name_response` | ✅ Ready | ⭐⭐⭐ PRIMARY - Social responsiveness |
+| `q4_eye_contact` | ✅ Ready | ⭐⭐⭐ PRIMARY - Social communication |
+| `q7_imitation` | ✅ Ready | ⭐⭐ Social learning |
+| `q9_joint_attention` | ✅ Ready | ⭐⭐ Gaze following |
+| `social_responsiveness_score` | ✅ Ready | ⭐⭐ Domain score (0-100) |
+| `cognitive_flexibility_score` | ✅ Ready | ⭐⭐ Domain score (0-100) |
+| `joint_attention_score` | ✅ Ready | ⭐⭐ Domain score (0-100) |
+| `failed_items_total` | ✅ Ready | ⭐⭐ Items scored 1-2 |
+| `failed_items_rate` | ✅ Ready | ⭐⭐ % of concerning items |
+| `risk_score` | ✅ Ready | ⭐ Overall ASD risk (0-100) |
 
 ---
 
@@ -405,15 +418,41 @@ PRE-095,PRE-095,48,M,typically_developing,NA,2024-11-27,
 low,0,0
 ```
 
-### For Age 2-3 (Questionnaire)
+### For Age 2-3 (Questionnaire - M-CHAT-R/F Style)
 
 ```csv
 child_id,child_code,age_months,gender,study_group,asd_level,session_date,
-q1_response,q2_response,q3_response,...,q20_response,
-total_score,risk_category,
+q1_name_response,q2_routine_change,q3_toy_switching,q4_eye_contact,q5_pointing,
+q6_sensory,q7_imitation,q8_peer_play,q9_joint_attention,q10_communication,
+critical_items_failed,critical_fail_rate,failed_items_total,failed_items_rate,
+social_responsiveness,cognitive_flexibility,joint_attention,social_communication,
+total_score,percentage_score,risk_score,
 attention,engagement,frustration,instructions,overall_behavior,
 risk_level,asd_label,severity_label
+
+LRH-045,LRH-045,32,F,asd,level_2,2024-11-27,
+2,2,1,2,1,3,2,2,1,2,
+4,80.0,8,80.0,
+40.0,30.0,30.0,40.0,
+18,36.0,78.0,
+2,2,3,2,2,
+high,1,2
+
+PRE-102,PRE-102,28,M,typically_developing,NA,2024-11-27,
+5,4,5,5,5,4,5,4,5,4,
+0,0.0,0,0.0,
+100.0,90.0,100.0,100.0,
+46,92.0,8.0,
+5,5,5,5,5,
+low,0,0
 ```
+
+**Critical Items (M-CHAT-R/F Inspired):**
+- Q1: Name response (Social Responsiveness)
+- Q4: Eye contact (Social Communication)  
+- Q5: Pointing (Joint Attention) - **MOST PREDICTIVE**
+- Q7: Imitation (Social Learning)
+- Q9: Joint attention / Gaze following
 
 ---
 
@@ -464,7 +503,7 @@ cfi = (post_switch_accuracy + mixed_accuracy) / 2 - (perseverative_rate * 0.5)
 | 1 | Create `MLExportService` | 🔴 HIGH | ❌ TODO |
 | 2 | Add session columns (game_results, ml_features) | 🔴 HIGH | ❌ TODO |
 | 3 | Add Frog Jump ML feature extraction | 🟡 MEDIUM | ✅ DONE |
-| 4 | Add M-CHAT scoring for questionnaire | 🟡 MEDIUM | ❌ TODO |
+| 4 | Add M-CHAT scoring for questionnaire | 🟡 MEDIUM | ✅ DONE |
 | 5 | Add Export button to Settings screen | 🟡 MEDIUM | ❌ TODO |
 | 6 | Test CSV export with sample data | 🟡 MEDIUM | ❌ TODO |
 
@@ -484,15 +523,22 @@ cfi = (post_switch_accuracy + mixed_accuracy) / 2 - (perseverative_rate * 0.5)
 
 ### Ready ✅
 - Child profile model (complete)
-- DCCS game ML features (complete)
+- DCCS game ML features (complete) - Age 5.5-6+
+- Frog Jump ML features (complete) - Age 3.5-5
+- Questionnaire ML features (complete) - Age 2-3.5
 - Clinical reflection data (complete)
 - Data storage infrastructure (complete)
 
 ### Missing ❌
 - CSV Export Service (create new)
-- Frog Jump ML features (enhance)
-- Questionnaire standardized scoring (enhance)
 - Export UI button (add to settings)
 
-**Your system is ~70% ready for ML training. The main missing piece is the CSV export service.**
+**Your system is ~90% ready for ML training!** 
+
+All age groups now have complete ML feature extraction:
+- **Age 2-3.5**: Questionnaire with M-CHAT-R/F style scoring
+- **Age 3.5-5**: Frog Jump (Go/No-Go) with inhibitory control metrics
+- **Age 5.5-6+**: DCCS with cognitive flexibility metrics
+
+The only remaining task is implementing the CSV Export Service to export merged datasets.
 

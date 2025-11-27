@@ -23,7 +23,7 @@ class StorageService {
 
     return await openDatabase(
       path,
-      version: 3, // Upgraded version for new child profile fields
+      version: 4, // Added clinician_id and clinician_name columns
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -44,6 +44,8 @@ class StorageService {
         study_group TEXT NOT NULL DEFAULT 'typically_developing',
         asd_level TEXT,
         diagnosis_source TEXT NOT NULL DEFAULT 'Unknown',
+        clinician_id TEXT,
+        clinician_name TEXT,
         created_at INTEGER NOT NULL
       )
     ''');
@@ -107,6 +109,11 @@ class StorageService {
         }
       }
     }
+    if (oldVersion < 4) {
+      // Add clinician_id and clinician_name columns for ASD group tracking
+      await db.execute('ALTER TABLE children ADD COLUMN clinician_id TEXT');
+      await db.execute('ALTER TABLE children ADD COLUMN clinician_name TEXT');
+    }
   }
 
   static int _calculateAgeInMonthsFromDate(DateTime dob) {
@@ -140,6 +147,8 @@ class StorageService {
     required ChildGroup group,
     AsdLevel? asdLevel,
     required String diagnosisSource,
+    String? clinicianId,
+    String? clinicianName,
   }) async {
     final payload = {
       'child_code': childCode,
@@ -152,6 +161,8 @@ class StorageService {
       'group': group.toJson(),
       'asd_level': asdLevel?.toJson(),
       'diagnosis_source': diagnosisSource,
+      'clinician_id': clinicianId,
+      'clinician_name': clinicianName,
     };
 
     try {
@@ -166,6 +177,8 @@ class StorageService {
         group: group,
         asdLevel: asdLevel,
         diagnosisSource: diagnosisSource,
+        clinicianId: clinicianId,
+        clinicianName: clinicianName,
       );
       await _upsertChildLocal({
         'id': child['id'],
@@ -180,6 +193,8 @@ class StorageService {
         'study_group': child['group'] ?? group.toJson(),
         'asd_level': child['asd_level'] ?? asdLevel?.toJson(),
         'diagnosis_source': child['diagnosis_source'] ?? diagnosisSource,
+        'clinician_id': child['clinician_id'] ?? clinicianId,
+        'clinician_name': child['clinician_name'] ?? clinicianName,
         'created_at':
             child['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
       });
@@ -199,6 +214,8 @@ class StorageService {
         'study_group': group.toJson(),
         'asd_level': asdLevel?.toJson(),
         'diagnosis_source': diagnosisSource,
+        'clinician_id': clinicianId,
+        'clinician_name': clinicianName,
         'created_at': DateTime.now().millisecondsSinceEpoch,
       };
       await _upsertChildLocal(localChild);
@@ -224,6 +241,8 @@ class StorageService {
     required ChildGroup group,
     AsdLevel? asdLevel,
     required String diagnosisSource,
+    String? clinicianId,
+    String? clinicianName,
   }) async {
     final payload = {
       'child_code': childCode,
@@ -236,6 +255,8 @@ class StorageService {
       'group': group.toJson(),
       'asd_level': asdLevel?.toJson(),
       'diagnosis_source': diagnosisSource,
+      'clinician_id': clinicianId,
+      'clinician_name': clinicianName,
     };
 
     try {
@@ -251,6 +272,8 @@ class StorageService {
         group: group,
         asdLevel: asdLevel,
         diagnosisSource: diagnosisSource,
+        clinicianId: clinicianId,
+        clinicianName: clinicianName,
       );
       await _upsertChildLocal({
         'id': updated['id'],
@@ -265,6 +288,8 @@ class StorageService {
         'study_group': updated['group'] ?? group.toJson(),
         'asd_level': updated['asd_level'] ?? asdLevel?.toJson(),
         'diagnosis_source': updated['diagnosis_source'] ?? diagnosisSource,
+        'clinician_id': updated['clinician_id'] ?? clinicianId,
+        'clinician_name': updated['clinician_name'] ?? clinicianName,
         'created_at':
             updated['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
       });
@@ -283,6 +308,8 @@ class StorageService {
         'study_group': group.toJson(),
         'asd_level': asdLevel?.toJson(),
         'diagnosis_source': diagnosisSource,
+        'clinician_id': clinicianId,
+        'clinician_name': clinicianName,
         'created_at': DateTime.now().millisecondsSinceEpoch,
       };
       await _upsertChildLocal(localChild);

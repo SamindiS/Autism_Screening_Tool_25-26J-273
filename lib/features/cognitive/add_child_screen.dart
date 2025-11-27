@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/services/storage_service.dart';
+import '../../core/services/auth_service.dart';
 import '../../data/models/child.dart';
 import 'age_select_screen.dart';
 
@@ -46,15 +47,11 @@ class _AddChildScreenState extends State<AddChildScreen> {
     'ta': 'Tamil',
   };
 
-  // Common diagnosis sources for quick selection
-  final List<String> _hospitalSources = [
-    'Lady Ridgeway Hospital',
-    'Ragama Teaching Hospital',
-    'Jaffna Teaching Hospital',
-    'National Hospital Colombo',
-    'Kandy Teaching Hospital',
-    'Other Hospital',
-  ];
+  // Clinician Medical ID controller for ASD group (5-digit number like 10982)
+  final _clinicianIdCtrl = TextEditingController();
+  
+  // Hospital from registered account
+  String? _registeredHospital;
 
   @override
   void dispose() {
@@ -62,6 +59,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
     _nameCtrl.dispose();
     _dobCtrl.dispose();
     _diagnosisSourceCtrl.dispose();
+    _clinicianIdCtrl.dispose();
     super.dispose();
   }
 
@@ -70,11 +68,21 @@ class _AddChildScreenState extends State<AddChildScreen> {
   @override
   void initState() {
     super.initState();
+    _loadRegisteredHospital();
     if (_isEditing) {
       _prefillChildData();
     } else {
       // Default to "Preschool screening" for control group
       _diagnosisSourceCtrl.text = 'Preschool screening';
+    }
+  }
+
+  Future<void> _loadRegisteredHospital() async {
+    final clinicianInfo = await AuthService.getClinicianInfo();
+    if (mounted && clinicianInfo['hospital'] != null) {
+      setState(() {
+        _registeredHospital = clinicianInfo['hospital'];
+      });
     }
   }
 
@@ -117,6 +125,9 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
     _diagnosisSourceCtrl.text = child['diagnosis_source'] as String? ?? 
         (_selectedGroup == ChildGroup.asd ? '' : 'Preschool screening');
+    
+    // Prefill clinician ID for ASD children
+    _clinicianIdCtrl.text = child['clinician_id'] as String? ?? '';
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -177,9 +188,11 @@ class _AddChildScreenState extends State<AddChildScreen> {
       _selectedGroup = group;
       if (group == ChildGroup.typicallyDeveloping) {
         _selectedAsdLevel = null;
+        _clinicianIdCtrl.clear();
         _diagnosisSourceCtrl.text = 'Preschool screening';
       } else {
-        _diagnosisSourceCtrl.text = '';
+        // Use hospital from registered account
+        _diagnosisSourceCtrl.text = _registeredHospital ?? '';
       }
     });
   }
@@ -210,6 +223,13 @@ class _AddChildScreenState extends State<AddChildScreen> {
       return;
     }
 
+    if (_selectedGroup == ChildGroup.asd && _clinicianIdCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter the Clinician Medical ID')),
+      );
+      return;
+    }
+
     if (_isEditing) {
       await _updateChild();
     } else {
@@ -219,6 +239,18 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
   Future<void> _createChild() async {
     try {
+      // Determine diagnosis source based on group
+      String diagnosisSource;
+      String? clinicianId;
+      
+      if (_selectedGroup == ChildGroup.asd) {
+        diagnosisSource = _registeredHospital ?? 'Unknown Hospital'; // Hospital from account
+        clinicianId = _clinicianIdCtrl.text.trim(); // 5-digit Clinician Medical ID
+      } else {
+        diagnosisSource = 'Preschool screening';
+        clinicianId = null;
+      }
+
       final childData = await StorageService.saveChild(
         childCode: _childCodeCtrl.text.trim(),
         name: _nameCtrl.text.trim().isNotEmpty 
@@ -231,7 +263,9 @@ class _AddChildScreenState extends State<AddChildScreen> {
         age: _calculatedAge!,
         group: _selectedGroup,
         asdLevel: _selectedGroup == ChildGroup.asd ? _selectedAsdLevel : null,
-        diagnosisSource: _diagnosisSourceCtrl.text.trim(),
+        diagnosisSource: diagnosisSource,
+        clinicianId: clinicianId,
+        clinicianName: null, // Not needed with simple ID approach
       );
 
       final childId = (childData?['id'] as String?) ??
@@ -275,6 +309,18 @@ class _AddChildScreenState extends State<AddChildScreen> {
       return;
     }
 
+    // Determine diagnosis source based on group
+    String diagnosisSource;
+    String? clinicianId;
+    
+    if (_selectedGroup == ChildGroup.asd) {
+      diagnosisSource = _registeredHospital ?? 'Unknown Hospital'; // Hospital from account
+      clinicianId = _clinicianIdCtrl.text.trim(); // 5-digit Clinician Medical ID
+    } else {
+      diagnosisSource = 'Preschool screening';
+      clinicianId = null;
+    }
+
     try {
       await StorageService.updateChild(
         id: childId,
@@ -290,7 +336,9 @@ class _AddChildScreenState extends State<AddChildScreen> {
         hospitalId: widget.child?['hospital_id'] as String?,
         group: _selectedGroup,
         asdLevel: _selectedGroup == ChildGroup.asd ? _selectedAsdLevel : null,
-        diagnosisSource: _diagnosisSourceCtrl.text.trim(),
+        diagnosisSource: diagnosisSource,
+        clinicianId: clinicianId,
+        clinicianName: null,
       );
 
       if (!mounted) return;
@@ -817,96 +865,128 @@ class _AddChildScreenState extends State<AddChildScreen> {
           children: [
             Icon(Icons.school, color: Colors.grey.shade600),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Diagnosis Source',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Data Collection Source',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
-                ),
-                const Text(
-                  'Preschool screening',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                  const Text(
+                    'Preschool screening (no clinician needed)',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            Icon(Icons.check_circle, color: Colors.green.shade600),
           ],
         ),
       );
     }
 
-    // For ASD group, show dropdown with hospital options
+    // For ASD group, show hospital (from account) and clinician ID input
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Hospital (from registered account - read only)
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _primaryColor.withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.local_hospital, color: _primaryColor),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hospital / Clinic',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _primaryColor.withOpacity(0.7),
+                      ),
+                    ),
+                    Text(
+                      _registeredHospital ?? 'Loading...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: _primaryColor,
+                      ),
+                    ),
+                    Text(
+                      'From your registered account',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.verified, color: _primaryColor),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        
+        // Clinician Medical ID (5-digit number)
         Text(
-          'Diagnosis Source (Hospital)',
+          'Clinician Medical ID',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             color: Colors.grey.shade700,
           ),
         ),
+        const SizedBox(height: 4),
+        Text(
+          'Enter the 5-digit clinician ID who diagnosed this child',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade500,
+          ),
+        ),
         const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: _hospitalSources.contains(_diagnosisSourceCtrl.text) 
-              ? _diagnosisSourceCtrl.text 
-              : null,
+        TextFormField(
+          controller: _clinicianIdCtrl,
+          keyboardType: TextInputType.number,
+          maxLength: 5,
           decoration: InputDecoration(
-            prefixIcon: Icon(Icons.local_hospital, color: _primaryColor),
+            hintText: 'e.g., 10982',
+            prefixIcon: Icon(Icons.badge, color: _primaryColor),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
             filled: true,
             fillColor: Colors.white,
-            hintText: 'Select hospital',
+            counterText: '', // Hide character counter
           ),
-          items: _hospitalSources.map((source) {
-            return DropdownMenuItem(
-              value: source,
-              child: Text(source),
-            );
-          }).toList(),
-          onChanged: (value) {
-            setState(() {
-              if (value == 'Other Hospital') {
-                _diagnosisSourceCtrl.text = '';
-              } else {
-                _diagnosisSourceCtrl.text = value ?? '';
-              }
-            });
-          },
           validator: (v) {
             if (_selectedGroup == ChildGroup.asd && 
-                (v == null || v.isEmpty) && 
-                _diagnosisSourceCtrl.text.isEmpty) {
-              return 'Please select diagnosis source';
+                (v == null || v.trim().isEmpty)) {
+              return 'Please enter Clinician Medical ID';
+            }
+            if (_selectedGroup == ChildGroup.asd && 
+                v != null && v.trim().length < 5) {
+              return 'Clinician ID should be 5 digits';
             }
             return null;
           },
         ),
-        if (_diagnosisSourceCtrl.text.isEmpty || 
-            !_hospitalSources.contains(_diagnosisSourceCtrl.text)) ...[
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _diagnosisSourceCtrl,
-            decoration: InputDecoration(
-              labelText: 'Or enter hospital name',
-              prefixIcon: Icon(Icons.edit, color: _primaryColor),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -989,9 +1069,12 @@ class _AddChildScreenState extends State<AddChildScreen> {
           _buildSummaryRow('Age', '${_calculatedAgeInMonths} months'),
           _buildSummaryRow('Gender', _selectedGender ?? '-'),
           _buildSummaryRow('Group', _selectedGroup.displayName),
-          if (_selectedGroup == ChildGroup.asd)
+          if (_selectedGroup == ChildGroup.asd) ...[
             _buildSummaryRow('ASD Level', _selectedAsdLevel?.shortName ?? '-'),
-          _buildSummaryRow('Source', _diagnosisSourceCtrl.text),
+            _buildSummaryRow('Clinician ID', _clinicianIdCtrl.text.isNotEmpty ? _clinicianIdCtrl.text : '-'),
+            _buildSummaryRow('Hospital', _registeredHospital ?? '-'),
+          ] else
+            _buildSummaryRow('Source', 'Preschool screening'),
         ],
       ),
     );

@@ -7,7 +7,7 @@ const childrenCollection = db.collection('children');
 const sessionsCollection = db.collection('sessions');
 const trialsCollection = db.collection('trials');
 
-// Updated schema with pilot study fields
+// Updated schema with pilot study fields + clinician info
 const childSchema = Joi.object({
   child_code: Joi.string().min(1).max(50).optional(),
   name: Joi.string().min(1).max(100).required(),
@@ -16,11 +16,13 @@ const childSchema = Joi.object({
   gender: Joi.string().valid('male', 'female', 'other').required(),
   language: Joi.string().valid('en', 'si', 'ta').required(),
   hospital_id: Joi.string().allow(null, '').optional(),
-  clinician_id: Joi.string().allow(null, '').optional(),
   // Pilot study fields
   group: Joi.string().valid('asd', 'typically_developing').optional(),
   asd_level: Joi.string().valid('level_1', 'level_2', 'level_3', null).optional().allow(null),
   diagnosis_source: Joi.string().max(200).optional(),
+  // Clinician info for ASD group (one-tap selection, no password)
+  clinician_id: Joi.string().max(50).allow(null, '').optional(),
+  clinician_name: Joi.string().max(200).allow(null, '').optional(),
 });
 
 const calculateAge = (dobMs) => {
@@ -76,11 +78,13 @@ router.post('/', async (req, res) => {
       language: value.language,
       age: value.date_of_birth ? calculateAge(value.date_of_birth) : null,
       hospital_id: value.hospital_id || null,
-      clinician_id: value.clinician_id || null,
       // Pilot study fields
       group: value.group || 'typically_developing',
       asd_level: value.asd_level || null,
       diagnosis_source: value.diagnosis_source || 'Unknown',
+      // Clinician info for ASD group
+      clinician_id: value.clinician_id || null,
+      clinician_name: value.clinician_name || null,
       created_at: now,
       updated_at: now,
     };
@@ -156,6 +160,9 @@ router.put('/:id', async (req, res) => {
       group: value.group || existing.data().group || 'typically_developing',
       asd_level: value.asd_level || null,
       diagnosis_source: value.diagnosis_source || existing.data().diagnosis_source || 'Unknown',
+      // Clinician info for ASD group
+      clinician_id: value.clinician_id || existing.data().clinician_id || null,
+      clinician_name: value.clinician_name || existing.data().clinician_name || null,
       updated_at: Date.now(),
     };
 

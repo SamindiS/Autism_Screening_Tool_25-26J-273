@@ -18,6 +18,8 @@ class Child {
   final ChildGroup group; // ASD or Typically Developing
   final AsdLevel? asdLevel; // Only for ASD group
   final String diagnosisSource; // Hospital name or "Preschool screening"
+  final String? clinicianId; // Clinician ID for ASD group (e.g., DR_001_LRH)
+  final String? clinicianName; // Clinician name for ASD group
 
   Child({
     required this.id,
@@ -33,6 +35,8 @@ class Child {
     required this.group,
     this.asdLevel,
     required this.diagnosisSource,
+    this.clinicianId,
+    this.clinicianName,
   });
 
   Map<String, dynamic> toJson() {
@@ -50,6 +54,8 @@ class Child {
       'group': group.toJson(),
       'asd_level': asdLevel?.toJson(),
       'diagnosis_source': diagnosisSource,
+      'clinician_id': clinicianId,
+      'clinician_name': clinicianName,
     };
   }
 
@@ -67,11 +73,13 @@ class Child {
       age: (json['age'] as num).toDouble(),
       createdAt: DateTime.fromMillisecondsSinceEpoch(json['created_at'] as int),
       hospitalId: json['hospital_id'] as String?,
-      group: ChildGroup.fromJson(json['group'] as String? ?? 'typically_developing'),
+      group: ChildGroup.fromJson(json['group'] as String? ?? json['study_group'] as String? ?? 'typically_developing'),
       asdLevel: json['asd_level'] != null 
           ? AsdLevel.fromJson(json['asd_level'] as String)
           : null,
       diagnosisSource: json['diagnosis_source'] as String? ?? 'Unknown',
+      clinicianId: json['clinician_id'] as String?,
+      clinicianName: json['clinician_name'] as String?,
     );
   }
 
@@ -89,6 +97,8 @@ class Child {
     ChildGroup? group,
     AsdLevel? asdLevel,
     String? diagnosisSource,
+    String? clinicianId,
+    String? clinicianName,
   }) {
     return Child(
       id: id ?? this.id,
@@ -104,6 +114,8 @@ class Child {
       group: group ?? this.group,
       asdLevel: asdLevel ?? this.asdLevel,
       diagnosisSource: diagnosisSource ?? this.diagnosisSource,
+      clinicianId: clinicianId ?? this.clinicianId,
+      clinicianName: clinicianName ?? this.clinicianName,
     );
   }
 

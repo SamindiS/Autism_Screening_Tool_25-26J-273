@@ -209,6 +209,8 @@ class ApiService {
     required ChildGroup group,
     AsdLevel? asdLevel,
     required String diagnosisSource,
+    String? clinicianId,
+    String? clinicianName,
   }) async {
     try {
       // Convert gender to lowercase to match backend validation
@@ -229,6 +231,8 @@ class ApiService {
           'group': group.toJson(),
           'asd_level': asdLevel?.toJson(),
           'diagnosis_source': diagnosisSource,
+          'clinician_id': clinicianId,
+          'clinician_name': clinicianName,
         }),
       );
 
@@ -293,6 +297,8 @@ class ApiService {
     required ChildGroup group,
     AsdLevel? asdLevel,
     required String diagnosisSource,
+    String? clinicianId,
+    String? clinicianName,
   }) async {
     try {
       // Convert gender to lowercase to match backend validation
@@ -313,6 +319,8 @@ class ApiService {
           'group': group.toJson(),
           'asd_level': asdLevel?.toJson(),
           'diagnosis_source': diagnosisSource,
+          'clinician_id': clinicianId,
+          'clinician_name': clinicianName,
         }),
       );
 

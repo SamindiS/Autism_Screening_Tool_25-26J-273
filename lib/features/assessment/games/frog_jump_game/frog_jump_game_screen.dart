@@ -10,6 +10,7 @@ import 'package:senseai/l10n/app_localizations.dart';
 import '../../../../core/providers/language_provider.dart';
 import '../../../cognitive/reflection_screen.dart';
 import 'models/game_trial.dart';
+import 'models/frog_jump_summary.dart';
 import 'models/stimulus.dart';
 import 'widgets/game_character_widget.dart';
 import 'widgets/game_feedback_widget.dart';
@@ -319,6 +320,21 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
   }
 
   GameResults _calculateResults() {
+    // Convert to FrogJumpTrial for enhanced analysis
+    final frogJumpTrials = _trials.map((t) => FrogJumpTrial.fromGameTrial(t)).toList();
+    
+    // Calculate completion time
+    final completionTimeSec = _sessionStartTime != null
+        ? DateTime.now().difference(_sessionStartTime!).inSeconds
+        : 0;
+    
+    // Generate comprehensive ML summary
+    final summary = FrogJumpSummary.fromTrials(
+      trials: frogJumpTrials,
+      completionTimeSec: completionTimeSec,
+    );
+    
+    // Basic metrics for backward compatibility
     final correctTrials = _trials.where((t) => t.correct).toList();
     final totalTrials = _trials.length;
     final accuracy = totalTrials > 0 ? (correctTrials.length / totalTrials) * 100 : 0.0;
@@ -328,7 +344,7 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
     final avgReactionTime =
         correctTrials.isNotEmpty ? totalReactionTime ~/ correctTrials.length : 0;
 
-    final completionTime = _sessionStartTime != null
+    final completionTimeMs = _sessionStartTime != null
         ? DateTime.now().difference(_sessionStartTime!).inMilliseconds
         : 0;
 
@@ -338,22 +354,32 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
       correctTrials: correctTrials.length,
       accuracy: accuracy,
       averageReactionTime: avgReactionTime,
-      completionTime: completionTime,
+      completionTime: completionTimeMs,
       switchCost: null,
-      perseverativeErrors: null,
+      // Store commission errors in perseverativeErrors field for compatibility
+      perseverativeErrors: summary.commissionErrors,
       trials: _trials
           .map((t) => TrialData(
                 trialNumber: t.trialNumber,
                 stimulus: t.stimulus,
-                rule: null,
+                rule: t.phase,
                 response: t.response,
                 reactionTime: t.reactionTime,
                 correct: t.correct,
                 timestamp: t.timestamp,
                 isPostSwitch: null,
-                isPerseverativeError: null,
+                isPerseverativeError: t.stimulus == 'sleepy' && 
+                    (t.response == 'tap' || t.response == 'wrong_tap'),
               ))
           .toList(),
+      // Include full ML features
+      mlFeatures: summary.mlFeatures,
+      // Include additional metrics
+      additionalMetrics: {
+        'summary': summary.toJson(),
+        'risk_level': summary.riskLevel,
+        'interpretation': summary.interpretation,
+      },
     );
   }
 

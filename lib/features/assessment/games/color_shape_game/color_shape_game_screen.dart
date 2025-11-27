@@ -1,24 +1,22 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/child.dart';
 import '../../../../data/models/game_results.dart' show GameResults, TrialData;
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/utils/age_calculator.dart';
-import 'package:senseai/l10n/app_localizations.dart';
+// App localizations not used in clinical DCCS game - uses hardcoded English
 import 'package:senseai/core/providers/language_provider.dart';
 import '../../../cognitive/reflection_screen.dart';
 import 'models/game_trial.dart';
-import 'models/flower_stimulus.dart';
-import 'widgets/game_flower_widget.dart';
-import 'widgets/game_wand_button.dart';
-import 'widgets/game_rule_display.dart';
+import 'models/shape_stimulus.dart';
 import 'widgets/game_language_selector.dart';
 import 'services/game_audio_service.dart';
 import 'services/game_speech_service.dart';
 
+/// Clinical DCCS (Dimensional Change Card Sort) Game
+/// Measures cognitive flexibility and rule-switching for ASD screening
 class ColorShapeGameScreen extends StatefulWidget {
   final Child child;
 
@@ -33,76 +31,46 @@ class ColorShapeGameScreen extends StatefulWidget {
 
 class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
     with TickerProviderStateMixin {
-  // Game state - Very simplified for young autistic children
-  int _currentTrial = 1;
-  final int _maxTrials = 12; // Much simpler - only 12 trials
-  final int _practiceTrials = 3; // Only 3 practice trials
-  final List<int> _switchPoints = [5, 9]; // Only 2 rule switches
-  int _score = 0;
-  List<GameTrial> _trials = [];
-  List<FlowerStimulus> _currentFlowers = [];
+  
+  // DCCS Configuration
+  static const int _practiceTrials = 4;
+  static const int _preSwitchTrials = 8;
+  static const int _postSwitchTrials = 12;
+  static const int _mixedTrials = 8;
+  
+  // Game state
+  int _currentTrial = 0;
+  int _totalTrials = 0;
+  List<DccsTrial> _trials = [];
+  ShapeStimulus? _currentStimulus;
   String _currentRule = 'color';
-  String _gamePhase =
-      'language'; // 'language', 'instructions', 'practice', 'main', 'complete'
+  String _previousRule = 'color';
+  String _gamePhase = 'language';
   String _selectedLanguage = 'en';
   int _streak = 0;
   int _maxStreak = 0;
-  DateTime? _startTime;
+  DateTime? _trialStartTime;
   DateTime? _sessionStartTime;
-  int _timeRemaining = 300; // 5 minutes
+  int _timeRemaining = 300;
   bool _isProcessing = false;
-  bool _isSwitching = false;
+  bool _showFeedback = false;
+  bool _lastCorrect = false;
 
   // Session
   String? _sessionId;
-
-  // UI state
   Timer? _timer;
-
-  // Animations
-  late AnimationController _notificationController;
 
   @override
   void initState() {
     super.initState();
-    GameAudioService.startBackgroundMusic();
-    // Reset all game state to ensure fresh start
-    _currentTrial = 1;
-    _score = 0;
-    _trials = [];
-    _currentFlowers = [];
-    _currentRule = 'color';
-    _gamePhase = 'language';
-    _selectedLanguage = 'en';
-    _streak = 0;
-    _maxStreak = 0;
-    _startTime = null;
-    _sessionStartTime = null;
-    _timeRemaining = 300;
-    _isProcessing = false;
-    _isSwitching = false;
-    _sessionId = null;
-    _timer?.cancel();
-    _timer = null;
-
-    _initializeServices();
+    _totalTrials = _practiceTrials + _preSwitchTrials + _postSwitchTrials + _mixedTrials;
     _createSession();
-    _notificationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
-  }
-
-  Future<void> _initializeServices() async {
-    // Will initialize with selected language after language selection
   }
 
   Future<void> _initializeWithLanguage(String language) async {
     _selectedLanguage = language;
     await GameSpeechService.initialize(language: language);
-    // Update app language if needed
-    final languageProvider =
-        Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
     final locale = Locale(language);
     if (languageProvider.locale != locale) {
       await languageProvider.setLocale(locale);
@@ -114,16 +82,12 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
       final ageGroup = AgeCalculator.getAgeGroup(widget.child.age);
       final sessionData = await StorageService.saveSession(
         childId: widget.child.id,
-        sessionType: 'color-shape',
+        sessionType: 'dccs-color-shape',
         ageGroup: ageGroup,
         startTime: DateTime.now(),
       );
-
-      if (sessionData != null && sessionData['id'] != null) {
-        _sessionId = sessionData['id'] as String;
-      } else {
-        _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
-      }
+      _sessionId = sessionData?['id'] as String? ??
+          DateTime.now().millisecondsSinceEpoch.toString();
     } catch (e) {
       debugPrint('Error creating session: $e');
       _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -131,32 +95,22 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
   }
 
   void _startGame() {
-    debugPrint('🎮 Starting game...');
+    GameAudioService.startBackgroundMusic();
     setState(() {
       _gamePhase = 'practice';
-      _currentTrial = 1;
-      _score = 0;
+      _currentTrial = 0;
       _trials = [];
       _currentRule = 'color';
+      _previousRule = 'color';
       _streak = 0;
       _maxStreak = 0;
       _timeRemaining = 300;
-      _isProcessing = false;
-      _isSwitching = false;
       _sessionStartTime = DateTime.now();
-      _startTime = null;
-      _currentFlowers = [];
     });
-
     _startTimer();
-    final localizations = AppLocalizations.of(context)!;
-    _showNotification("${localizations.greatJob} 🌷", 'encouragement');
-    // Speak instructions with a small delay for better UX
-    Future.delayed(const Duration(milliseconds: 500), () {
-      GameSpeechService.speakInstructions(_selectedLanguage);
-    });
+    // Announce practice phase
+    GameSpeechService.speakPhaseStart('practice', _selectedLanguage);
     _nextTrial();
-    debugPrint('🎮 Game started, trial: $_currentTrial, phase: $_gamePhase');
   }
 
   void _startTimer() {
@@ -177,85 +131,55 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
   }
 
   void _nextTrial() {
-    debugPrint(
-        '🔄 Next trial: $_currentTrial/$_maxTrials, phase: $_gamePhase, isProcessing: $_isProcessing');
-
-    if (_currentTrial > _maxTrials) {
-      debugPrint('✅ Game complete! Ending game...');
+    _currentTrial++;
+    
+    if (_currentTrial > _totalTrials) {
       _endGame();
       return;
     }
 
-    // Ensure we're not processing when starting a new trial
-    if (_isProcessing) {
-      debugPrint('⚠️ Warning: Still processing, but continuing anyway');
-      setState(() {
-        _isProcessing = false;
-      });
+    // Determine phase and rule
+    _previousRule = _currentRule;
+    final previousPhase = _gamePhase;
+    
+    if (_currentTrial <= _practiceTrials) {
+      _gamePhase = 'practice';
+      _currentRule = 'color';
+    } else if (_currentTrial <= _practiceTrials + _preSwitchTrials) {
+      _gamePhase = 'pre_switch';
+      _currentRule = 'color';
+    } else if (_currentTrial <= _practiceTrials + _preSwitchTrials + _postSwitchTrials) {
+      _gamePhase = 'post_switch';
+      _currentRule = 'shape';
+    } else {
+      _gamePhase = 'mixed';
+      // Random rule in mixed phase
+      _currentRule = math.Random().nextBool() ? 'color' : 'shape';
     }
 
-    // Handle phase transition
-    if (_currentTrial == _practiceTrials + 1) {
-      setState(() {
-        _gamePhase = 'main';
-      });
-      _showNotification(
-          "Great job! Now the real magic begins! ✨", 'encouragement');
+    // Announce phase transition
+    if (_gamePhase != previousPhase) {
+      GameSpeechService.speakPhaseStart(_gamePhase, _selectedLanguage);
+      GameAudioService.playRuleChangeSound();
     }
-
-    // Handle rule switches
-    if (_switchPoints.contains(_currentTrial)) {
-      setState(() {
-        _currentRule = _currentRule == 'color' ? 'shape' : 'color';
-        _isSwitching = true;
-      });
+    // Also announce rule changes within mixed phase
+    else if (_gamePhase == 'mixed' && _currentRule != _previousRule) {
       GameAudioService.playRuleChangeSound();
       GameSpeechService.speakRuleChange(_currentRule, _selectedLanguage);
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted) {
-          setState(() {
-            _isSwitching = false;
-          });
-        }
-      });
     }
 
-    // Generate flowers
-    _currentFlowers = _generateFlowers();
-    _startTime = DateTime.now();
+    // Generate random conflict stimulus
+    final stimuli = ShapeStimulus.conflictStimuli;
+    _currentStimulus = stimuli[math.Random().nextInt(stimuli.length)];
+    _trialStartTime = DateTime.now();
     _isProcessing = false;
-    debugPrint(
-        '✅ Trial $_currentTrial ready: ${_currentFlowers.length} flowers, rule: $_currentRule');
+    _showFeedback = false;
+    
+    setState(() {});
   }
 
-  List<FlowerStimulus> _generateFlowers() {
-    final flowers = FlowerStimulus.allFlowers;
-    final selected = <FlowerStimulus>[];
-    final random = math.Random();
-
-    while (selected.length < 2) {
-      final flower = flowers[random.nextInt(flowers.length)];
-      if (!selected.any((f) => f.emoji == flower.emoji)) {
-        selected.add(flower);
-      }
-    }
-
-    return selected;
-  }
-
-  void _handleResponse(String response) {
-    debugPrint(
-        '🎯 Response received: $response, currentRule: $_currentRule, isProcessing: $_isProcessing, phase: $_gamePhase');
-
-    if (_isProcessing || _startTime == null || _currentFlowers.isEmpty) {
-      debugPrint(
-          '⚠️ Response blocked: isProcessing=$_isProcessing, startTime=$_startTime, flowers=${_currentFlowers.length}');
-      return;
-    }
-
-    // Prevent multiple responses during processing
-    if (_gamePhase == 'complete') {
-      debugPrint('⚠️ Response blocked: game already complete');
+  void _handleChoice(String side) {
+    if (_isProcessing || _currentStimulus == null || _trialStartTime == null) {
       return;
     }
 
@@ -263,157 +187,223 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
       _isProcessing = true;
     });
 
-    try {
-      final reactionTime =
-          DateTime.now().difference(_startTime!).inMilliseconds;
-      final isCorrect = response == _currentRule;
-      final isPostSwitch = _switchPoints.contains(_currentTrial - 1);
-      final isPerseverativeError = !isCorrect &&
-          isPostSwitch &&
-          _trials.isNotEmpty &&
-          _trials.last.rule != _currentRule;
+    final reactionTime = DateTime.now().difference(_trialStartTime!).inMilliseconds;
+    final correctSide = _currentStimulus!.getCorrectSide(_currentRule);
+    final isCorrect = side == correctSide;
 
-      final trial = GameTrial(
-        trialNumber: _currentTrial,
-        phase: _gamePhase,
-        stimulus: _currentFlowers.map((f) => f.emoji).join(' '),
-        rule: _currentRule,
-        response: response,
-        reactionTime: reactionTime,
-        correct: isCorrect,
-        isPostSwitch: isPostSwitch,
-        isPerseverativeError: isPerseverativeError,
-        timestamp: DateTime.now(),
-      );
-
-      setState(() {
-        _trials.add(trial);
-      });
-
-      if (isCorrect) {
-        setState(() {
-          _score += 2;
-          _streak++;
-          if (_streak > _maxStreak) {
-            _maxStreak = _streak;
-          }
-        });
-        GameAudioService.playCorrectSound();
-        final localizations = AppLocalizations.of(context)!;
-        GameSpeechService.speakFeedback(true, _selectedLanguage);
-        _showNotification(localizations.greatJob, 'success');
-
-        if (_streak >= 5) {
-          _showNotification('🔥 $_streak in a row! Amazing! 🔥', 'success');
-        }
-      } else {
-        setState(() {
-          _streak = 0;
-        });
-        GameAudioService.playWrongSound();
-        final localizations = AppLocalizations.of(context)!;
-        GameSpeechService.speakFeedback(false, _selectedLanguage);
-        _showNotification(localizations.tryAgain, 'encouragement');
-      }
-
-      // Use a slightly longer delay to ensure notification is visible
-      final delayMs = isCorrect ? 1000 : 1500;
-      Future.delayed(Duration(milliseconds: delayMs), () {
-        if (!mounted) {
-          _isProcessing = false;
-          return;
-        }
-
-        if (_gamePhase == 'complete') {
-          setState(() {
-            _isProcessing = false;
-          });
-          return;
-        }
-
-        // Clear any existing notifications
-        ScaffoldMessenger.of(context).clearSnackBars();
-
-        // Update state and move to next trial
-        setState(() {
-          _currentTrial++;
-          _isProcessing = false; // Reset BEFORE calling _nextTrial
-        });
-
-        debugPrint('🔄 Moving to trial $_currentTrial, isProcessing: false');
-        _nextTrial();
-      });
-    } catch (e) {
-      debugPrint('Error handling response: $e');
-      // Reset processing flag on error
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-      } else {
-        _isProcessing = false;
+    // Determine if switch trial (in mixed phase)
+    bool isSwitchTrial = false;
+    if (_gamePhase == 'mixed' && _trials.isNotEmpty) {
+      final lastTrial = _trials.last;
+      if (lastTrial.phase == 'mixed' && lastTrial.rule != _currentRule) {
+        isSwitchTrial = true;
       }
     }
-  }
 
-  void _showNotification(String message, String type) {
-    // Show notification using ScaffoldMessenger - shorter duration to not block game
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: type == 'success'
-              ? const Color(0xFF06D6A0)
-              : const Color(0xFFFF6B8B),
-          duration: const Duration(milliseconds: 1500), // Shorter duration
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          dismissDirection:
-              DismissDirection.none, // Prevent accidental dismissal
-        ),
-      );
+    // Detect perseverative error
+    bool isPerseverativeError = false;
+    if (!isCorrect) {
+      // In post-switch phase or switch trial in mixed
+      if (_gamePhase == 'post_switch' || isSwitchTrial) {
+        // Check if child used the old rule
+        final oldRule = _currentRule == 'color' ? 'shape' : 'color';
+        final oldRuleCorrectSide = _currentStimulus!.getCorrectSide(oldRule);
+        if (side == oldRuleCorrectSide) {
+          isPerseverativeError = true;
+        }
+      }
     }
+
+    // Record trial
+    final trial = DccsTrial(
+      trialNumber: _currentTrial,
+      phase: _gamePhase,
+      rule: _currentRule,
+      stimulusColor: _currentStimulus!.color,
+      stimulusShape: _currentStimulus!.shape,
+      correctChoice: correctSide,
+      childChoice: side,
+      reactionTimeMs: reactionTime,
+      correct: isCorrect,
+      isSwitchTrial: isSwitchTrial,
+      isPerseverativeError: isPerseverativeError,
+      isPostSwitch: _gamePhase == 'post_switch',
+      timestamp: DateTime.now(),
+    );
+
+    _trials.add(trial);
+
+    // Update streak and provide feedback
+    if (isCorrect) {
+      _streak++;
+      if (_streak > _maxStreak) _maxStreak = _streak;
+      GameAudioService.playCorrectSound();
+      GameSpeechService.speakFeedback(true, _selectedLanguage);
+    } else {
+      _streak = 0;
+      GameAudioService.playWrongSound();
+      GameSpeechService.speakFeedback(false, _selectedLanguage);
+    }
+
+    // Show feedback
+    setState(() {
+      _showFeedback = true;
+      _lastCorrect = isCorrect;
+    });
+
+    // Move to next trial after delay
+    Future.delayed(Duration(milliseconds: isCorrect ? 800 : 1200), () {
+      if (!mounted) return;
+      _nextTrial();
+    });
   }
 
   void _endGame() {
     _timer?.cancel();
+    GameAudioService.stopBackgroundMusic();
+    GameSpeechService.speakGameComplete(_selectedLanguage);
     setState(() {
       _gamePhase = 'complete';
-      _isProcessing = false; // Reset processing flag
     });
-
     _saveResults();
+  }
+
+  DccsSummary _calculateSummary() {
+    if (_trials.isEmpty) {
+      return DccsSummary(
+        totalTrials: 0,
+        completionTimeSec: 0,
+        accuracyPreColor: 0,
+        accuracyPostShape: 0,
+        accuracyMixed: 0,
+        accuracyOverall: 0,
+        avgReactionTimeMs: 0,
+        avgRtPreSwitchMs: 0,
+        avgRtPostSwitchMs: 0,
+        avgRtPostCorrectMs: 0,
+        switchCostMs: 0,
+        perseverativeErrors: 0,
+        perseverativeRatePost: 0,
+        maxConsecutivePerseverations: 0,
+        totalRuleSwitchErrors: 0,
+        longestStreak: 0,
+      );
+    }
+
+    // Filter trials by phase
+    final preTrials = _trials.where((t) => t.phase == 'pre_switch').toList();
+    final postTrials = _trials.where((t) => t.phase == 'post_switch').toList();
+    final mixedTrials = _trials.where((t) => t.phase == 'mixed').toList();
+
+    // Calculate accuracies
+    double accuracy(List<DccsTrial> trials) {
+      if (trials.isEmpty) return 0;
+      return (trials.where((t) => t.correct).length / trials.length) * 100;
+    }
+
+    double meanRt(List<DccsTrial> trials) {
+      if (trials.isEmpty) return 0;
+      return trials.map((t) => t.reactionTimeMs).reduce((a, b) => a + b) / trials.length;
+    }
+
+    // Calculate switch cost
+    final preRt = meanRt(preTrials);
+    final postCorrect = postTrials.where((t) => t.correct).toList();
+    final postRtCorrect = meanRt(postCorrect);
+    final switchCost = postRtCorrect - preRt;
+
+    // Count perseverative errors
+    final perseverativeErrors = _trials.where((t) => t.isPerseverativeError).length;
+    // postErrors variable reserved for future use
+    final perseverativeRate = postTrials.isEmpty ? 0.0 :
+        (perseverativeErrors / postTrials.length) * 100;
+
+    // Count consecutive perseverations
+    int maxConsec = 0;
+    int currentConsec = 0;
+    for (final trial in _trials) {
+      if (trial.isPerseverativeError) {
+        currentConsec++;
+        if (currentConsec > maxConsec) maxConsec = currentConsec;
+      } else {
+        currentConsec = 0;
+      }
+    }
+
+    // Total rule switch errors
+    final ruleSwitchErrors = _trials.where((t) => !t.correct && (t.isPostSwitch || t.isSwitchTrial)).length;
+
+    final completionTime = _sessionStartTime != null
+        ? DateTime.now().difference(_sessionStartTime!).inSeconds
+        : 0;
+
+    return DccsSummary(
+      totalTrials: _trials.length,
+      completionTimeSec: completionTime,
+      accuracyPreColor: accuracy(preTrials),
+      accuracyPostShape: accuracy(postTrials),
+      accuracyMixed: accuracy(mixedTrials),
+      accuracyOverall: accuracy(_trials),
+      avgReactionTimeMs: meanRt(_trials),
+      avgRtPreSwitchMs: preRt,
+      avgRtPostSwitchMs: meanRt(postTrials),
+      avgRtPostCorrectMs: postRtCorrect,
+      switchCostMs: switchCost.isNaN ? 0 : switchCost,
+      perseverativeErrors: perseverativeErrors,
+      perseverativeRatePost: perseverativeRate.isNaN ? 0 : perseverativeRate,
+      maxConsecutivePerseverations: maxConsec,
+      totalRuleSwitchErrors: ruleSwitchErrors,
+      longestStreak: _maxStreak,
+    );
   }
 
   Future<void> _saveResults() async {
     try {
-      final results = _calculateResults();
+      final summary = _calculateSummary();
       final endTime = DateTime.now();
+
+      // Convert to GameResults for compatibility
+      final gameResults = GameResults(
+        gameType: 'dccs-color-shape',
+        totalTrials: summary.totalTrials,
+        correctTrials: _trials.where((t) => t.correct).length,
+        accuracy: summary.accuracyOverall,
+        averageReactionTime: summary.avgReactionTimeMs.round(),
+        completionTime: summary.completionTimeSec,
+        switchCost: summary.switchCostMs.round(),
+        perseverativeErrors: summary.perseverativeErrors,
+        trials: _trials.map((t) => TrialData(
+          trialNumber: t.trialNumber,
+          stimulus: '${t.stimulusColor} ${t.stimulusShape}',
+          rule: t.rule,
+          response: t.childChoice,
+          correct: t.correct,
+          reactionTime: t.reactionTimeMs,
+          timestamp: t.timestamp,
+          isPostSwitch: t.isPostSwitch,
+          isPerseverativeError: t.isPerseverativeError,
+        )).toList(),
+        mlFeatures: summary.mlFeatures,
+      );
 
       if (_sessionId != null) {
         await StorageService.updateSession(
           id: _sessionId!,
           endTime: endTime,
-          gameResults: results.toJson(),
+          gameResults: gameResults.toJson(),
         );
 
         for (final trial in _trials) {
-          try {
-            await StorageService.saveTrial(
-              id: '${_sessionId}_trial_${trial.trialNumber}',
-              sessionId: _sessionId!,
-              trialNumber: trial.trialNumber,
-              stimulus: trial.stimulus,
-              response: trial.response,
-              reactionTime: trial.reactionTime,
-              correct: trial.correct,
-              timestamp: trial.timestamp,
-            );
-          } catch (e) {
-            debugPrint('Error saving trial ${trial.trialNumber}: $e');
-          }
+          await StorageService.saveTrial(
+            id: '${_sessionId}_trial_${trial.trialNumber}',
+            sessionId: _sessionId!,
+            trialNumber: trial.trialNumber,
+            stimulus: '${trial.stimulusColor} ${trial.stimulusShape}',
+            response: trial.childChoice,
+            reactionTime: trial.reactionTimeMs,
+            correct: trial.correct,
+            timestamp: trial.timestamp,
+          );
         }
       }
 
@@ -424,7 +414,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
             builder: (_) => ClinicianReflectionScreen(
               child: widget.child,
               sessionId: _sessionId!,
-              gameResults: results,
+              gameResults: gameResults,
             ),
           ),
         );
@@ -432,79 +422,29 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
     } catch (e) {
       debugPrint('Error saving results: $e');
       if (mounted) {
+        final summary = _calculateSummary();
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (_) => ClinicianReflectionScreen(
               child: widget.child,
               sessionId: _sessionId ?? '',
-              gameResults: _calculateResults(),
+              gameResults: GameResults(
+                gameType: 'dccs-color-shape',
+                totalTrials: summary.totalTrials,
+                correctTrials: _trials.where((t) => t.correct).length,
+                accuracy: summary.accuracyOverall,
+                averageReactionTime: summary.avgReactionTimeMs.round(),
+                completionTime: summary.completionTimeSec,
+                switchCost: summary.switchCostMs.round(),
+                perseverativeErrors: summary.perseverativeErrors,
+                trials: [],
+              ),
             ),
           ),
         );
       }
     }
-  }
-
-  GameResults _calculateResults() {
-    final correctTrials = _trials.where((t) => t.correct).toList();
-    final accuracy =
-        _trials.isEmpty ? 0.0 : (correctTrials.length / _trials.length) * 100;
-    final avgReactionTime = _trials.isEmpty
-        ? 0
-        : (_trials.map((t) => t.reactionTime).reduce((a, b) => a + b) /
-                _trials.length)
-            .round();
-    final completionTime = _sessionStartTime != null
-        ? DateTime.now().difference(_sessionStartTime!).inSeconds
-        : 0;
-    final switchCost = _calculateSwitchCost();
-    final perseverativeErrors =
-        _trials.where((t) => t.isPerseverativeError).length;
-
-    return GameResults(
-      gameType: 'color-shape',
-      totalTrials: _trials.length,
-      correctTrials: correctTrials.length,
-      accuracy: accuracy,
-      averageReactionTime: avgReactionTime,
-      completionTime: completionTime,
-      switchCost: switchCost,
-      perseverativeErrors: perseverativeErrors,
-      trials: _trials
-          .map((t) => TrialData(
-                trialNumber: t.trialNumber,
-                stimulus: t.stimulus,
-                rule: t.rule,
-                response: t.response,
-                correct: t.correct,
-                reactionTime: t.reactionTime,
-                timestamp: t.timestamp,
-                isPostSwitch: t.isPostSwitch,
-                isPerseverativeError: t.isPerseverativeError,
-              ))
-          .toList(),
-    );
-  }
-
-  int _calculateSwitchCost() {
-    if (_switchPoints.isEmpty) return 0;
-    final switchPoint = _switchPoints[0];
-    final preSwitch =
-        _trials.where((t) => t.trialNumber <= switchPoint).toList();
-    final postSwitch =
-        _trials.where((t) => t.trialNumber > switchPoint).toList();
-
-    if (preSwitch.isEmpty || postSwitch.isEmpty) return 0;
-
-    final preAvg =
-        preSwitch.map((t) => t.reactionTime).reduce((a, b) => a + b) /
-            preSwitch.length;
-    final postAvg =
-        postSwitch.map((t) => t.reactionTime).reduce((a, b) => a + b) /
-            postSwitch.length;
-
-    return (postAvg - preAvg).round();
   }
 
   String _formatTime(int seconds) {
@@ -516,11 +456,8 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
   @override
   void dispose() {
     _timer?.cancel();
-    _notificationController.dispose();
     GameSpeechService.stop();
     GameAudioService.stopBackgroundMusic();
-    // Reset processing flag on dispose
-    _isProcessing = false;
     super.dispose();
   }
 
@@ -541,47 +478,31 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
       return _buildInstructionsScreen();
     }
 
-    if (_gamePhase == 'story') {
-      return _buildStoryScreen();
-    }
-
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-          ),
+          color: Color(0xFFE3F2FD), // Light blue clinical background
         ),
         child: SafeArea(
           child: Column(
             children: [
               _buildHeader(),
               Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 15, vertical: 8),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildProgressBar(),
-                          const SizedBox(height: 8),
-                          GameRuleDisplay(
-                            rule: _currentRule,
-                            isSwitching: _isSwitching,
-                          ),
-                          const SizedBox(height: 10),
-                          _buildGardenArea(),
-                          const SizedBox(height: 10),
-                          _buildWandButtons(),
-                          const SizedBox(height: 5),
-                        ],
-                      ),
-                    );
-                  },
+                child: Column(
+                  children: [
+                    _buildProgressBar(),
+                    const SizedBox(height: 12),
+                    _buildRuleBanner(),
+                    const SizedBox(height: 16),
+                    _buildTargetBoxes(),
+                    const SizedBox(height: 24),
+                    _buildStimulusCard(),
+                    const SizedBox(height: 16),
+                    if (_showFeedback) _buildFeedback(),
+                    const Spacer(),
+                    _buildPhaseIndicator(),
+                    const SizedBox(height: 16),
+                  ],
                 ),
               ),
             ],
@@ -592,16 +513,10 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
   }
 
   Widget _buildInstructionsScreen() {
-    final localizations = AppLocalizations.of(context)!;
-
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-          ),
+          color: Color(0xFFE3F2FD),
         ),
         child: SafeArea(
           child: Center(
@@ -610,35 +525,77 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    '🌺',
-                    style: TextStyle(fontSize: 100),
+                  // DCCS icon
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.blue,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 30),
-                  Text(
-                    localizations.gameTitle,
-                    style: const TextStyle(
-                      fontSize: 36,
+                  const Text(
+                    'Color-Shape Sorting Game',
+                    style: TextStyle(
+                      fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Color(0xFF1565C0),
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 30),
                   Container(
                     padding: const EdgeInsets.all(25),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white, width: 2),
+                      border: Border.all(color: const Color(0xFF90CAF9), width: 2),
                     ),
                     child: Column(
                       children: [
-                        Text(
-                          localizations.gameInstructionsSimple,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            color: Colors.white,
+                        const Text(
+                          'First we play the COLOR game:\nPut the card where the COLOR matches.',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Color(0xFFE53935),
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Then we play the SHAPE game:\nPut the card where the SHAPE matches.',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Color(0xFF1E88E5),
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
@@ -647,56 +604,55 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _buildInstructionButton(
-                                localizations.colorButton, '🎨', Colors.pink),
-                            const SizedBox(width: 20),
-                            _buildInstructionButton(
-                                localizations.shapeButton, '🔷', Colors.blue),
+                            _buildTargetPreview(Colors.red, true, 'Left'),
+                            const SizedBox(width: 40),
+                            _buildTargetPreview(Colors.blue, false, 'Right'),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 30),
                   SizedBox(
                     width: double.infinity,
-                    height: 70,
-                    child: ElevatedButton(
+                    height: 60,
+                    child: ElevatedButton.icon(
                       onPressed: () {
                         GameSpeechService.speakInstructions(_selectedLanguage);
                       },
+                      icon: const Icon(Icons.volume_up, size: 28),
+                      label: const Text('Listen'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFF59E0B),
+                        backgroundColor: const Color(0xFFFFA726),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                      ),
-                      child: const Text(
-                        '🔊 Listen',
-                        style: TextStyle(
-                            fontSize: 22, fontWeight: FontWeight.bold),
+                        textStyle: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
-                    height: 70,
+                    height: 60,
                     child: ElevatedButton(
                       onPressed: _startGame,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF06D6A0),
+                        backgroundColor: const Color(0xFF43A047),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      child: const Text(
-                        'START',
-                        style: TextStyle(
-                            fontSize: 28, fontWeight: FontWeight.bold),
-                      ),
+                      child: const Text('START GAME'),
                     ),
                   ),
                 ],
@@ -708,138 +664,77 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
     );
   }
 
-  Widget _buildInstructionButton(String label, String emoji, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: color, width: 3),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 40)),
-          const SizedBox(height: 5),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 18,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+  Widget _buildTargetPreview(Color color, bool isCircle, String label) {
+    return Column(
+      children: [
+        Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(isCircle ? 25 : 8),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.black54,
+          ),
+        ),
+      ],
     );
-  }
-
-  Widget _buildStoryScreen() {
-    return _buildInstructionsScreen(); // Use same screen
   }
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF667eea).withOpacity(0.9),
-        border: const Border(
-          bottom: BorderSide(color: Colors.white30, width: 2),
-        ),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: const Icon(Icons.close, color: Colors.black54),
             onPressed: () => Navigator.pop(context),
           ),
           const Text(
-            '🌷 Magic Garden',
+            'DCCS Game',
             style: TextStyle(
-              color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold,
+              color: Color(0xFF1565C0),
             ),
           ),
-          Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFFFFE4A1), width: 2),
-                ),
-                child: Row(
-                  children: [
-                    const Text('⭐', style: TextStyle(fontSize: 20)),
-                    const SizedBox(width: 6),
-                    Text(
-                      '$_score',
-                      style: const TextStyle(
-                        color: Color(0xFFFF6B8B),
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFF88E2DC), width: 2),
-                ),
-                child: Row(
-                  children: [
-                    const Text('⏱️', style: TextStyle(fontSize: 18)),
-                    const SizedBox(width: 6),
-                    Text(
-                      _formatTime(_timeRemaining),
-                      style: const TextStyle(
-                        color: Color(0xFF4ECDC4),
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (_streak > 0) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                    ),
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: Row(
-                    children: [
-                      const Text('🔥', style: TextStyle(fontSize: 16)),
-                      const SizedBox(width: 6),
-                      Text(
-                        '$_streak',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE3F2FD),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.timer, size: 18, color: Color(0xFF1565C0)),
+                const SizedBox(width: 4),
+                Text(
+                  _formatTime(_timeRemaining),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1565C0),
                   ),
                 ),
               ],
-            ],
+            ),
           ),
         ],
       ),
@@ -847,142 +742,242 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
   }
 
   Widget _buildProgressBar() {
-    final progress = (_currentTrial / _maxTrials) * 100;
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'GARDEN PROGRESS',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFFF6B8B),
+    final progress = _currentTrial / _totalTrials;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Trial $_currentTrial of $_totalTrials',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black54,
+                ),
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF88E2DC),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Text(
-                '${progress.round()}%',
+              Text(
+                '${(progress * 100).round()}%',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF4ECDC4),
+                  color: Color(0xFF1565C0),
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Container(
-          height: 18,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFFFE4A1), width: 2),
+            ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                width: MediaQuery.of(context).size.width * (progress / 100),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFFFF6B8B),
-                      Color(0xFF4ECDC4),
-                      Color(0xFF06D6A0)
-                    ],
-                  ),
+          const SizedBox(height: 8),
+          Container(
+            height: 8,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: Colors.grey[200],
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  _currentRule == 'color' ? Colors.red : Colors.blue,
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildGardenArea() {
+  Widget _buildRuleBanner() {
+    final isColorRule = _currentRule == 'color';
     return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(
-        minHeight: 200,
-        maxHeight: 250,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFE3F2FD), Color(0xFFF3E5F5)],
+        color: isColorRule ? const Color(0xFFFFEBEE) : const Color(0xFFE3F2FD),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isColorRule ? Colors.red : Colors.blue,
+          width: 2,
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFE4A1), width: 3),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            isColorRule ? Icons.palette : Icons.category,
+            color: isColorRule ? Colors.red : Colors.blue,
+            size: 28,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            isColorRule ? 'COLOR GAME' : 'SHAPE GAME',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: isColorRule ? Colors.red : Colors.blue,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTargetBoxes() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _handleChoice('left'),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.grey[300]!, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'LEFT',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(35),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Red Circle',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.black45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _handleChoice('right'),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.grey[300]!, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'RIGHT',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Blue Square',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.black45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStimulusCard() {
+    if (_currentStimulus == null) {
+      return const SizedBox(height: 120);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey[300]!, width: 2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
             blurRadius: 15,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: Stack(
+      child: Column(
         children: [
-          Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (_currentFlowers.isNotEmpty)
-                  IgnorePointer(
-                    child: GameFlowerWidget(
-                      flower: _currentFlowers[0],
-                      onTap: () {}, // Flowers are display-only, not interactive
-                    ),
-                  ),
-                const SizedBox(width: 40),
-                if (_currentFlowers.length > 1)
-                  IgnorePointer(
-                    child: GameFlowerWidget(
-                      flower: _currentFlowers[1],
-                      onTap: () {}, // Flowers are display-only, not interactive
-                    ),
-                  ),
-              ],
+          const Text(
+            'TAP THE MATCHING BOX',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.black45,
             ),
           ),
-          Positioned(
-            bottom: 15,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFFA7BA), Color(0xFFFF6B8B)],
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 4),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Text('🐰', style: TextStyle(fontSize: 40)),
-                ),
-              ),
+          const SizedBox(height: 16),
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: _currentStimulus!.colorValue,
+              borderRadius: BorderRadius.circular(_currentStimulus!.borderRadius),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '${_currentStimulus!.color.toUpperCase()} ${_currentStimulus!.shape.toUpperCase()}',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black54,
             ),
           ),
         ],
@@ -990,50 +985,64 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
     );
   }
 
-  Widget _buildWandButtons() {
-    final isActive = !_isProcessing &&
-        _gamePhase != 'complete' &&
-        _gamePhase != 'story' &&
-        _currentFlowers.isNotEmpty &&
-        _startTime != null;
+  Widget _buildFeedback() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+      decoration: BoxDecoration(
+        color: _lastCorrect ? const Color(0xFF43A047) : const Color(0xFFE53935),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Text(
+        _lastCorrect ? '✓ Correct!' : '✗ Try the next one',
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
 
-    debugPrint(
-        '🎯 Wand buttons - isActive: $isActive, isProcessing: $_isProcessing, phase: $_gamePhase, flowers: ${_currentFlowers.length}, startTime: $_startTime');
+  Widget _buildPhaseIndicator() {
+    String phaseText;
+    Color phaseColor;
+    
+    switch (_gamePhase) {
+      case 'practice':
+        phaseText = 'Practice Round';
+        phaseColor = Colors.orange;
+        break;
+      case 'pre_switch':
+        phaseText = 'Color Game Phase';
+        phaseColor = Colors.red;
+        break;
+      case 'post_switch':
+        phaseText = 'Shape Game Phase';
+        phaseColor = Colors.blue;
+        break;
+      case 'mixed':
+        phaseText = 'Mixed Phase';
+        phaseColor = Colors.purple;
+        break;
+      default:
+        phaseText = '';
+        phaseColor = Colors.grey;
+    }
 
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 5),
-        child: Row(
-          children: [
-            Expanded(
-              child: WandButton(
-                type: 'color',
-                onTap: () {
-                  debugPrint(
-                      '🎨 Color wand tapped - isProcessing: $_isProcessing');
-                  if (!_isProcessing && _gamePhase != 'complete') {
-                    _handleResponse('color');
-                  }
-                },
-                isActive: isActive,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: WandButton(
-                type: 'shape',
-                onTap: () {
-                  debugPrint(
-                      '🔷 Shape wand tapped - isProcessing: $_isProcessing');
-                  if (!_isProcessing && _gamePhase != 'complete') {
-                    _handleResponse('shape');
-                  }
-                },
-                isActive: isActive,
-              ),
-            ),
-          ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      decoration: BoxDecoration(
+        color: phaseColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: phaseColor, width: 1),
+      ),
+      child: Text(
+        phaseText,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: phaseColor,
         ),
       ),
     );

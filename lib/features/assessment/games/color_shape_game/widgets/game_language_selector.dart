@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:senseai/l10n/app_localizations.dart';
-import 'package:senseai/core/providers/language_provider.dart';
 
+/// Language selection screen for DCCS game
 class GameLanguageSelector extends StatelessWidget {
   final Function(String) onLanguageSelected;
 
@@ -13,65 +11,107 @@ class GameLanguageSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-    final languageProvider = Provider.of<LanguageProvider>(context);
-    
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-          ),
+          color: Color(0xFFE3F2FD),
         ),
         child: SafeArea(
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.all(30.0),
+              padding: const EdgeInsets.all(30),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    '🌺',
-                    style: TextStyle(fontSize: 80),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    localizations.selectLanguage,
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
+                  // DCCS icon
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
                       color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                        ),
+                      ],
                     ),
-                    textAlign: TextAlign.center,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.blue,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 50),
+                  const SizedBox(height: 30),
+                  const Text(
+                    'Color-Shape Game',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1565C0),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Select language for voice instructions',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'Sort cards by COLOR or SHAPE',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black45,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
                   _buildLanguageButton(
                     context,
                     'English',
                     'en',
                     '🇬🇧',
-                    languageProvider.locale.languageCode == 'en',
-                    onLanguageSelected,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                   _buildLanguageButton(
                     context,
                     'සිංහල',
                     'si',
                     '🇱🇰',
-                    languageProvider.locale.languageCode == 'si',
-                    onLanguageSelected,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                   _buildLanguageButton(
                     context,
                     'தமிழ்',
                     'ta',
-                    '🇱🇰',
-                    languageProvider.locale.languageCode == 'ta',
-                    onLanguageSelected,
+                    '🇮🇳',
                   ),
                 ],
               ),
@@ -86,42 +126,35 @@ class GameLanguageSelector extends StatelessWidget {
     BuildContext context,
     String label,
     String code,
-    String emoji,
-    bool isSelected,
-    Function(String) onSelected,
+    String flag,
   ) {
     return SizedBox(
       width: double.infinity,
-      height: 80,
+      height: 60,
       child: ElevatedButton(
-        onPressed: () => onSelected(code),
+        onPressed: () => onLanguageSelected(code),
         style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected
-              ? const Color(0xFFFF6B8B)
-              : Colors.white.withOpacity(0.2),
-          foregroundColor: Colors.white,
+          backgroundColor: Colors.white,
+          foregroundColor: const Color(0xFF1565C0),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(
-              color: isSelected ? Colors.white : Colors.transparent,
-              width: 3,
-            ),
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFF90CAF9), width: 2),
           ),
-          elevation: isSelected ? 8 : 2,
+          elevation: 2,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              emoji,
-              style: const TextStyle(fontSize: 32),
+              flag,
+              style: const TextStyle(fontSize: 24),
             ),
-            const SizedBox(width: 15),
+            const SizedBox(width: 12),
             Text(
               label,
               style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -130,4 +163,3 @@ class GameLanguageSelector extends StatelessWidget {
     );
   }
 }
-

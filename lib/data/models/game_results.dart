@@ -9,6 +9,7 @@ class GameResults {
   final int completionTime;
   final List<TrialData> trials;
   final Map<String, dynamic>? additionalMetrics;
+  final Map<String, dynamic>? mlFeatures; // ML features for ASD detection
 
   GameResults({
     required this.gameType,
@@ -21,6 +22,7 @@ class GameResults {
     required this.completionTime,
     required this.trials,
     this.additionalMetrics,
+    this.mlFeatures,
   });
 
   Map<String, dynamic> toJson() {
@@ -35,6 +37,7 @@ class GameResults {
       'completion_time': completionTime,
       'trials': trials.map((t) => t.toJson()).toList(),
       'additional_metrics': additionalMetrics,
+      'ml_features': mlFeatures,
     };
   }
 
@@ -53,6 +56,7 @@ class GameResults {
               .toList() ??
           [],
       additionalMetrics: json['additional_metrics'] as Map<String, dynamic>?,
+      mlFeatures: json['ml_features'] as Map<String, dynamic>?,
     );
   }
 }
@@ -112,4 +116,3 @@ class TrialData {
     );
   }
 }
-

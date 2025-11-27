@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:senseai/l10n/app_localizations.dart';
 
+/// Simple button widget for DCCS game (not used in current clinical version)
+/// Kept for backwards compatibility
 class WandButton extends StatefulWidget {
   final String type; // 'color' or 'shape'
   final VoidCallback onTap;
@@ -20,7 +21,6 @@ class WandButton extends StatefulWidget {
 class _WandButtonState extends State<WandButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
-  bool _isPressed = false;
 
   @override
   void initState() {
@@ -39,37 +39,31 @@ class _WandButtonState extends State<WandButton>
 
   @override
   Widget build(BuildContext context) {
-    final gradient = widget.type == 'color'
+    final isColor = widget.type == 'color';
+    final gradient = isColor
         ? const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFFF6B8B), Color(0xFFFF8FA3)],
+            colors: [Colors.red, Color(0xFFEF5350)],
           )
         : const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF4ECDC4), Color(0xFF67E2DC)],
+            colors: [Colors.blue, Color(0xFF42A5F5)],
           );
 
     return GestureDetector(
       onTapDown: widget.isActive
-          ? (_) {
-              setState(() => _isPressed = true);
-              _animationController.forward();
-            }
+          ? (_) => _animationController.forward()
           : null,
       onTapUp: widget.isActive
           ? (_) {
-              setState(() => _isPressed = false);
               _animationController.reverse();
               widget.onTap();
             }
           : null,
       onTapCancel: widget.isActive
-          ? () {
-              setState(() => _isPressed = false);
-              _animationController.reverse();
-            }
+          ? () => _animationController.reverse()
           : null,
       child: AnimatedBuilder(
         animation: _animationController,
@@ -98,36 +92,20 @@ class _WandButtonState extends State<WandButton>
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      widget.type == 'color' ? '🎨' : '🔷',
-                      style: const TextStyle(fontSize: 34),
+                    Icon(
+                      isColor ? Icons.palette : Icons.category,
+                      color: Colors.white,
+                      size: 34,
                     ),
-                    const SizedBox(height: 3),
-                    Builder(
-                      builder: (context) {
-                        final localizations = AppLocalizations.of(context)!;
-                        final label = widget.type == 'color' 
-                            ? localizations.colorButton 
-                            : localizations.shapeButton;
-                        return Text(
-                          label,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 19,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black54,
-                                offset: Offset(1, 1),
-                                blurRadius: 2,
-                              ),
-                            ],
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
+                    const SizedBox(height: 4),
+                    Text(
+                      isColor ? 'COLOR' : 'SHAPE',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ],
                 ),
@@ -139,5 +117,3 @@ class _WandButtonState extends State<WandButton>
     );
   }
 }
-
-

@@ -1,23 +1,24 @@
-// lib/core/services/game_speech_service.dart
+// lib/features/assessment/games/color_shape_game/services/game_speech_service.dart
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/foundation.dart';
 
+/// Speech service for DCCS (Dimensional Change Card Sort) game
+/// Provides calm, clear voice instructions for children
 class GameSpeechService {
   static final FlutterTts _tts = FlutterTts();
   static bool _initialized = false;
   static bool _speechEnabled = true;
 
-  /// Initializes the cutest, calmest voice possible
+  /// Initializes the calmest, clearest voice for children with autism
   static Future<void> initialize({String language = 'en'}) async {
     try {
       // === BEST VOICE SETTINGS FOR CHILDREN WITH AUTISM ===
-      await _tts.setSpeechRate(0.45); // Very slow and calm
-      await _tts.setPitch(1.3); // High, cute, child-like voice
-      await _tts.setVolume(1.0); // Full volume but sounds soft with high pitch
+      await _tts.setSpeechRate(0.42); // Very slow and calm
+      await _tts.setPitch(1.25); // Slightly high, friendly voice
+      await _tts.setVolume(1.0);
 
-      // Try to use the best available voice (Google or Samsung)
-      await _tts
-          .setEngine('com.google.android.tts'); // Best quality on most devices
+      // Try to use the best available voice
+      await _tts.setEngine('com.google.android.tts');
 
       // Set language
       String ttsLanguage;
@@ -38,14 +39,12 @@ class GameSpeechService {
       if (languages.contains(ttsLanguage)) {
         await _tts.setLanguage(ttsLanguage);
       } else {
-        debugPrint(
-            'Language $ttsLanguage not available, falling back to en-US');
+        debugPrint('Language $ttsLanguage not available, falling back to en-US');
         await _tts.setLanguage('en-US');
-        await _tts.setPitch(1.3); // Keep cute voice even in English
       }
 
       _initialized = true;
-      debugPrint('Cute calm voice ready! Language: $ttsLanguage');
+      debugPrint('DCCS Speech ready! Language: $ttsLanguage');
     } catch (e) {
       debugPrint('Speech init failed: $e');
       _speechEnabled = false;
@@ -57,8 +56,10 @@ class GameSpeechService {
   }
 
   // ================================================
-  // SUPER CALM & CUTE INSTRUCTIONS
+  // DCCS GAME INSTRUCTIONS
   // ================================================
+  
+  /// Speak main game instructions
   static Future<void> speakInstructions(String language) async {
     if (!_speechEnabled || !_initialized) return;
     await _tts.stop();
@@ -66,22 +67,41 @@ class GameSpeechService {
     String text;
     switch (language) {
       case 'si':
-        text =
-            "හායි  පුංචි  යාළුවා... මල් බලමුද? පාට හෝ හැඩයෙන් තෝරමු... ඔයාට පුළුවන්!";
+        text = '''
+හායි පුංචි යාළුවා...
+අපි සෙල්ලමක්  කරමු...
+මේ තියෙන්නේ රතු  රවුමකුයි නිල් කොටුවකුයි ...
+මුලින්ම අපි පාට තෝරමු ...
+කාඩ්පත බැලුවාම, එකේ  පාටම තියෙන පෙට්ටිය තෝරන්න...
+ඔයාට පුළුවන්!
+''';
         break;
       case 'ta':
-        text =
-            "வணக்கம் சின்னஞ்சிறிய நண்பனே... மலர்களைப் பார்ப்போமா? நிறம் அல்லது வடிவம் தேர்ந்தெடுப்போம்... நீ ரொம்ப அழகாக செய்வாய்!";
+        text = '''
+வணக்கம் சின்னஞ்சிறிய நண்பனே...
+வடிவ விளையாட்டு விளையாடுவோம்...
+இங்கே ஒரு சிவப்பு வட்டமும் நீல சதுரமும் உள்ளது...
+முதலில் நிற விளையாட்டு விளையாடுவோம்...
+அட்டையைப் பார், அதே நிறப் பெட்டியைத் தேர்ந்தெடு...
+நீ ரொம்ப அழகாக செய்வாய்!
+''';
         break;
       case 'en':
       default:
-        text =
-            "Hello little friend... Shall we look at the flowers? We can choose by color or by shape... You're going to do so well!";
+        text = '''
+Hello little friend...
+Let's play the sorting game...
+Here is a red circle and a blue square...
+First, we play the color game...
+Look at the card and tap the box with the same color...
+You can do it!
+''';
         break;
     }
     await _speakSlowly(text);
   }
 
+  /// Speak rule change announcement
   static Future<void> speakRuleChange(String newRule, String language) async {
     if (!_speechEnabled || !_initialized) return;
     await _tts.stop();
@@ -90,24 +110,25 @@ class GameSpeechService {
     switch (language) {
       case 'si':
         text = newRule == 'color'
-            ? "දැන් අපි පාට තෝරමු? ඔයාගේ කැමතිම  පාට මල තෝරමු."
-            : "දැන් හැඩය තෝරමු... රවුම්  මල් තෝරමු... ";
+            ? "දැන් පාට සෙල්ලම... එකම පාට තෝරන්න..."
+            : "දැන් හැඩතල සෙල්ලම ... එකම හැඩය තෝරන්න... රවුම්  නම් රවුම , හතරැස් නම් කොටුව...";
         break;
       case 'ta':
         text = newRule == 'color'
-            ? "இப்போது நிறத்தால் தேர்ந்தெடுப்போம் சரியா? உனக்குப் பிடித்த நிற மலரைத் தேர்ந்தெடு..."
-            : "இப்போது வடிவத்தால் தேர்ந்தெடுப்போம்... வட்ட மலர்களைத் தேர்ந்தெடு... நீ ரொம்ப அற்புதமாக செய்கிறாய்!";
+            ? "இப்போது நிற விளையாட்டு... அதே நிறப் பெட்டியைத் தேர்ந்தெடு..."
+            : "இப்போது வடிவ விளையாட்டு... அதே வடிவப் பெட்டியைத் தேர்ந்தெடு... வட்டம் என்றால் வட்டம், சதுரம் என்றால் சதுரம்...";
         break;
       case 'en':
       default:
         text = newRule == 'color'
-            ? "Now we're choosing by color, okay? Pick your favorite color flower..."
-            : "Now we're choosing by shape... Let's pick the round flowers... You're so clever!";
+            ? "Now we play the color game... Tap the box with the same color..."
+            : "Now we play the shape game... Tap the box with the same shape... Circle goes to circle, square goes to square...";
         break;
     }
     await _speakSlowly(text);
   }
 
+  /// Speak feedback after each trial
   static Future<void> speakFeedback(bool isCorrect, String language) async {
     if (!_speechEnabled || !_initialized) return;
     await _tts.stop();
@@ -117,41 +138,122 @@ class GameSpeechService {
       switch (language) {
         case 'si':
           text = [
-            "වාහ්! ඔයා ගොඩක් දක්ෂයි!",
-            "හරිම හොඳයි පුංචි යාළුවා!"
+            "හරි!",
+            "වාහ්! ගොඩක් හොඳයි!",
+            "ඔයා දක්ෂයි!"
           ][DateTime.now().millisecond % 3];
           break;
         case 'ta':
           text = [
-            "வாவ்! நீ ரொம்ப சூப்பர்!",
-            "மிகவும் நன்றாக செய்தாய்!",
-            "உன்னால் ரொம்ப நன்றாக முடியும்!"
+            "சரி!",
+            "வாவ்! மிக நன்று!",
+            "நீ அருமை!"
           ][DateTime.now().millisecond % 3];
           break;
         case 'en':
         default:
           text = [
-            "Wow! You're so smart!",
-            "Amazing job, little friend!",
-            "You did it! Well done!"
+            "Correct!",
+            "Wow! Great job!",
+            "You're doing great!"
           ][DateTime.now().millisecond % 3];
           break;
       }
     } else {
       switch (language) {
         case 'si':
-          text = "කමක් නැහැ ...අපි නැවත උත්සාහ කරමු..";
+          text = "කමක් නැහැ... ඊළඟ එක බලමු...";
           break;
         case 'ta':
-          text =
-              "பரவாயில்லை சின்ன நண்பா... மீண்டும் முயற்சி செய்வோம்... உன்னால் முடியும்!";
+          text = "பரவாயில்லை... அடுத்ததைப் பார்ப்போம்...";
           break;
         case 'en':
         default:
-          text =
-              "It's okay, little friend... Let's try again... You can do it!";
+          text = "That's okay... Let's try the next one...";
           break;
       }
+    }
+    await _tts.speak(text);
+  }
+
+  /// Speak phase transition message
+  static Future<void> speakPhaseStart(String phase, String language) async {
+    if (!_speechEnabled || !_initialized) return;
+    await _tts.stop();
+
+    String text;
+    switch (phase) {
+      case 'practice':
+        switch (language) {
+          case 'si':
+            text = "පුහුණුව පටන් ගමු...";
+            break;
+          case 'ta':
+            text = "பயிற்சி தொடங்குகிறது...";
+            break;
+          default:
+            text = "Let's practice first...";
+        }
+        break;
+      case 'pre_switch':
+        switch (language) {
+          case 'si':
+            text = "පාට සෙල්ලම පටන් ගමු!";
+            break;
+          case 'ta':
+            text = "நிற விளையாட்டு தொடங்குகிறது!";
+            break;
+          default:
+            text = "Color game starting!";
+        }
+        break;
+      case 'post_switch':
+        switch (language) {
+          case 'si':
+            text = "දැන් හැඩ සෙල්ලම! හැඩය බලන්න!";
+            break;
+          case 'ta':
+            text = "இப்போது வடிவ விளையாட்டு! வடிவத்தைப் பார்!";
+            break;
+          default:
+            text = "Now the shape game! Look at the shape!";
+        }
+        break;
+      case 'mixed':
+        switch (language) {
+          case 'si':
+            text = "දැන් මිශ්‍ර සෙල්ලම! හොඳින් බලන්න!";
+            break;
+          case 'ta':
+            text = "இப்போது கலப்பு விளையாட்டு! நன்றாகப் பார்!";
+            break;
+          default:
+            text = "Now the mixed game! Watch carefully!";
+        }
+        break;
+      default:
+        return;
+    }
+    await _tts.speak(text);
+  }
+
+  /// Speak game completion message
+  static Future<void> speakGameComplete(String language) async {
+    if (!_speechEnabled || !_initialized) return;
+    await _tts.stop();
+
+    String text;
+    switch (language) {
+      case 'si':
+        text = "ඔයා ඉවර කළා! ඔයා ගොඩක් දක්ෂයි! ස්තූතියි!";
+        break;
+      case 'ta':
+        text = "நீ முடித்துவிட்டாய்! நீ மிகவும் சூப்பர்! நன்றி!";
+        break;
+      case 'en':
+      default:
+        text = "You finished! You did amazing! Thank you!";
+        break;
     }
     await _speakSlowly(text);
   }
@@ -162,10 +264,8 @@ class GameSpeechService {
     for (int i = 0; i < sentences.length; i++) {
       if (sentences[i].trim().isNotEmpty) {
         await _tts.speak(sentences[i].trim());
-        if (i < sentences.length - 1) {
-          await Future.delayed(
-              const Duration(milliseconds: 800)); // gentle pause
-        }
+        // Wait for speech to complete
+        await Future.delayed(const Duration(milliseconds: 1500));
       }
     }
   }

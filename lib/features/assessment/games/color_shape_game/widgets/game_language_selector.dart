@@ -60,36 +60,69 @@ class GameLanguageSelector extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  const Text(
-                    'Color-Shape Game',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1565C0),
-                    ),
+                  // Title in all three languages
+                  const Column(
+                    children: [
+                      Text(
+                        'Select Language',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1565C0),
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'භාෂාව තෝරන්න',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF1976D2),
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'மொழியைத் தேர்ந்தெடு',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF1976D2),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
-                  const Text(
-                    'Select language for voice instructions',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.black54,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
-                      'Sort cards by COLOR or SHAPE',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black45,
-                        fontStyle: FontStyle.italic,
-                      ),
+                    child: const Column(
+                      children: [
+                        Text(
+                          'Color-Shape Sorting Game',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black54,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          'පාට-හැඩ තෝරන සෙල්ලම',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.black45,
+                          ),
+                        ),
+                        Text(
+                          'நிறம்-வடிவம் விளையாட்டு',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.black45,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -98,6 +131,7 @@ class GameLanguageSelector extends StatelessWidget {
                     'English',
                     'en',
                     '🇬🇧',
+                    const Color(0xFF1565C0),
                   ),
                   const SizedBox(height: 16),
                   _buildLanguageButton(
@@ -105,6 +139,7 @@ class GameLanguageSelector extends StatelessWidget {
                     'සිංහල',
                     'si',
                     '🇱🇰',
+                    const Color(0xFF7B1FA2),
                   ),
                   const SizedBox(height: 16),
                   _buildLanguageButton(
@@ -112,6 +147,7 @@ class GameLanguageSelector extends StatelessWidget {
                     'தமிழ்',
                     'ta',
                     '🇮🇳',
+                    const Color(0xFFE65100),
                   ),
                 ],
               ),
@@ -127,18 +163,19 @@ class GameLanguageSelector extends StatelessWidget {
     String label,
     String code,
     String flag,
+    Color accentColor,
   ) {
     return SizedBox(
       width: double.infinity,
-      height: 60,
+      height: 65,
       child: ElevatedButton(
         onPressed: () => onLanguageSelected(code),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
-          foregroundColor: const Color(0xFF1565C0),
+          foregroundColor: accentColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF90CAF9), width: 2),
+            side: BorderSide(color: accentColor.withOpacity(0.5), width: 2),
           ),
           elevation: 2,
         ),
@@ -147,14 +184,15 @@ class GameLanguageSelector extends StatelessWidget {
           children: [
             Text(
               flag,
-              style: const TextStyle(fontSize: 24),
+              style: const TextStyle(fontSize: 28),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: accentColor,
               ),
             ),
           ],

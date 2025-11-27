@@ -14,6 +14,7 @@ import 'models/shape_stimulus.dart';
 import 'widgets/game_language_selector.dart';
 import 'services/game_audio_service.dart';
 import 'services/game_speech_service.dart';
+import 'utils/dccs_translations.dart';
 
 /// Clinical DCCS (Dimensional Change Card Sort) Game
 /// Measures cognitive flexibility and rule-switching for ASD screening
@@ -453,6 +454,9 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
     return '${minutes}:${secs.toString().padLeft(2, '0')}';
   }
 
+  /// Get translated text
+  String _t(String key) => DccsTranslations.get(key, _selectedLanguage);
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -562,9 +566,9 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
                     ),
                   ),
                   const SizedBox(height: 30),
-                  const Text(
-                    'Color-Shape Sorting Game',
-                    style: TextStyle(
+                  Text(
+                    _t('game_title'),
+                    style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF1565C0),
@@ -581,9 +585,9 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
                     ),
                     child: Column(
                       children: [
-                        const Text(
-                          'First we play the COLOR game:\nPut the card where the COLOR matches.',
-                          style: TextStyle(
+                        Text(
+                          _t('color_rule_instruction'),
+                          style: const TextStyle(
                             fontSize: 18,
                             color: Color(0xFFE53935),
                             fontWeight: FontWeight.bold,
@@ -591,9 +595,9 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 20),
-                        const Text(
-                          'Then we play the SHAPE game:\nPut the card where the SHAPE matches.',
-                          style: TextStyle(
+                        Text(
+                          _t('shape_rule_instruction'),
+                          style: const TextStyle(
                             fontSize: 18,
                             color: Color(0xFF1E88E5),
                             fontWeight: FontWeight.bold,
@@ -604,9 +608,9 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _buildTargetPreview(Colors.red, true, 'Left'),
+                            _buildTargetPreview(Colors.red, true, _t('left')),
                             const SizedBox(width: 40),
-                            _buildTargetPreview(Colors.blue, false, 'Right'),
+                            _buildTargetPreview(Colors.blue, false, _t('right')),
                           ],
                         ),
                       ],
@@ -621,7 +625,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
                         GameSpeechService.speakInstructions(_selectedLanguage);
                       },
                       icon: const Icon(Icons.volume_up, size: 28),
-                      label: const Text('Listen'),
+                      label: Text(_t('listen')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFA726),
                         foregroundColor: Colors.white,
@@ -652,7 +656,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      child: const Text('START GAME'),
+                      child: Text(_t('start_game')),
                     ),
                   ),
                 ],
@@ -707,9 +711,9 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
             icon: const Icon(Icons.close, color: Colors.black54),
             onPressed: () => Navigator.pop(context),
           ),
-          const Text(
-            'DCCS Game',
-            style: TextStyle(
+          Text(
+            _t('dccs_game'),
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Color(0xFF1565C0),
@@ -751,7 +755,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Trial $_currentTrial of $_totalTrials',
+                '${_t('trial_of')} $_currentTrial ${_t('of')} $_totalTrials',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -814,7 +818,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
           ),
           const SizedBox(width: 12),
           Text(
-            isColorRule ? 'COLOR GAME' : 'SHAPE GAME',
+            isColorRule ? _t('color_game') : _t('shape_game'),
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -849,9 +853,9 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
                 ),
                 child: Column(
                   children: [
-                    const Text(
-                      'LEFT',
-                      style: TextStyle(
+                    Text(
+                      _t('left'),
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Colors.black54,
@@ -867,9 +871,9 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Red Circle',
-                      style: TextStyle(
+                    Text(
+                      _t('red_circle'),
+                      style: const TextStyle(
                         fontSize: 12,
                         color: Colors.black45,
                       ),
@@ -898,9 +902,9 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
                 ),
                 child: Column(
                   children: [
-                    const Text(
-                      'RIGHT',
-                      style: TextStyle(
+                    Text(
+                      _t('right'),
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Colors.black54,
@@ -916,9 +920,9 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Blue Square',
-                      style: TextStyle(
+                    Text(
+                      _t('blue_square'),
+                      style: const TextStyle(
                         fontSize: 12,
                         color: Colors.black45,
                       ),
@@ -954,9 +958,9 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
       ),
       child: Column(
         children: [
-          const Text(
-            'TAP THE MATCHING BOX',
-            style: TextStyle(
+          Text(
+            _t('tap_matching_box'),
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: Colors.black45,
@@ -973,7 +977,11 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
           ),
           const SizedBox(height: 12),
           Text(
-            '${_currentStimulus!.color.toUpperCase()} ${_currentStimulus!.shape.toUpperCase()}',
+            DccsTranslations.getStimulusDescription(
+              _currentStimulus!.color,
+              _currentStimulus!.shape,
+              _selectedLanguage,
+            ),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -994,7 +1002,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
         borderRadius: BorderRadius.circular(24),
       ),
       child: Text(
-        _lastCorrect ? '✓ Correct!' : '✗ Try the next one',
+        _lastCorrect ? _t('correct') : _t('try_next'),
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
@@ -1010,19 +1018,19 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
     
     switch (_gamePhase) {
       case 'practice':
-        phaseText = 'Practice Round';
+        phaseText = _t('practice_round');
         phaseColor = Colors.orange;
         break;
       case 'pre_switch':
-        phaseText = 'Color Game Phase';
+        phaseText = _t('color_game_phase');
         phaseColor = Colors.red;
         break;
       case 'post_switch':
-        phaseText = 'Shape Game Phase';
+        phaseText = _t('shape_game_phase');
         phaseColor = Colors.blue;
         break;
       case 'mixed':
-        phaseText = 'Mixed Phase';
+        phaseText = _t('mixed_phase');
         phaseColor = Colors.purple;
         break;
       default:

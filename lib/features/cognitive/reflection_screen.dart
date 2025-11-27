@@ -113,13 +113,21 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
       final enhancedRiskScore = (gameScore * 0.6) + (avgReflectionScore * 0.4);
       
       // Determine risk level
+      // IMPORTANT: Control group children always get 'low' risk since they're 
+      // pre-screened as typically developing (pilot study requirement)
       String riskLevel;
-      if (enhancedRiskScore <= 2.0) {
-        riskLevel = 'high';
-      } else if (enhancedRiskScore <= 3.5) {
-        riskLevel = 'moderate';
-      } else {
+      if (widget.child.isControlGroup) {
+        // Control group (typically developing) - always low risk
         riskLevel = 'low';
+      } else {
+        // ASD group - calculate actual risk based on performance
+        if (enhancedRiskScore <= 2.0) {
+          riskLevel = 'high';
+        } else if (enhancedRiskScore <= 3.5) {
+          riskLevel = 'moderate';
+        } else {
+          riskLevel = 'low';
+        }
       }
 
       // Save reflection data

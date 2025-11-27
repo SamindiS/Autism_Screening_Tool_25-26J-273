@@ -4,6 +4,7 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../data/models/child.dart';
 import 'api_service.dart';
 import 'offline_sync_service.dart';
 
@@ -22,7 +23,7 @@ class StorageService {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3, // Upgraded version for new child profile fields
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -32,12 +33,17 @@ class StorageService {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS children (
         id TEXT PRIMARY KEY,
+        child_code TEXT NOT NULL,
         name TEXT NOT NULL,
         date_of_birth INTEGER NOT NULL,
+        age_in_months INTEGER NOT NULL,
         gender TEXT NOT NULL,
         language TEXT NOT NULL,
         age REAL NOT NULL,
         hospital_id TEXT,
+        study_group TEXT NOT NULL DEFAULT 'typically_developing',
+        asd_level TEXT,
+        diagnosis_source TEXT NOT NULL DEFAULT 'Unknown',
         created_at INTEGER NOT NULL
       )
     ''');
@@ -74,6 +80,40 @@ class StorageService {
     if (oldVersion < 2) {
       await db.execute('ALTER TABLE children ADD COLUMN hospital_id TEXT');
     }
+    if (oldVersion < 3) {
+      // Add new study-specific columns for child profile
+      await db.execute('ALTER TABLE children ADD COLUMN child_code TEXT');
+      await db.execute('ALTER TABLE children ADD COLUMN age_in_months INTEGER');
+      await db.execute('ALTER TABLE children ADD COLUMN study_group TEXT DEFAULT \'typically_developing\'');
+      await db.execute('ALTER TABLE children ADD COLUMN asd_level TEXT');
+      await db.execute('ALTER TABLE children ADD COLUMN diagnosis_source TEXT DEFAULT \'Unknown\'');
+      
+      // Update existing records to have child_code = name if null
+      await db.execute('UPDATE children SET child_code = name WHERE child_code IS NULL');
+      
+      // Calculate age_in_months for existing records
+      final children = await db.query('children');
+      for (final child in children) {
+        final dob = child['date_of_birth'] as int?;
+        if (dob != null) {
+          final dobDate = DateTime.fromMillisecondsSinceEpoch(dob);
+          final ageInMonths = _calculateAgeInMonthsFromDate(dobDate);
+          await db.update(
+            'children',
+            {'age_in_months': ageInMonths},
+            where: 'id = ?',
+            whereArgs: [child['id']],
+          );
+        }
+      }
+    }
+  }
+
+  static int _calculateAgeInMonthsFromDate(DateTime dob) {
+    final now = DateTime.now();
+    int months = (now.year - dob.year) * 12 + (now.month - dob.month);
+    if (now.day < dob.day) months--;
+    return months;
   }
 
   static String _offlineId(String prefix) =>
@@ -85,39 +125,61 @@ class StorageService {
   }
 
   // ---------------- CHILDREN ----------------
+  
+  /// Save a new child profile with study-specific fields
   static Future<Map<String, dynamic>?> saveChild({
     String? id,
+    required String childCode,
     required String name,
     required DateTime dateOfBirth,
+    required int ageInMonths,
     required String gender,
     required String language,
     required double age,
     String? hospitalId,
+    required ChildGroup group,
+    AsdLevel? asdLevel,
+    required String diagnosisSource,
   }) async {
     final payload = {
+      'child_code': childCode,
       'name': name,
       'date_of_birth': dateOfBirth.millisecondsSinceEpoch,
+      'age_in_months': ageInMonths,
       'gender': gender.toLowerCase(),
       'language': language,
       'hospital_id': hospitalId,
+      'group': group.toJson(),
+      'asd_level': asdLevel?.toJson(),
+      'diagnosis_source': diagnosisSource,
     };
 
     try {
       final child = await ApiService.createChild(
+        childCode: childCode,
         name: name,
         dateOfBirth: dateOfBirth,
+        ageInMonths: ageInMonths,
         gender: gender,
         language: language,
         hospitalId: hospitalId,
+        group: group,
+        asdLevel: asdLevel,
+        diagnosisSource: diagnosisSource,
       );
       await _upsertChildLocal({
         'id': child['id'],
+        'child_code': child['child_code'] ?? childCode,
         'name': child['name'],
         'date_of_birth': child['date_of_birth'],
+        'age_in_months': child['age_in_months'] ?? ageInMonths,
         'gender': child['gender'],
         'language': child['language'],
         'age': child['age'] ?? age,
         'hospital_id': child['hospital_id'],
+        'study_group': child['group'] ?? group.toJson(),
+        'asd_level': child['asd_level'] ?? asdLevel?.toJson(),
+        'diagnosis_source': child['diagnosis_source'] ?? diagnosisSource,
         'created_at':
             child['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
       });
@@ -126,12 +188,17 @@ class StorageService {
       final offlineId = id ?? _offlineId('child');
       final localChild = {
         'id': offlineId,
+        'child_code': childCode,
         'name': name,
         'date_of_birth': dateOfBirth.millisecondsSinceEpoch,
+        'age_in_months': ageInMonths,
         'gender': gender,
         'language': language,
         'age': age,
         'hospital_id': hospitalId,
+        'study_group': group.toJson(),
+        'asd_level': asdLevel?.toJson(),
+        'diagnosis_source': diagnosisSource,
         'created_at': DateTime.now().millisecondsSinceEpoch,
       };
       await _upsertChildLocal(localChild);
@@ -146,38 +213,58 @@ class StorageService {
 
   static Future<Map<String, dynamic>?> updateChild({
     required String id,
+    required String childCode,
     required String name,
     required DateTime dateOfBirth,
+    required int ageInMonths,
     required String gender,
     required String language,
     double? age,
     String? hospitalId,
+    required ChildGroup group,
+    AsdLevel? asdLevel,
+    required String diagnosisSource,
   }) async {
     final payload = {
+      'child_code': childCode,
       'name': name,
       'date_of_birth': dateOfBirth.millisecondsSinceEpoch,
+      'age_in_months': ageInMonths,
       'gender': gender.toLowerCase(),
       'language': language,
       'hospital_id': hospitalId,
+      'group': group.toJson(),
+      'asd_level': asdLevel?.toJson(),
+      'diagnosis_source': diagnosisSource,
     };
 
     try {
       final updated = await ApiService.updateChild(
         id: id,
+        childCode: childCode,
         name: name,
         dateOfBirth: dateOfBirth,
+        ageInMonths: ageInMonths,
         gender: gender,
         language: language,
         hospitalId: hospitalId,
+        group: group,
+        asdLevel: asdLevel,
+        diagnosisSource: diagnosisSource,
       );
       await _upsertChildLocal({
         'id': updated['id'],
+        'child_code': updated['child_code'] ?? childCode,
         'name': updated['name'],
         'date_of_birth': updated['date_of_birth'],
+        'age_in_months': updated['age_in_months'] ?? ageInMonths,
         'gender': updated['gender'],
         'language': updated['language'],
         'age': updated['age'] ?? age ?? _calculateAge(dateOfBirth),
         'hospital_id': updated['hospital_id'],
+        'study_group': updated['group'] ?? group.toJson(),
+        'asd_level': updated['asd_level'] ?? asdLevel?.toJson(),
+        'diagnosis_source': updated['diagnosis_source'] ?? diagnosisSource,
         'created_at':
             updated['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
       });
@@ -185,12 +272,17 @@ class StorageService {
     } catch (_) {
       final localChild = {
         'id': id,
+        'child_code': childCode,
         'name': name,
         'date_of_birth': dateOfBirth.millisecondsSinceEpoch,
+        'age_in_months': ageInMonths,
         'gender': gender,
         'language': language,
         'age': age ?? _calculateAge(dateOfBirth),
         'hospital_id': hospitalId,
+        'study_group': group.toJson(),
+        'asd_level': asdLevel?.toJson(),
+        'diagnosis_source': diagnosisSource,
         'created_at': DateTime.now().millisecondsSinceEpoch,
       };
       await _upsertChildLocal(localChild);
@@ -209,12 +301,17 @@ class StorageService {
       final formatted = children
           .map((child) => {
                 'id': child['id'],
+                'child_code': child['child_code'] ?? child['name'],
                 'name': child['name'],
                 'date_of_birth': child['date_of_birth'],
+                'age_in_months': child['age_in_months'],
                 'gender': child['gender'],
                 'language': child['language'],
                 'age': child['age'],
                 'hospital_id': child['hospital_id'],
+                'study_group': child['group'],
+                'asd_level': child['asd_level'],
+                'diagnosis_source': child['diagnosis_source'],
                 'created_at': child['created_at'],
               })
           .toList();
@@ -230,12 +327,17 @@ class StorageService {
       final child = await ApiService.getChild(id);
       final mapped = {
         'id': child['id'],
+        'child_code': child['child_code'] ?? child['name'],
         'name': child['name'],
         'date_of_birth': child['date_of_birth'],
+        'age_in_months': child['age_in_months'],
         'gender': child['gender'],
         'language': child['language'],
         'age': child['age'],
         'hospital_id': child['hospital_id'],
+        'study_group': child['group'],
+        'asd_level': child['asd_level'],
+        'diagnosis_source': child['diagnosis_source'],
         'created_at': child['created_at'],
       };
       await _upsertChildLocal(mapped);

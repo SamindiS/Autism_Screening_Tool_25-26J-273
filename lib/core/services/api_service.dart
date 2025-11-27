@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../data/models/child.dart';
+
 class ApiService {
   // Default URLs for different platforms
   static const String _defaultEmulatorUrl =
@@ -195,13 +197,18 @@ class ApiService {
 
   // ==================== CHILDREN ====================
 
-  /// Create a new child
+  /// Create a new child with study profile fields
   static Future<Map<String, dynamic>> createChild({
+    required String childCode,
     required String name,
     required DateTime dateOfBirth,
+    required int ageInMonths,
     required String gender,
     required String language,
     String? hospitalId,
+    required ChildGroup group,
+    AsdLevel? asdLevel,
+    required String diagnosisSource,
   }) async {
     try {
       // Convert gender to lowercase to match backend validation
@@ -212,11 +219,16 @@ class ApiService {
         Uri.parse('$url/api/children'),
         headers: headers,
         body: jsonEncode({
+          'child_code': childCode,
           'name': name,
           'date_of_birth': dateOfBirth.millisecondsSinceEpoch,
+          'age_in_months': ageInMonths,
           'gender': normalizedGender,
           'language': language,
           'hospital_id': hospitalId,
+          'group': group.toJson(),
+          'asd_level': asdLevel?.toJson(),
+          'diagnosis_source': diagnosisSource,
         }),
       );
 
@@ -268,14 +280,19 @@ class ApiService {
     }
   }
 
-  /// Update child
+  /// Update child with study profile fields
   static Future<Map<String, dynamic>> updateChild({
     required String id,
+    required String childCode,
     required String name,
     required DateTime dateOfBirth,
+    required int ageInMonths,
     required String gender,
     required String language,
     String? hospitalId,
+    required ChildGroup group,
+    AsdLevel? asdLevel,
+    required String diagnosisSource,
   }) async {
     try {
       // Convert gender to lowercase to match backend validation
@@ -286,11 +303,16 @@ class ApiService {
         Uri.parse('$url/api/children/$id'),
         headers: headers,
         body: jsonEncode({
+          'child_code': childCode,
           'name': name,
           'date_of_birth': dateOfBirth.millisecondsSinceEpoch,
+          'age_in_months': ageInMonths,
           'gender': normalizedGender,
           'language': language,
           'hospital_id': hospitalId,
+          'group': group.toJson(),
+          'asd_level': asdLevel?.toJson(),
+          'diagnosis_source': diagnosisSource,
         }),
       );
 

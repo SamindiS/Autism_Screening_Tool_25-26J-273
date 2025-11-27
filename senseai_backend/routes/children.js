@@ -7,18 +7,34 @@ const childrenCollection = db.collection('children');
 const sessionsCollection = db.collection('sessions');
 const trialsCollection = db.collection('trials');
 
+// Updated schema with pilot study fields
 const childSchema = Joi.object({
-  name: Joi.string().min(2).max(100).required(),
+  child_code: Joi.string().min(1).max(50).optional(),
+  name: Joi.string().min(1).max(100).required(),
   date_of_birth: Joi.number().integer().positive().required(),
+  age_in_months: Joi.number().integer().min(0).optional(),
   gender: Joi.string().valid('male', 'female', 'other').required(),
   language: Joi.string().valid('en', 'si', 'ta').required(),
   hospital_id: Joi.string().allow(null, '').optional(),
   clinician_id: Joi.string().allow(null, '').optional(),
+  // Pilot study fields
+  group: Joi.string().valid('asd', 'typically_developing').optional(),
+  asd_level: Joi.string().valid('level_1', 'level_2', 'level_3', null).optional().allow(null),
+  diagnosis_source: Joi.string().max(200).optional(),
 });
 
 const calculateAge = (dobMs) => {
   const now = Date.now();
   return (now - dobMs) / (1000 * 60 * 60 * 24 * 365.25);
+};
+
+const calculateAgeInMonths = (dobMs) => {
+  const dob = new Date(dobMs);
+  const now = new Date();
+  let months = (now.getFullYear() - dob.getFullYear()) * 12;
+  months += now.getMonth() - dob.getMonth();
+  if (now.getDate() < dob.getDate()) months--;
+  return months;
 };
 
 const toChild = (doc) => ({
@@ -52,16 +68,29 @@ router.post('/', async (req, res) => {
 
     const now = Date.now();
     const child = {
-      ...value,
+      child_code: value.child_code || value.name,
+      name: value.name,
+      date_of_birth: value.date_of_birth,
+      age_in_months: value.age_in_months || calculateAgeInMonths(value.date_of_birth),
+      gender: value.gender,
+      language: value.language,
       age: value.date_of_birth ? calculateAge(value.date_of_birth) : null,
+      hospital_id: value.hospital_id || null,
+      clinician_id: value.clinician_id || null,
+      // Pilot study fields
+      group: value.group || 'typically_developing',
+      asd_level: value.asd_level || null,
+      diagnosis_source: value.diagnosis_source || 'Unknown',
       created_at: now,
       updated_at: now,
     };
 
     const ref = await childrenCollection.add(child);
     const snapshot = await ref.get();
+    console.log(`✅ Child created in Firebase: ${ref.id} (${child.child_code}, Group: ${child.group})`);
     res.status(201).json({ child: toChild(snapshot) });
   } catch (err) {
+    console.error('❌ Error creating child:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -115,15 +144,27 @@ router.put('/:id', async (req, res) => {
     }
 
     const update = {
-      ...value,
+      child_code: value.child_code || value.name,
+      name: value.name,
+      date_of_birth: value.date_of_birth,
+      age_in_months: value.age_in_months || calculateAgeInMonths(value.date_of_birth),
+      gender: value.gender,
+      language: value.language,
       age: value.date_of_birth ? calculateAge(value.date_of_birth) : null,
+      hospital_id: value.hospital_id || null,
+      // Pilot study fields
+      group: value.group || existing.data().group || 'typically_developing',
+      asd_level: value.asd_level || null,
+      diagnosis_source: value.diagnosis_source || existing.data().diagnosis_source || 'Unknown',
       updated_at: Date.now(),
     };
 
     await docRef.update(update);
     const updated = await docRef.get();
+    console.log(`✅ Child updated in Firebase: ${req.params.id} (Group: ${update.group})`);
     res.json({ child: toChild(updated) });
   } catch (err) {
+    console.error('❌ Error updating child:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -138,11 +179,12 @@ router.delete('/:id', async (req, res) => {
 
     await deleteSessionsForChild(req.params.id);
     await docRef.delete();
+    console.log(`✅ Child deleted from Firebase: ${req.params.id}`);
     res.json({ message: 'Child deleted successfully' });
   } catch (err) {
+    console.error('❌ Error deleting child:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
 module.exports = router;
-

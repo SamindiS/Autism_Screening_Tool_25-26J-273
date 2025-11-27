@@ -51,8 +51,8 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh data when returning to this screen
-    _loadData();
+    // Note: Data refresh is handled explicitly after navigation returns
+    // to avoid double-loading issues
   }
 
   Future<void> _loadData() async {
@@ -63,14 +63,21 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
       final childrenData = await StorageService.getAllChildren();
       _children = childrenData.map((data) {
         // Convert storage format to Child model
+        final dob = DateTime.fromMillisecondsSinceEpoch(data['date_of_birth'] as int);
+        final groupStr = data['study_group'] as String? ?? data['group'] as String? ?? 'typically_developing';
         return Child(
           id: data['id'] as String,
+          childCode: data['child_code'] as String? ?? data['name'] as String,
           name: data['name'] as String,
-          dateOfBirth: DateTime.fromMillisecondsSinceEpoch(data['date_of_birth'] as int),
+          dateOfBirth: dob,
+          ageInMonths: data['age_in_months'] as int? ?? _calculateAgeInMonths(dob),
           gender: data['gender'] as String,
           language: data['language'] as String,
           age: (data['age'] as num).toDouble(),
           createdAt: DateTime.fromMillisecondsSinceEpoch(data['created_at'] as int),
+          group: ChildGroup.fromJson(groupStr),
+          asdLevel: data['asd_level'] != null ? AsdLevel.fromJson(data['asd_level'] as String) : null,
+          diagnosisSource: data['diagnosis_source'] as String? ?? 'Unknown',
         );
       }).toList();
 
@@ -201,26 +208,31 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                 ),
               ),
               child: SafeArea(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header Card
-                      _buildHeaderCard(),
-                      const SizedBox(height: 24),
-                      // Statistics Cards
-                      _buildStatisticsCards(),
-                      const SizedBox(height: 24),
-                      // Quick Actions
-                      _buildQuickActions(),
-                      const SizedBox(height: 24),
-                      // Search Bar
-                      _buildSearchBar(),
-                      const SizedBox(height: 24),
-                      // Recent Children
-                      _buildRecentChildren(),
-                    ],
+                child: RefreshIndicator(
+                  onRefresh: _loadData,
+                  color: Colors.blue.shade600,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header Card
+                        _buildHeaderCard(),
+                        const SizedBox(height: 24),
+                        // Statistics Cards
+                        _buildStatisticsCards(),
+                        const SizedBox(height: 24),
+                        // Quick Actions
+                        _buildQuickActions(),
+                        const SizedBox(height: 24),
+                        // Search Bar
+                        _buildSearchBar(),
+                        const SizedBox(height: 24),
+                        // Recent Children
+                        _buildRecentChildren(),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -624,13 +636,14 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
               },
             ),
             TextButton(
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => const ChildListScreen(),
                   ),
                 );
+                _loadData(); // Refresh after returning
               },
               child: Builder(
                 builder: (context) {
@@ -701,13 +714,14 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
           if (_searchQuery.isEmpty) ...[
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => const AddChildScreen(),
                   ),
                 );
+                _loadData(); // Refresh after returning
               },
               icon: const Icon(Icons.add),
               label: Builder(
@@ -870,13 +884,14 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
           color: Colors.blue.shade700,
           size: 20,
         ),
-        onTap: () {
-          Navigator.push(
+        onTap: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => AgeSelectScreen(childId: child.id),
             ),
           );
+          _loadData(); // Refresh after assessment
         },
       ),
     );
@@ -896,5 +911,12 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
     } else {
       return '${date.day}/${date.month}/${date.year}';
     }
+  }
+
+  int _calculateAgeInMonths(DateTime dob) {
+    final now = DateTime.now();
+    int months = (now.year - dob.year) * 12 + (now.month - dob.month);
+    if (now.day < dob.day) months--;
+    return months;
   }
 }

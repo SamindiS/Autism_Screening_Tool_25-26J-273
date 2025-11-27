@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/services/storage_service.dart';
+import '../../data/models/child.dart';
 import 'age_select_screen.dart';
 
+/// Child Profile Screen for pilot study data collection
+/// 
+/// Captures:
+/// - Child code (e.g., LRH-027, PRE-112)
+/// - Age (in months)
+/// - Gender
+/// - Group (ASD or Typically Developing)
+/// - ASD Level (Level 1/2/3) - only shown for ASD group
+/// - Diagnosis source (hospital name or "Preschool screening")
 class AddChildScreen extends StatefulWidget {
   final Map<String, dynamic>? child;
 
@@ -14,12 +24,20 @@ class AddChildScreen extends StatefulWidget {
 
 class _AddChildScreenState extends State<AddChildScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _childCodeCtrl = TextEditingController();
   final _nameCtrl = TextEditingController();
   final _dobCtrl = TextEditingController();
+  final _diagnosisSourceCtrl = TextEditingController();
+  
   String? _selectedGender;
   String? _selectedLanguage = 'en';
   DateTime? _selectedDate;
   double? _calculatedAge;
+  int? _calculatedAgeInMonths;
+  
+  // Study-specific fields
+  ChildGroup _selectedGroup = ChildGroup.typicallyDeveloping;
+  AsdLevel? _selectedAsdLevel;
 
   final List<String> _genders = ['Male', 'Female', 'Other'];
   final Map<String, String> _languages = {
@@ -28,10 +46,22 @@ class _AddChildScreenState extends State<AddChildScreen> {
     'ta': 'Tamil',
   };
 
+  // Common diagnosis sources for quick selection
+  final List<String> _hospitalSources = [
+    'Lady Ridgeway Hospital',
+    'Ragama Teaching Hospital',
+    'Jaffna Teaching Hospital',
+    'National Hospital Colombo',
+    'Kandy Teaching Hospital',
+    'Other Hospital',
+  ];
+
   @override
   void dispose() {
+    _childCodeCtrl.dispose();
     _nameCtrl.dispose();
     _dobCtrl.dispose();
+    _diagnosisSourceCtrl.dispose();
     super.dispose();
   }
 
@@ -42,11 +72,15 @@ class _AddChildScreenState extends State<AddChildScreen> {
     super.initState();
     if (_isEditing) {
       _prefillChildData();
+    } else {
+      // Default to "Preschool screening" for control group
+      _diagnosisSourceCtrl.text = 'Preschool screening';
     }
   }
 
   void _prefillChildData() {
     final child = widget.child!;
+    _childCodeCtrl.text = child['child_code'] as String? ?? child['name'] as String? ?? '';
     _nameCtrl.text = child['name'] as String? ?? '';
 
     final dobMillis = child['date_of_birth'];
@@ -57,6 +91,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
       _calculatedAge = (child['age'] is num)
           ? (child['age'] as num).toDouble()
           : _calculateAgeFromDate(dob);
+      _calculatedAgeInMonths = child['age_in_months'] as int? ?? _calculateAgeInMonthsFromDate(dob);
     }
 
     final gender = (child['gender'] as String?) ?? '';
@@ -68,6 +103,20 @@ class _AddChildScreenState extends State<AddChildScreen> {
         match.isNotEmpty ? match : (gender.isEmpty ? null : gender);
 
     _selectedLanguage = (child['language'] as String?) ?? 'en';
+
+    // Load study-specific fields
+    final groupStr = child['study_group'] as String? ?? child['group'] as String?;
+    if (groupStr != null) {
+      _selectedGroup = ChildGroup.fromJson(groupStr);
+    }
+
+    final asdLevelStr = child['asd_level'] as String?;
+    if (asdLevelStr != null) {
+      _selectedAsdLevel = AsdLevel.fromJson(asdLevelStr);
+    }
+
+    _diagnosisSourceCtrl.text = child['diagnosis_source'] as String? ?? 
+        (_selectedGroup == ChildGroup.asd ? '' : 'Preschool screening');
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -80,7 +129,9 @@ class _AddChildScreenState extends State<AddChildScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
-              primary: Colors.orange,
+              primary: _selectedGroup == ChildGroup.asd 
+                  ? const Color(0xFF6366F1) // Indigo for ASD
+                  : const Color(0xFF10B981), // Emerald for TD
               onPrimary: Colors.white,
             ),
           ),
@@ -103,13 +154,34 @@ class _AddChildScreenState extends State<AddChildScreen> {
       final now = DateTime.now();
       final difference = now.difference(_selectedDate!);
       _calculatedAge = difference.inDays / 365.25;
+      _calculatedAgeInMonths = _calculateAgeInMonthsFromDate(_selectedDate!);
       setState(() {});
     }
+  }
+
+  int _calculateAgeInMonthsFromDate(DateTime dob) {
+    final now = DateTime.now();
+    int months = (now.year - dob.year) * 12 + (now.month - dob.month);
+    if (now.day < dob.day) months--;
+    return months;
   }
 
   double _calculateAgeFromDate(DateTime date) {
     final now = DateTime.now();
     return now.difference(date).inDays / 365.25;
+  }
+
+  void _onGroupChanged(ChildGroup? group) {
+    if (group == null) return;
+    setState(() {
+      _selectedGroup = group;
+      if (group == ChildGroup.typicallyDeveloping) {
+        _selectedAsdLevel = null;
+        _diagnosisSourceCtrl.text = 'Preschool screening';
+      } else {
+        _diagnosisSourceCtrl.text = '';
+      }
+    });
   }
 
   Future<void> _saveChild() async {
@@ -131,6 +203,13 @@ class _AddChildScreenState extends State<AddChildScreen> {
       return;
     }
 
+    if (_selectedGroup == ChildGroup.asd && _selectedAsdLevel == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select ASD level for ASD group')),
+      );
+      return;
+    }
+
     if (_isEditing) {
       await _updateChild();
     } else {
@@ -141,11 +220,18 @@ class _AddChildScreenState extends State<AddChildScreen> {
   Future<void> _createChild() async {
     try {
       final childData = await StorageService.saveChild(
-        name: _nameCtrl.text.trim(),
+        childCode: _childCodeCtrl.text.trim(),
+        name: _nameCtrl.text.trim().isNotEmpty 
+            ? _nameCtrl.text.trim() 
+            : _childCodeCtrl.text.trim(),
         dateOfBirth: _selectedDate!,
+        ageInMonths: _calculatedAgeInMonths!,
         gender: _selectedGender!,
         language: _selectedLanguage!,
         age: _calculatedAge!,
+        group: _selectedGroup,
+        asdLevel: _selectedGroup == ChildGroup.asd ? _selectedAsdLevel : null,
+        diagnosisSource: _diagnosisSourceCtrl.text.trim(),
       );
 
       final childId = (childData?['id'] as String?) ??
@@ -153,8 +239,10 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Child added successfully!'),
+        SnackBar(
+          content: Text(_selectedGroup == ChildGroup.asd 
+              ? 'ASD child profile added successfully!' 
+              : 'Control child profile added successfully!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -190,18 +278,25 @@ class _AddChildScreenState extends State<AddChildScreen> {
     try {
       await StorageService.updateChild(
         id: childId,
-        name: _nameCtrl.text.trim(),
+        childCode: _childCodeCtrl.text.trim(),
+        name: _nameCtrl.text.trim().isNotEmpty 
+            ? _nameCtrl.text.trim() 
+            : _childCodeCtrl.text.trim(),
         dateOfBirth: _selectedDate!,
+        ageInMonths: _calculatedAgeInMonths!,
         gender: _selectedGender!,
         language: _selectedLanguage!,
         age: _calculatedAge,
         hospitalId: widget.child?['hospital_id'] as String?,
+        group: _selectedGroup,
+        asdLevel: _selectedGroup == ChildGroup.asd ? _selectedAsdLevel : null,
+        diagnosisSource: _diagnosisSourceCtrl.text.trim(),
       );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Child updated successfully!'),
+          content: Text('Child profile updated successfully!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -217,13 +312,22 @@ class _AddChildScreenState extends State<AddChildScreen> {
     }
   }
 
+  Color get _primaryColor => _selectedGroup == ChildGroup.asd 
+      ? const Color(0xFF6366F1) // Indigo for ASD
+      : const Color(0xFF10B981); // Emerald for TD
+
+  Color get _lightColor => _selectedGroup == ChildGroup.asd 
+      ? const Color(0xFFE0E7FF) // Light indigo
+      : const Color(0xFFD1FAE5); // Light emerald
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Child' : 'Add New Child'),
-        backgroundColor: Colors.orange,
+        title: Text(_isEditing ? 'Edit Child Profile' : 'Add Child Profile'),
+        backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -231,47 +335,81 @@ class _AddChildScreenState extends State<AddChildScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.orange.shade50,
+              _lightColor,
               Colors.white,
             ],
           ),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
-                  _buildHeader(),
-                  const SizedBox(height: 32),
-                  // Name Field
+                  // Study Group Selector (Most Important - First)
+                  _buildGroupSelector(),
+                  const SizedBox(height: 24),
+                  
+                  // Info Banner
+                  _buildInfoBanner(),
+                  const SizedBox(height: 24),
+                  
+                  // Child Code Field
                   _buildTextField(
-                    controller: _nameCtrl,
-                    label: 'Child Name',
-                    icon: Icons.person_outline,
+                    controller: _childCodeCtrl,
+                    label: 'Child Code',
+                    hint: _selectedGroup == ChildGroup.asd ? 'e.g., LRH-027' : 'e.g., PRE-112',
+                    icon: Icons.badge_outlined,
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
-                        return 'Name is required';
+                        return 'Child code is required';
                       }
                       return null;
                     },
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+                  
+                  // Optional Name Field
+                  _buildTextField(
+                    controller: _nameCtrl,
+                    label: 'Child Name (Optional)',
+                    hint: 'For your reference only',
+                    icon: Icons.person_outline,
+                  ),
+                  const SizedBox(height: 16),
+                  
                   // Date of Birth
                   _buildDateField(),
-                  const SizedBox(height: 20),
-                  // Age Display
-                  if (_calculatedAge != null) _buildAgeDisplay(),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+                  
+                  // Age Display (in months and years)
+                  if (_calculatedAgeInMonths != null) _buildAgeDisplay(),
+                  const SizedBox(height: 16),
+                  
                   // Gender
                   _buildGenderSelector(),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+                  
+                  // ASD Level (only shown for ASD group)
+                  if (_selectedGroup == ChildGroup.asd) ...[
+                    _buildAsdLevelSelector(),
+                    const SizedBox(height: 16),
+                  ],
+                  
+                  // Diagnosis Source
+                  _buildDiagnosisSourceField(),
+                  const SizedBox(height: 16),
+                  
                   // Language
                   _buildLanguageSelector(),
                   const SizedBox(height: 32),
+                  
+                  // Summary Card
+                  _buildSummaryCard(),
+                  const SizedBox(height: 24),
+                  
                   // Save Button
                   _buildSaveButton(),
                 ],
@@ -283,24 +421,147 @@ class _AddChildScreenState extends State<AddChildScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildGroupSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Study Group',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade800,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildGroupOption(
+                group: ChildGroup.asd,
+                title: 'ASD Group',
+                subtitle: 'Clinical diagnosis',
+                icon: Icons.medical_services_outlined,
+                color: const Color(0xFF6366F1),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildGroupOption(
+                group: ChildGroup.typicallyDeveloping,
+                title: 'Control Group',
+                subtitle: 'Typically developing',
+                icon: Icons.school_outlined,
+                color: const Color(0xFF10B981),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGroupOption({
+    required ChildGroup group,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+  }) {
+    final isSelected = _selectedGroup == group;
+    return GestureDetector(
+      onTap: () => _onGroupChanged(group),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.1) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? color : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 32,
+              color: isSelected ? color : Colors.grey.shade400,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: isSelected ? color : Colors.grey.shade700,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 11,
+                color: isSelected ? color.withOpacity(0.8) : Colors.grey.shade500,
+              ),
+            ),
+            if (isSelected)
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Selected',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoBanner() {
+    final isAsd = _selectedGroup == ChildGroup.asd;
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.orange.shade100,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        color: _lightColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _primaryColor.withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline, color: Colors.orange.shade700),
+          Icon(
+            isAsd ? Icons.local_hospital : Icons.school,
+            color: _primaryColor,
+            size: 24,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Enter child details to start the assessment',
+              isAsd
+                  ? 'For children with existing autism diagnosis from a hospital/clinic'
+                  : 'For typically developing children from preschools (no diagnosis)',
               style: TextStyle(
-                color: Colors.orange.shade900,
-                fontSize: 14,
+                color: _primaryColor.withOpacity(0.9),
+                fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -313,6 +574,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
+    String? hint,
     required IconData icon,
     String? Function(String?)? validator,
   }) {
@@ -320,9 +582,14 @@ class _AddChildScreenState extends State<AddChildScreen> {
       controller: controller,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
+        hintText: hint,
+        prefixIcon: Icon(icon, color: _primaryColor),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _primaryColor, width: 2),
         ),
         filled: true,
         fillColor: Colors.white,
@@ -334,10 +601,11 @@ class _AddChildScreenState extends State<AddChildScreen> {
   Widget _buildDateField() {
     return InkWell(
       onTap: () => _selectDate(context),
+      borderRadius: BorderRadius.circular(12),
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: 'Date of Birth',
-          prefixIcon: const Icon(Icons.calendar_today),
+          prefixIcon: Icon(Icons.calendar_today, color: _primaryColor),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -357,25 +625,39 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
   Widget _buildAgeDisplay() {
     final ageYears = _calculatedAge!.floor();
-    final ageMonths = ((_calculatedAge! - ageYears) * 12).floor();
+    final ageMonthsRemaining = ((_calculatedAge! - ageYears) * 12).floor();
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.orange.shade50,
+        color: _lightColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        border: Border.all(color: _primaryColor.withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          Icon(Icons.cake, color: Colors.orange.shade700),
+          Icon(Icons.cake, color: _primaryColor),
           const SizedBox(width: 12),
-          Text(
-            'Age: ${ageYears} years ${ageMonths} months (${_calculatedAge!.toStringAsFixed(2)} years)',
-            style: TextStyle(
-              color: Colors.orange.shade900,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Age: ${_calculatedAgeInMonths} months',
+                  style: TextStyle(
+                    color: _primaryColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '($ageYears years and $ageMonthsRemaining months)',
+                  style: TextStyle(
+                    color: _primaryColor.withOpacity(0.7),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -406,7 +688,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
               onSelected: (selected) {
                 setState(() => _selectedGender = selected ? gender : null);
               },
-              selectedColor: Colors.orange,
+              selectedColor: _primaryColor,
               labelStyle: TextStyle(
                 color: isSelected ? Colors.white : Colors.black87,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -418,12 +700,223 @@ class _AddChildScreenState extends State<AddChildScreen> {
     );
   }
 
+  Widget _buildAsdLevelSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'ASD Level / Severity',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Required for ASD',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.red.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ...AsdLevel.values.map((level) => _buildAsdLevelOption(level)),
+      ],
+    );
+  }
+
+  Widget _buildAsdLevelOption(AsdLevel level) {
+    final isSelected = _selectedAsdLevel == level;
+    String description;
+    switch (level) {
+      case AsdLevel.level1:
+        description = 'Requiring support - Mild';
+        break;
+      case AsdLevel.level2:
+        description = 'Requiring substantial support - Moderate';
+        break;
+      case AsdLevel.level3:
+        description = 'Requiring very substantial support - Severe';
+        break;
+    }
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedAsdLevel = level),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? _primaryColor.withOpacity(0.1) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? _primaryColor : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Radio<AsdLevel>(
+              value: level,
+              groupValue: _selectedAsdLevel,
+              onChanged: (v) => setState(() => _selectedAsdLevel = v),
+              activeColor: _primaryColor,
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    level.shortName,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isSelected ? _primaryColor : Colors.black87,
+                    ),
+                  ),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDiagnosisSourceField() {
+    final isAsd = _selectedGroup == ChildGroup.asd;
+    
+    if (!isAsd) {
+      // For control group, show read-only field
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.school, color: Colors.grey.shade600),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Diagnosis Source',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const Text(
+                  'Preschool screening',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    // For ASD group, show dropdown with hospital options
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Diagnosis Source (Hospital)',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: _hospitalSources.contains(_diagnosisSourceCtrl.text) 
+              ? _diagnosisSourceCtrl.text 
+              : null,
+          decoration: InputDecoration(
+            prefixIcon: Icon(Icons.local_hospital, color: _primaryColor),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            hintText: 'Select hospital',
+          ),
+          items: _hospitalSources.map((source) {
+            return DropdownMenuItem(
+              value: source,
+              child: Text(source),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              if (value == 'Other Hospital') {
+                _diagnosisSourceCtrl.text = '';
+              } else {
+                _diagnosisSourceCtrl.text = value ?? '';
+              }
+            });
+          },
+          validator: (v) {
+            if (_selectedGroup == ChildGroup.asd && 
+                (v == null || v.isEmpty) && 
+                _diagnosisSourceCtrl.text.isEmpty) {
+              return 'Please select diagnosis source';
+            }
+            return null;
+          },
+        ),
+        if (_diagnosisSourceCtrl.text.isEmpty || 
+            !_hospitalSources.contains(_diagnosisSourceCtrl.text)) ...[
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _diagnosisSourceCtrl,
+            decoration: InputDecoration(
+              labelText: 'Or enter hospital name',
+              prefixIcon: Icon(Icons.edit, color: _primaryColor),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildLanguageSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Language',
+          'Preferred Language',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -434,7 +927,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
         DropdownButtonFormField<String>(
           value: _selectedLanguage,
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.language),
+            prefixIcon: Icon(Icons.language, color: _primaryColor),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -455,22 +948,98 @@ class _AddChildScreenState extends State<AddChildScreen> {
     );
   }
 
+  Widget _buildSummaryCard() {
+    if (_childCodeCtrl.text.isEmpty || _calculatedAgeInMonths == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _primaryColor.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: _primaryColor.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.preview, color: _primaryColor),
+              const SizedBox(width: 8),
+              Text(
+                'Profile Preview',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: _primaryColor,
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 24),
+          _buildSummaryRow('Child Code', _childCodeCtrl.text),
+          _buildSummaryRow('Age', '${_calculatedAgeInMonths} months'),
+          _buildSummaryRow('Gender', _selectedGender ?? '-'),
+          _buildSummaryRow('Group', _selectedGroup.displayName),
+          if (_selectedGroup == ChildGroup.asd)
+            _buildSummaryRow('ASD Level', _selectedAsdLevel?.shortName ?? '-'),
+          _buildSummaryRow('Source', _diagnosisSourceCtrl.text),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 13,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSaveButton() {
     return SizedBox(
       width: double.infinity,
       height: 56,
-      child: ElevatedButton(
+      child: ElevatedButton.icon(
         onPressed: _saveChild,
+        icon: const Icon(Icons.save),
+        label: Text(
+          _isEditing ? 'Update & Continue' : 'Save & Start Assessment',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange,
+          backgroundColor: _primaryColor,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-        ),
-        child: const Text(
-          'Save & Continue',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          elevation: 2,
         ),
       ),
     );

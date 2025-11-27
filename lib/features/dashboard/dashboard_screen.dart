@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/storage_service.dart';
+import '../../data/models/child.dart';
 import 'package:senseai/l10n/app_localizations.dart';
-import '../../widgets/language_selector.dart';
 import '../auth/login_screen.dart';
 import '../cognitive/cognitive_dashboard_screen.dart';
 import '../cognitive/add_child_screen.dart';
+import '../cognitive/child_list_screen.dart';
+import '../cognitive/age_select_screen.dart';
 import '../settings/settings_screen.dart';
 import 'widgets/stat_card.dart';
 import 'widgets/component_tile.dart';
@@ -33,6 +35,13 @@ class _DashboardScreenState extends State<DashboardScreen>
   int _completedAssessments = 0;
   int _pendingAssessments = 0;
   int _todayAssessments = 0;
+  
+  // Pilot Study Statistics
+  int _asdGroupCount = 0;
+  int _controlGroupCount = 0;
+  
+  // Children list for overview
+  List<Child> _recentChildren = [];
 
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -82,7 +91,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       final info = await AuthService.getClinicianInfo();
 
       // Load statistics
-      final children = await StorageService.getAllChildren();
+      final childrenData = await StorageService.getAllChildren();
       final sessions = await StorageService.getAllSessions();
 
       final today = DateTime.now();
@@ -96,6 +105,33 @@ class _DashboardScreenState extends State<DashboardScreen>
         return sessionDate.isAfter(todayStart);
       }).length;
 
+      // Convert to Child models and calculate study group stats
+      final children = childrenData.map((data) {
+        final dob = DateTime.fromMillisecondsSinceEpoch(data['date_of_birth'] as int);
+        final groupStr = data['study_group'] as String? ?? data['group'] as String? ?? 'typically_developing';
+        return Child(
+          id: data['id'] as String,
+          childCode: data['child_code'] as String? ?? data['name'] as String,
+          name: data['name'] as String,
+          dateOfBirth: dob,
+          ageInMonths: data['age_in_months'] as int? ?? _calculateAgeInMonths(dob),
+          gender: data['gender'] as String,
+          language: data['language'] as String,
+          age: (data['age'] as num).toDouble(),
+          createdAt: DateTime.fromMillisecondsSinceEpoch(data['created_at'] as int),
+          group: ChildGroup.fromJson(groupStr),
+          asdLevel: data['asd_level'] != null ? AsdLevel.fromJson(data['asd_level'] as String) : null,
+          diagnosisSource: data['diagnosis_source'] as String? ?? 'Unknown',
+        );
+      }).toList();
+
+      // Calculate study group counts
+      final asdCount = children.where((c) => c.isAsdGroup).length;
+      final controlCount = children.where((c) => c.isControlGroup).length;
+
+      // Get recent children (last 5)
+      final recentChildren = children.take(5).toList();
+
       if (mounted) {
         setState(() {
           _clinicianName = info['name'];
@@ -104,6 +140,9 @@ class _DashboardScreenState extends State<DashboardScreen>
           _completedAssessments = completed;
           _pendingAssessments = pending;
           _todayAssessments = todayCount;
+          _asdGroupCount = asdCount;
+          _controlGroupCount = controlCount;
+          _recentChildren = recentChildren;
           _loading = false;
           _errorMessage = null;
         });
@@ -360,9 +399,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                       hospital: _hospitalName,
                     ),
                     const SizedBox(height: 20),
-                    _buildStatisticsCards(isDark),
-                    const SizedBox(height: 24),
+                    // Assessment Components at the top
                     _buildComponentsSection(),
+                    const SizedBox(height: 20),
+                    _buildStatisticsCards(isDark),
+                    const SizedBox(height: 20),
+                    _buildPilotStudyStats(isDark),
+                    const SizedBox(height: 24),
+                    _buildRecentChildrenSection(isDark),
                     const SizedBox(height: 24),
                     _buildQuickActions(),
                     const SizedBox(height: 24),
@@ -480,13 +524,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                 Color(0xFF3B82F6),
                 Color(0xFF60A5FA),
               ],
-              onTap: () {
-                Navigator.push(
+              onTap: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => const CognitiveDashboardScreen(),
                   ),
                 );
+                _loadData(); // Refresh after returning
               },
             ),
             ComponentTile(
@@ -588,5 +633,345 @@ class _DashboardScreenState extends State<DashboardScreen>
         ),
       ],
     );
+  }
+
+  Widget _buildPilotStudyStats(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark 
+              ? [Colors.indigo.shade900, Colors.purple.shade900]
+              : [const Color(0xFF6366F1).withOpacity(0.1), const Color(0xFF10B981).withOpacity(0.1)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.indigo.shade700 : const Color(0xFF6366F1).withOpacity(0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.science, color: isDark ? Colors.white : const Color(0xFF6366F1)),
+              const SizedBox(width: 8),
+              Text(
+                'Pilot Study Progress',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF1F2937),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStudyGroupCard(
+                  title: 'ASD Group',
+                  count: _asdGroupCount,
+                  target: '30-50',
+                  color: const Color(0xFF6366F1),
+                  icon: Icons.medical_services,
+                  isDark: isDark,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStudyGroupCard(
+                  title: 'Control Group',
+                  count: _controlGroupCount,
+                  target: '40-60',
+                  color: const Color(0xFF10B981),
+                  icon: Icons.school,
+                  isDark: isDark,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStudyGroupCard({
+    required String title,
+    required int count,
+    required String target,
+    required Color color,
+    required IconData icon,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? color.withOpacity(0.2) : color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            '$count',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white70 : Colors.grey.shade700,
+            ),
+          ),
+          Text(
+            'Target: $target',
+            style: TextStyle(
+              fontSize: 10,
+              color: isDark ? Colors.white54 : Colors.grey.shade500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentChildrenSection(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xFF6366F1), Color(0xFF10B981)],
+                    ),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Recent Children',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : const Color(0xFF1F2937),
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
+            TextButton.icon(
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChildListScreen()),
+                );
+                _loadData();
+              },
+              icon: const Icon(Icons.list, size: 18),
+              label: const Text('View All'),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF0A7C7F),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (_recentChildren.isEmpty)
+          _buildEmptyChildrenState(isDark)
+        else
+          ..._recentChildren.map((child) => _buildChildCard(child, isDark)),
+      ],
+    );
+  }
+
+  Widget _buildEmptyChildrenState(bool isDark) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey.shade800 : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade700 : Colors.grey.shade200,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.child_care_outlined,
+            size: 48,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'No children added yet',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white70 : Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Add children to start pilot study data collection',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? Colors.white54 : Colors.grey.shade500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChildCard(Child child, bool isDark) {
+    final isAsd = child.isAsdGroup;
+    final primaryColor = isAsd ? const Color(0xFF6366F1) : const Color(0xFF10B981);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey.shade800 : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: primaryColor.withOpacity(0.3),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AgeSelectScreen(childId: child.id),
+            ),
+          );
+          _loadData();
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Avatar
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: primaryColor.withOpacity(0.3)),
+                ),
+                child: Icon(
+                  isAsd ? Icons.medical_services : Icons.school,
+                  color: primaryColor,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          child.childCode,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: primaryColor.withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            isAsd ? 'ASD' : 'Control',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: primaryColor,
+                            ),
+                          ),
+                        ),
+                        if (isAsd && child.asdLevel != null) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              child.asdLevel!.shortName,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.orange.shade800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${child.ageInMonths} months • ${child.gender}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white60 : Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.play_circle_fill,
+                color: primaryColor,
+                size: 28,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  int _calculateAgeInMonths(DateTime dob) {
+    final now = DateTime.now();
+    int months = (now.year - dob.year) * 12 + (now.month - dob.month);
+    if (now.day < dob.day) months--;
+    return months;
   }
 }

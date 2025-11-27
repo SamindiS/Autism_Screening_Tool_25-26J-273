@@ -43,8 +43,19 @@ class _ResultScreenState extends State<ResultScreen> {
     super.dispose();
   }
 
+  /// For control group children, always show low risk / no ASD concern
+  /// This is because they've been pre-screened as typically developing
+  String get _effectiveRiskLevel {
+    if (widget.child.isControlGroup) {
+      return 'control_low'; // Special level for control group
+    }
+    return widget.riskLevel ?? 'not_assessed';
+  }
+
   Color _getRiskColor() {
-    switch (widget.riskLevel) {
+    switch (_effectiveRiskLevel) {
+      case 'control_low':
+        return const Color(0xFF10B981); // Emerald green for control
       case 'low':
         return Colors.green;
       case 'moderate':
@@ -57,6 +68,9 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   String _getRiskLabel() {
+    if (widget.child.isControlGroup) {
+      return 'No ASD Concern';
+    }
     switch (widget.riskLevel) {
       case 'low':
         return 'Low Risk';
@@ -69,12 +83,32 @@ class _ResultScreenState extends State<ResultScreen> {
     }
   }
 
+  IconData _getRiskIcon() {
+    if (widget.child.isControlGroup) {
+      return Icons.verified; // Checkmark with shield for control
+    }
+    switch (widget.riskLevel) {
+      case 'low':
+        return Icons.check_circle;
+      case 'moderate':
+        return Icons.warning;
+      case 'high':
+        return Icons.error;
+      default:
+        return Icons.help_outline;
+    }
+  }
+
+  Color get _primaryColor => widget.child.isAsdGroup 
+      ? const Color(0xFF6366F1) 
+      : const Color(0xFF10B981);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Assessment Results'),
-        backgroundColor: Colors.orange,
+        backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
       ),
       body: Container(
@@ -83,7 +117,7 @@ class _ResultScreenState extends State<ResultScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.orange.shade50,
+              _primaryColor.withOpacity(0.1),
               Colors.white,
             ],
           ),
@@ -99,8 +133,11 @@ class _ResultScreenState extends State<ResultScreen> {
                     // Child Info Card
                     _buildChildInfoCard(),
                     const SizedBox(height: 24),
+                    // Study Group Badge
+                    _buildStudyGroupBadge(),
+                    const SizedBox(height: 24),
                     // Risk Level Card
-                    if (widget.riskLevel != null) _buildRiskCard(),
+                    _buildRiskCard(),
                     const SizedBox(height: 24),
                     // Questionnaire Results (for ages 2-3.5)
                     if (widget.questionnaireResults != null) _buildQuestionnaireCard(),
@@ -144,12 +181,12 @@ class _ResultScreenState extends State<ResultScreen> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.orange.shade600, Colors.orange.shade400],
+          colors: [_primaryColor, _primaryColor.withOpacity(0.7)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.orange.withOpacity(0.3),
+            color: _primaryColor.withOpacity(0.3),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -163,7 +200,11 @@ class _ResultScreenState extends State<ResultScreen> {
               color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.child_care, color: Colors.white, size: 32),
+            child: Icon(
+              widget.child.isAsdGroup ? Icons.medical_services : Icons.school,
+              color: Colors.white,
+              size: 32,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -171,16 +212,24 @@ class _ResultScreenState extends State<ResultScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.child.name,
+                  widget.child.childCode,
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
+                if (widget.child.name != widget.child.childCode)
+                  Text(
+                    widget.child.name,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
                 const SizedBox(height: 4),
                 Text(
-                  'Age: ${widget.child.age.toStringAsFixed(1)} years | ${widget.child.gender}',
+                  '${widget.child.ageInMonths} months | ${widget.child.gender}',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.white.withOpacity(0.9),
@@ -194,8 +243,60 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
+  Widget _buildStudyGroupBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: _primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _primaryColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            widget.child.isAsdGroup ? Icons.medical_services : Icons.school,
+            color: _primaryColor,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Study Group: ${widget.child.groupDisplayName}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: _primaryColor,
+                  ),
+                ),
+                if (widget.child.isAsdGroup && widget.child.asdLevel != null)
+                  Text(
+                    'ASD ${widget.child.asdLevelDisplayName}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: _primaryColor.withOpacity(0.8),
+                    ),
+                  ),
+                Text(
+                  'Source: ${widget.child.diagnosisSource}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRiskCard() {
     final riskColor = _getRiskColor();
+    final isControl = widget.child.isControlGroup;
+    
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -213,11 +314,7 @@ class _ResultScreenState extends State<ResultScreen> {
       child: Column(
         children: [
           Icon(
-            widget.riskLevel == 'low'
-                ? Icons.check_circle
-                : widget.riskLevel == 'moderate'
-                    ? Icons.warning
-                    : Icons.error,
+            _getRiskIcon(),
             size: 64,
             color: riskColor,
           ),
@@ -230,8 +327,24 @@ class _ResultScreenState extends State<ResultScreen> {
               color: riskColor,
             ),
           ),
-          if (widget.riskScore != null) ...[
-            const SizedBox(height: 8),
+          const SizedBox(height: 8),
+          if (isControl)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: riskColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Control Group - Typically Developing',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: riskColor,
+                ),
+              ),
+            )
+          else if (widget.riskScore != null)
             Text(
               'Risk Score: ${widget.riskScore!.toStringAsFixed(2)} / 5.0',
               style: TextStyle(
@@ -240,7 +353,30 @@ class _ResultScreenState extends State<ResultScreen> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-          ],
+          const SizedBox(height: 12),
+          // Pilot study data collection note
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.science, color: Colors.blue.shade700, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Data collected for pilot study research',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -271,7 +407,7 @@ class _ResultScreenState extends State<ResultScreen> {
               Icon(Icons.games, color: Colors.blue.shade700),
               const SizedBox(width: 12),
               const Text(
-                'Game Performance',
+                'DCCS Game Performance',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -406,19 +542,30 @@ class _ResultScreenState extends State<ResultScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          _buildMetricRow('Attention Level', '${data['attention_level']}/5', Colors.blue),
-          const SizedBox(height: 12),
-          _buildMetricRow('Engagement Level', '${data['engagement_level']}/5', Colors.green),
-          const SizedBox(height: 12),
-          _buildMetricRow('Frustration Tolerance', '${data['frustration_tolerance']}/5', Colors.orange),
-          const SizedBox(height: 12),
-          _buildMetricRow('Instruction Following', '${data['instruction_following']}/5', Colors.teal),
-          const SizedBox(height: 12),
-          _buildMetricRow('Overall Behavior', '${data['overall_behavior']}/5', Colors.purple),
-          const SizedBox(height: 12),
-          Divider(color: Colors.grey.shade300),
-          const SizedBox(height: 12),
-          _buildMetricRow('Average Reflection Score', '${(data['average_reflection_score'] as num).toStringAsFixed(2)}/5', Colors.indigo, isBold: true),
+          if (data['attention_level'] != null)
+            _buildMetricRow('Attention Level', '${data['attention_level']}/5', Colors.blue),
+          if (data['engagement_level'] != null) ...[
+            const SizedBox(height: 12),
+            _buildMetricRow('Engagement Level', '${data['engagement_level']}/5', Colors.green),
+          ],
+          if (data['frustration_tolerance'] != null) ...[
+            const SizedBox(height: 12),
+            _buildMetricRow('Frustration Tolerance', '${data['frustration_tolerance']}/5', Colors.orange),
+          ],
+          if (data['instruction_following'] != null) ...[
+            const SizedBox(height: 12),
+            _buildMetricRow('Instruction Following', '${data['instruction_following']}/5', Colors.teal),
+          ],
+          if (data['overall_behavior'] != null) ...[
+            const SizedBox(height: 12),
+            _buildMetricRow('Overall Behavior', '${data['overall_behavior']}/5', Colors.purple),
+          ],
+          if (data['average_reflection_score'] != null) ...[
+            const SizedBox(height: 12),
+            Divider(color: Colors.grey.shade300),
+            const SizedBox(height: 12),
+            _buildMetricRow('Average Reflection Score', '${(data['average_reflection_score'] as num).toStringAsFixed(2)}/5', Colors.indigo, isBold: true),
+          ],
         ],
       ),
     );
@@ -460,22 +607,34 @@ class _ResultScreenState extends State<ResultScreen> {
     String recommendation;
     Color recColor;
 
-    switch (widget.riskLevel) {
-      case 'low':
-        recommendation = 'The child shows typical development patterns. Continue regular monitoring.';
-        recColor = Colors.green;
-        break;
-      case 'moderate':
-        recommendation = 'The child shows some areas of concern. Recommend further evaluation and monitoring.';
-        recColor = Colors.orange;
-        break;
-      case 'high':
-        recommendation = 'The child shows significant indicators. Recommend comprehensive evaluation by a specialist.';
-        recColor = Colors.red;
-        break;
-      default:
-        recommendation = 'Assessment completed. Review results with clinical team.';
-        recColor = Colors.grey;
+    if (widget.child.isControlGroup) {
+      // Control group specific recommendation
+      recommendation = 'This child is part of the Control Group (typically developing). '
+          'The assessment data will be used as baseline comparison for the pilot study. '
+          'No concerns identified based on parent screening.';
+      recColor = const Color(0xFF10B981);
+    } else {
+      // ASD group recommendations based on risk level
+      switch (widget.riskLevel) {
+        case 'low':
+          recommendation = 'ASD Group child showing good performance. Continue monitoring and '
+              'document any changes in behavior patterns.';
+          recColor = Colors.green;
+          break;
+        case 'moderate':
+          recommendation = 'ASD Group child shows some areas requiring attention. Review specific '
+              'metrics with clinical team and consider targeted interventions.';
+          recColor = Colors.orange;
+          break;
+        case 'high':
+          recommendation = 'ASD Group child shows significant indicators consistent with diagnosis. '
+              'Data supports existing clinical assessment. Continue comprehensive support.';
+          recColor = Colors.red;
+          break;
+        default:
+          recommendation = 'Assessment completed for ASD Group child. Review results with clinical team.';
+          recColor = Colors.grey;
+      }
     }
 
     return Container(
@@ -495,7 +654,7 @@ class _ResultScreenState extends State<ResultScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Recommendation',
+                  widget.child.isControlGroup ? 'Control Group Note' : 'Clinical Note',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -534,7 +693,7 @@ class _ResultScreenState extends State<ResultScreen> {
             icon: const Icon(Icons.picture_as_pdf),
             label: const Text('Export PDF Report'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
+              backgroundColor: _primaryColor,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -553,8 +712,8 @@ class _ResultScreenState extends State<ResultScreen> {
             icon: const Icon(Icons.dashboard),
             label: const Text('Back to Dashboard'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.orange,
-              side: const BorderSide(color: Colors.orange, width: 2),
+              foregroundColor: _primaryColor,
+              side: BorderSide(color: _primaryColor, width: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),

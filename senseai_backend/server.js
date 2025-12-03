@@ -17,6 +17,8 @@ app.use('/api/children', require('./routes/children'));
 app.use('/api/sessions', require('./routes/sessions'));
 app.use('/api/trials', require('./routes/trials'));
 app.use('/api/clinicians', require('./routes/clinicians'));
+app.use('/api/ml', require('./routes/ml_predictions'));
+app.use('/api/export', require('./routes/export'));
 
 // Health check (required for tablet sync)
 app.get('/health', (req, res) => {

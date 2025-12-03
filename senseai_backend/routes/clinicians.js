@@ -47,15 +47,20 @@ router.post('/register', async (req, res) => {
   try {
     const { error, value } = registerSchema.validate(req.body);
     if (error) {
+      console.log('❌ Registration validation error:', error.details[0].message);
       return res.status(400).json({ error: error.details[0].message });
     }
 
     // Check if PIN is exactly 4 digits for clinicians
-    if (!/^\d{4}$/.test(value.pin)) {
+    const pin = String(value.pin).trim();
+    if (!/^\d{4}$/.test(pin)) {
+      console.log('❌ Registration failed: PIN must be exactly 4 digits');
       return res.status(400).json({ error: 'Clinician PIN must be exactly 4 digits' });
     }
 
-    const pinHash = await bcrypt.hash(value.pin, 10);
+    console.log(`📝 Registering clinician: ${value.name} from ${value.hospital}`);
+
+    const pinHash = await bcrypt.hash(pin, 10);
     const now = Date.now();
     const payload = {
       name: value.name,
@@ -68,11 +73,16 @@ router.post('/register', async (req, res) => {
     // Allow multiple clinicians - just add new one
     const ref = await collection.add(payload);
     const saved = await ref.get();
+    const clinicianData = docToClinician(saved);
+    
+    console.log('✅ Clinician registered successfully:', clinicianData.id);
+    
     res.status(201).json({
       message: 'Clinician registered successfully',
-      clinician: docToClinician(saved),
+      clinician: clinicianData,
     });
   } catch (err) {
+    console.error('❌ Registration error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -114,18 +124,35 @@ router.post('/login', async (req, res) => {
     const allClinicians = await collection.get();
     let matchedClinician = null;
 
+    // Use the validated PIN from Joi, or fallback to original pin
+    const pinToCompare = String(value.pin || pin).trim();
+    console.log(`🔍 Attempting login with PIN (length: ${pinToCompare.length})`);
+
     for (const doc of allClinicians.docs) {
       const data = doc.data();
-      const match = await bcrypt.compare(value.pin || pin, data.pin_hash);
+      
+      // Check if pin_hash exists
+      if (!data.pin_hash) {
+        console.log(`⚠️  Clinician ${doc.id} has no pin_hash`);
+        continue;
+      }
+
+      // Compare PIN
+      const match = await bcrypt.compare(pinToCompare, data.pin_hash);
       if (match) {
         matchedClinician = doc;
+        console.log(`✅ PIN match found for clinician: ${doc.id}`);
         break;
       }
     }
 
     if (!matchedClinician) {
+      console.log('❌ Login failed: Invalid PIN');
       return res.status(401).json({ error: 'Invalid PIN' });
     }
+
+    const clinicianData = docToClinician(matchedClinician);
+    console.log('✅ Login successful for clinician:', clinicianData.id, clinicianData.name);
 
     res.json({
       success: true,
@@ -133,7 +160,12 @@ router.post('/login', async (req, res) => {
       role: 'clinician',
       isAdmin: false,
       user: {
-        ...docToClinician(matchedClinician),
+        ...clinicianData,
+        role: 'clinician',
+      },
+      // Also include 'clinician' for backward compatibility with Flutter app
+      clinician: {
+        ...clinicianData,
         role: 'clinician',
       },
     });

@@ -124,7 +124,15 @@ class ApiService {
       _handleError(response);
 
       final data = jsonDecode(response.body);
-      return data['clinician'] as Map<String, dynamic>;
+      // Backend returns 'user' for both admin and clinician, but also includes 'clinician' for compatibility
+      // Try 'clinician' first (for backward compatibility), then 'user'
+      if (data.containsKey('clinician')) {
+        return data['clinician'] as Map<String, dynamic>;
+      } else if (data.containsKey('user')) {
+        return data['user'] as Map<String, dynamic>;
+      } else {
+        throw Exception('Invalid login response: missing clinician/user data');
+      }
     } catch (e) {
       debugPrint('Error logging in clinician: $e');
       rethrow;

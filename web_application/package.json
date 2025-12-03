@@ -1,0 +1,44 @@
+{
+  "name": "senseai-admin-portal",
+  "version": "1.0.0",
+  "description": "SenseAI Clinical Data Management Admin Portal",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.15.0",
+    "@mui/material": "^5.15.0",
+    "@mui/x-charts": "^6.19.0",
+    "@mui/x-data-grid": "^6.19.0",
+    "axios": "^1.6.5",
+    "date-fns": "^3.0.6",
+    "i18next": "^23.7.16",
+    "jspdf": "^2.5.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-i18next": "^14.0.0",
+    "react-router-dom": "^6.21.1",
+    "recharts": "^2.10.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^6.17.0",
+    "@typescript-eslint/parser": "^6.17.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11"
+  }
+}
+

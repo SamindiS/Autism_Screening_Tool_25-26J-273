@@ -5,16 +5,31 @@ export interface Clinician {
   name: string
   hospital: string
   created_at?: number
+  role?: 'admin' | 'clinician'
 }
 
-export const login = async (pin: string): Promise<{ success: boolean; clinician?: Clinician; error?: string }> => {
+export interface User {
+  id: string
+  name: string
+  hospital: string
+  role: 'admin' | 'clinician'
+}
+
+export const login = async (pin: string): Promise<{ success: boolean; user?: User; error?: string }> => {
   try {
     const response = await cliniciansApi.login(pin)
     if (response.data.success) {
-      const clinician = response.data.clinician
-      localStorage.setItem('authToken', 'authenticated') // Simple token for now
-      localStorage.setItem('clinician', JSON.stringify(clinician))
-      return { success: true, clinician }
+      const user = response.data.user || response.data.clinician
+      const userData: User = {
+        id: user.id,
+        name: user.name,
+        hospital: user.hospital,
+        role: response.data.role || 'clinician',
+      }
+      localStorage.setItem('authToken', 'authenticated')
+      localStorage.setItem('user', JSON.stringify(userData))
+      localStorage.setItem('role', userData.role)
+      return { success: true, user: userData }
     }
     return { success: false, error: 'Invalid PIN' }
   } catch (error: any) {
@@ -24,21 +39,34 @@ export const login = async (pin: string): Promise<{ success: boolean; clinician?
 
 export const logout = () => {
   localStorage.removeItem('authToken')
-  localStorage.removeItem('clinician')
+  localStorage.removeItem('user')
+  localStorage.removeItem('role')
 }
 
 export const isAuthenticated = (): boolean => {
   return !!localStorage.getItem('authToken')
 }
 
-export const getCurrentClinician = (): Clinician | null => {
-  const clinicianStr = localStorage.getItem('clinician')
-  if (clinicianStr) {
+export const getCurrentUser = (): User | null => {
+  const userStr = localStorage.getItem('user')
+  if (userStr) {
     try {
-      return JSON.parse(clinicianStr)
+      return JSON.parse(userStr)
     } catch {
       return null
     }
+  }
+  return null
+}
+
+export const isAdmin = (): boolean => {
+  return localStorage.getItem('role') === 'admin'
+}
+
+export const getCurrentClinician = (): Clinician | null => {
+  const user = getCurrentUser()
+  if (user && user.role === 'clinician') {
+    return user
   }
   return null
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -198,8 +199,11 @@ class StorageService {
         'created_at':
             child['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
       });
+      debugPrint('✅ Child saved to backend: ${child['id']}');
       return child;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('❌ Error saving child to backend: $e');
+      debugPrint('⚠️ Saving locally and queuing for sync...');
       final offlineId = id ?? _offlineId('child');
       final localChild = {
         'id': offlineId,
@@ -450,8 +454,11 @@ class StorageService {
         'metrics': jsonEncode(metrics ?? const {}),
         'created_at': session['created_at'],
       });
+      debugPrint('✅ Session saved to backend: ${session['id']}');
       return session;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('❌ Error saving session to backend: $e');
+      debugPrint('⚠️ Saving locally and queuing for sync...');
       final offlineId = id ?? _offlineId('session');
       final localSession = {
         'id': offlineId,

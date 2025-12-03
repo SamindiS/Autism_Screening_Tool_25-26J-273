@@ -217,31 +217,40 @@ class ApiService {
       final normalizedGender = gender.toLowerCase();
 
       final url = await baseUrl;
+      debugPrint('🌐 Creating child via API: $url/api/children');
+      final requestBody = {
+        'child_code': childCode,
+        'name': name,
+        'date_of_birth': dateOfBirth.millisecondsSinceEpoch,
+        'age_in_months': ageInMonths,
+        'gender': normalizedGender,
+        'language': language,
+        'hospital_id': hospitalId,
+        'group': group.toJson(),
+        'asd_level': asdLevel?.toJson(),
+        'diagnosis_source': diagnosisSource,
+        'clinician_id': clinicianId,
+        'clinician_name': clinicianName,
+      };
+      debugPrint('📤 Request body: ${jsonEncode(requestBody)}');
+      
       final response = await http.post(
         Uri.parse('$url/api/children'),
         headers: headers,
-        body: jsonEncode({
-          'child_code': childCode,
-          'name': name,
-          'date_of_birth': dateOfBirth.millisecondsSinceEpoch,
-          'age_in_months': ageInMonths,
-          'gender': normalizedGender,
-          'language': language,
-          'hospital_id': hospitalId,
-          'group': group.toJson(),
-          'asd_level': asdLevel?.toJson(),
-          'diagnosis_source': diagnosisSource,
-          'clinician_id': clinicianId,
-          'clinician_name': clinicianName,
-        }),
+        body: jsonEncode(requestBody),
       );
+
+      debugPrint('📥 Response status: ${response.statusCode}');
+      debugPrint('📥 Response body: ${response.body}');
 
       _handleError(response);
 
       final data = jsonDecode(response.body);
+      debugPrint('✅ Child created successfully: ${data['child']?['id']}');
       return data['child'] as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('Error creating child: $e');
+      debugPrint('❌ Error creating child: $e');
+      debugPrint('❌ Error type: ${e.runtimeType}');
       rethrow;
     }
   }
@@ -368,30 +377,39 @@ class ApiService {
   }) async {
     try {
       final url = await baseUrl;
+      debugPrint('🌐 Creating session via API: $url/api/sessions');
+      final requestBody = {
+        'child_id': childId,
+        'session_type': sessionType,
+        'age_group': ageGroup,
+        'start_time': startTime.millisecondsSinceEpoch,
+        'end_time': endTime?.millisecondsSinceEpoch,
+        'metrics': metrics,
+        'game_results': gameResults,
+        'questionnaire_results': questionnaireResults,
+        'reflection_results': reflectionResults,
+        'risk_score': riskScore,
+        'risk_level': riskLevel,
+      };
+      debugPrint('📤 Request body: ${jsonEncode(requestBody)}');
+      
       final response = await http.post(
         Uri.parse('$url/api/sessions'),
         headers: headers,
-        body: jsonEncode({
-          'child_id': childId,
-          'session_type': sessionType,
-          'age_group': ageGroup,
-          'start_time': startTime.millisecondsSinceEpoch,
-          'end_time': endTime?.millisecondsSinceEpoch,
-          'metrics': metrics,
-          'game_results': gameResults,
-          'questionnaire_results': questionnaireResults,
-          'reflection_results': reflectionResults,
-          'risk_score': riskScore,
-          'risk_level': riskLevel,
-        }),
+        body: jsonEncode(requestBody),
       );
+
+      debugPrint('📥 Response status: ${response.statusCode}');
+      debugPrint('📥 Response body: ${response.body}');
 
       _handleError(response);
 
       final data = jsonDecode(response.body);
+      debugPrint('✅ Session created successfully: ${data['session']?['id']}');
       return data['session'] as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('Error creating session: $e');
+      debugPrint('❌ Error creating session: $e');
+      debugPrint('❌ Error type: ${e.runtimeType}');
       rethrow;
     }
   }

@@ -48,8 +48,10 @@ const deleteTrialsForSession = async (sessionId) => {
 
 router.post('/', async (req, res) => {
   try {
+    console.log('📥 Received session creation request:', JSON.stringify(req.body, null, 2));
     const { error, value } = sessionSchema.validate(req.body);
     if (error) {
+      console.error('❌ Validation error:', error.details[0].message);
       return res.status(400).json({ error: error.details[0].message });
     }
 
@@ -66,8 +68,10 @@ router.post('/', async (req, res) => {
 
     const ref = await sessionsCollection.add(session);
     const saved = await ref.get();
+    console.log(`✅ Session created in Firebase: ${ref.id} (Type: ${session.session_type}, Child: ${session.child_id})`);
     res.status(201).json({ session: toSession(saved) });
   } catch (err) {
+    console.error('❌ Error creating session:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -85,10 +89,29 @@ router.get('/child/:childId', async (req, res) => {
   }
 });
 
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const snap = await sessionsCollection.orderBy('created_at', 'desc').get();
-    const sessions = snap.docs.map(toSession);
+    const sessionType = req.query.type; // Filter by session type (e.g., 'color_shape', 'frog_jump')
+    const hospital = req.query.hospital; // Filter by hospital (via child's hospital)
+    
+    let query = sessionsCollection.orderBy('created_at', 'desc');
+    
+    if (sessionType) {
+      query = sessionsCollection.where('session_type', '==', sessionType).orderBy('created_at', 'desc');
+    }
+    
+    const snap = await query.get();
+    let sessions = snap.docs.map(toSession);
+    
+    // Filter by hospital if provided
+    if (hospital) {
+      const childIds = new Set();
+      const childrenSnap = await childrenCollection.where('diagnosis_source', '==', hospital).get();
+      childrenSnap.docs.forEach(doc => childIds.add(doc.id));
+      
+      sessions = sessions.filter(s => childIds.has(s.child_id));
+    }
+    
     res.json({ count: sessions.length, sessions });
   } catch (err) {
     res.status(500).json({ error: err.message });

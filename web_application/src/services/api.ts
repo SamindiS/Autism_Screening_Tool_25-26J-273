@@ -45,7 +45,13 @@ export const childrenApi = {
 
 // Sessions API
 export const sessionsApi = {
-  getAll: () => api.get('/api/sessions'),
+  getAll: (type?: string, hospital?: string) => {
+    const params = new URLSearchParams()
+    if (type) params.append('type', type)
+    if (hospital) params.append('hospital', hospital)
+    const query = params.toString()
+    return api.get(`/api/sessions${query ? `?${query}` : ''}`)
+  },
   getById: (id: string) => api.get(`/api/sessions/${id}`),
   getByChild: (childId: string) => api.get(`/api/sessions/child/${childId}`),
   create: (data: any) => api.post('/api/sessions', data),
@@ -58,6 +64,15 @@ export const cliniciansApi = {
   login: (pin: string) => api.post('/api/clinicians/login', { pin }),
   getCurrent: () => api.get('/api/clinicians/me'),
   register: (data: any) => api.post('/api/clinicians/register', data),
+  getAll: (hospital?: string) => {
+    const url = hospital 
+      ? `/api/clinicians?hospital=${encodeURIComponent(hospital)}`
+      : '/api/clinicians'
+    return api.get(url)
+  },
+  getById: (id: string) => api.get(`/api/clinicians/${id}`),
+  update: (id: string, data: any) => api.put(`/api/clinicians/${id}`, data),
+  delete: (id: string) => api.delete(`/api/clinicians/${id}`),
 }
 
 // Trials API

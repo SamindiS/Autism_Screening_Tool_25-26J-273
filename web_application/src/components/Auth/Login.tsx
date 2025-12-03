@@ -26,14 +26,17 @@ const Login = () => {
     setLoading(true)
 
     try {
+      // Allow admin123 or any PIN - let backend handle validation
       const result = await login(pin)
       if (result.success) {
         navigate('/dashboard')
       } else {
         setError(result.error || t('invalid_pin'))
       }
-    } catch (err) {
-      setError(t('error_occurred'))
+    } catch (err: any) {
+      console.error('Login error:', err)
+      const errorMessage = err?.response?.data?.error || err?.message || t('error_occurred')
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -69,11 +72,17 @@ const Login = () => {
               label={t('pin')}
               type="password"
               value={pin}
-              onChange={(e) => setPin(e.target.value)}
+              onChange={(e) => {
+                setPin(e.target.value)
+                setError('') // Clear error when typing
+              }}
               margin="normal"
               required
-              inputProps={{ maxLength: 4, pattern: '[0-9]*' }}
+              helperText="Enter PIN: admin123 (admin) or 4-digit PIN (clinician)"
               autoFocus
+              inputProps={{
+                maxLength: 20, // Allow up to 20 characters for admin123
+              }}
             />
 
             <Button
@@ -81,7 +90,7 @@ const Login = () => {
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
-              disabled={loading || pin.length !== 4}
+              disabled={loading || pin.length === 0}
             >
               {loading ? <CircularProgress size={24} /> : t('login')}
             </Button>

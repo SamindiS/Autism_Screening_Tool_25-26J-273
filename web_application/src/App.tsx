@@ -5,8 +5,13 @@ import Login from './components/Auth/Login'
 import Dashboard from './components/Dashboard/Dashboard'
 import Children from './components/Children/Children'
 import ChildDetails from './components/Children/ChildDetails'
+import Cognitive from './components/Cognitive/Cognitive'
+import CognitiveDashboard from './components/Cognitive/CognitiveDashboard'
 import Sessions from './components/Sessions/Sessions'
 import SessionDetails from './components/Sessions/SessionDetails'
+import Doctors from './components/Doctors/Doctors'
+import DoctorDetails from './components/Doctors/DoctorDetails'
+import DoctorChildRelations from './components/Admin/DoctorChildRelations'
 import Export from './components/Export/Export'
 import Settings from './components/Settings/Settings'
 import Layout from './components/Layout/Layout'
@@ -50,8 +55,15 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="children" element={<Children />} />
             <Route path="children/:id" element={<ChildDetails />} />
+            <Route path="cognitive" element={<CognitiveDashboard />} />
+            <Route path="rrb" element={<CognitiveDashboard />} />
+            <Route path="auditory" element={<CognitiveDashboard />} />
+            <Route path="visual" element={<CognitiveDashboard />} />
             <Route path="sessions" element={<Sessions />} />
             <Route path="sessions/:id" element={<SessionDetails />} />
+            <Route path="doctors" element={<Doctors />} />
+            <Route path="doctors/:id" element={<DoctorDetails />} />
+            <Route path="admin/doctor-relations" element={<DoctorChildRelations />} />
             <Route path="export" element={<Export />} />
             <Route path="settings" element={<Settings />} />
           </Route>

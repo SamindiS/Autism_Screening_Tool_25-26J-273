@@ -63,8 +63,10 @@ const deleteSessionsForChild = async (childId) => {
 
 router.post('/', async (req, res) => {
   try {
+    console.log('📥 Received child creation request:', JSON.stringify(req.body, null, 2));
     const { error, value } = childSchema.validate(req.body);
     if (error) {
+      console.error('❌ Validation error:', error.details[0].message);
       return res.status(400).json({ error: error.details[0].message });
     }
 

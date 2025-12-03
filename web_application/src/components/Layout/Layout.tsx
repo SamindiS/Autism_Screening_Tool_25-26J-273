@@ -25,9 +25,11 @@ import {
   Menu as MenuIcon,
   Language as LanguageIcon,
   Logout as LogoutIcon,
+  Psychology as PsychologyIcon,
+  PersonSearch as PersonSearchIcon,
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
-import { logout, getCurrentClinician } from '../../services/auth'
+import { logout, getCurrentUser, isAdmin } from '../../services/auth'
 
 const drawerWidth = 240
 
@@ -38,12 +40,18 @@ const Layout = () => {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [langAnchor, setLangAnchor] = useState<null | HTMLElement>(null)
 
-  const clinician = getCurrentClinician()
+  const user = getCurrentUser()
+  const admin = isAdmin()
 
   const menuItems = [
     { text: t('dashboard'), icon: <DashboardIcon />, path: '/dashboard' },
     { text: t('children'), icon: <PeopleIcon />, path: '/children' },
+    { text: t('cognitive'), icon: <PsychologyIcon />, path: '/cognitive' },
     { text: t('sessions'), icon: <AssessmentIcon />, path: '/sessions' },
+    ...(admin ? [
+      { text: t('clinicians_list'), icon: <PersonSearchIcon />, path: '/doctors' },
+      { text: t('doctor_relations'), icon: <PersonSearchIcon />, path: '/admin/doctor-relations' },
+    ] : []),
     { text: t('export'), icon: <ExportIcon />, path: '/export' },
     { text: t('settings'), icon: <SettingsIcon />, path: '/settings' },
   ]
@@ -115,9 +123,9 @@ const Layout = () => {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             {t('app_name')}
           </Typography>
-          {clinician && (
+          {user && (
             <Typography variant="body2" sx={{ mr: 2 }}>
-              {clinician.name}
+              {user.name} {admin && '(Admin)'}
             </Typography>
           )}
           <IconButton color="inherit" onClick={handleLanguageClick}>

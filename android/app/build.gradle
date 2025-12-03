@@ -24,7 +24,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.example.my_autism_app"  // Required for AGP 8.0+
-    compileSdkVersion 34  // Compile against latest SDK for plugin compatibility
+    compileSdkVersion 36  // Compile against latest SDK for plugin compatibility
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

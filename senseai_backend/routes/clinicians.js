@@ -17,9 +17,13 @@ const registerSchema = Joi.object({
 
 const loginSchema = Joi.object({
   pin: Joi.string()
-    .pattern(/^\d{4}$/)
+    .min(4)
+    .max(20)
     .required()
-    .messages({ 'string.pattern.base': 'PIN must be exactly 4 digits' }),
+    .messages({ 
+      'string.min': 'PIN must be at least 4 characters',
+      'any.required': 'PIN is required'
+    }),
 });
 
 const docToClinician = (doc) => {
@@ -46,6 +50,11 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
+    // Check if PIN is exactly 4 digits for clinicians
+    if (!/^\d{4}$/.test(value.pin)) {
+      return res.status(400).json({ error: 'Clinician PIN must be exactly 4 digits' });
+    }
+
     const pinHash = await bcrypt.hash(value.pin, 10);
     const now = Date.now();
     const payload = {
@@ -56,16 +65,7 @@ router.post('/register', async (req, res) => {
       updated_at: now,
     };
 
-    const existing = await getSingleClinician();
-    if (existing) {
-      await existing.ref.update({ ...payload, created_at: existing.data().created_at });
-      const updated = await existing.ref.get();
-      return res.json({
-        message: 'Clinician updated successfully',
-        clinician: docToClinician(updated),
-      });
-    }
-
+    // Allow multiple clinicians - just add new one
     const ref = await collection.add(payload);
     const saved = await ref.get();
     res.status(201).json({
@@ -79,26 +79,96 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   try {
-    const { error, value } = loginSchema.validate(req.body);
+    // Get PIN from request body
+    const pin = req.body?.pin || req.body;
+    
+    // Check if PIN is provided
+    if (!pin) {
+      return res.status(400).json({ error: 'PIN is required' });
+    }
+
+    // Check if admin login FIRST (before any validation) - this bypasses all validation
+    if (pin === 'admin123') {
+      console.log('✅ Admin login detected');
+      return res.json({
+        success: true,
+        message: 'Admin login successful',
+        role: 'admin',
+        isAdmin: true,
+        user: {
+          id: 'admin',
+          name: 'Administrator',
+          hospital: 'All Hospitals',
+          role: 'admin',
+        },
+      });
+    }
+
+    // Validate for regular clinician login (only if not admin)
+    const { error, value } = loginSchema.validate({ pin });
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const clinicianDoc = await getSingleClinician();
-    if (!clinicianDoc) {
-      return res.status(404).json({ error: 'No clinician registered. Please register first.' });
+    // Regular clinician login - check all clinicians
+    const allClinicians = await collection.get();
+    let matchedClinician = null;
+
+    for (const doc of allClinicians.docs) {
+      const data = doc.data();
+      const match = await bcrypt.compare(value.pin || pin, data.pin_hash);
+      if (match) {
+        matchedClinician = doc;
+        break;
+      }
     }
 
-    const match = await bcrypt.compare(value.pin, clinicianDoc.data().pin_hash);
-    if (!match) {
+    if (!matchedClinician) {
       return res.status(401).json({ error: 'Invalid PIN' });
     }
 
     res.json({
       success: true,
       message: 'Login successful',
-      clinician: docToClinician(clinicianDoc),
+      role: 'clinician',
+      isAdmin: false,
+      user: {
+        ...docToClinician(matchedClinician),
+        role: 'clinician',
+      },
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all clinicians (for admin)
+router.get('/', async (req, res) => {
+  try {
+    const hospital = req.query.hospital; // Optional filter by hospital
+    let query = collection.orderBy('created_at', 'desc');
+    
+    if (hospital) {
+      query = collection.where('hospital', '==', hospital).orderBy('created_at', 'desc');
+    }
+    
+    const snap = await query.get();
+    const clinicians = snap.docs.map(doc => docToClinician(doc));
+    
+    res.json({ count: clinicians.length, clinicians });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get single clinician by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const doc = await collection.doc(req.params.id).get();
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Clinician not found' });
+    }
+    res.json({ clinician: docToClinician(doc) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -48,6 +48,13 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
   bool _feedbackIsCorrect = false;
   Timer? _responseTimeout;
   Timer? _feedbackTimer;
+  
+  // Session time limit (5 minutes max for ASD-friendly screening)
+  // Clinical best practice: Short sessions reduce fatigue and improve data quality
+  static const int _maxSessionDurationSec = 300; // 5 minutes
+  int _timeRemaining = _maxSessionDurationSec;
+  Timer? _sessionTimer;
+  bool _showTimeWarning = false;
 
   // Session
   String? _sessionId;
@@ -104,7 +111,12 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
       _isProcessing = false;
       _showFeedback = false;
       _sessionStartTime = DateTime.now();
+      _timeRemaining = _maxSessionDurationSec;
+      _showTimeWarning = false;
     });
+
+    // Start session timer (5-minute limit for ASD-friendly screening)
+    _startSessionTimer();
 
     final localizations = AppLocalizations.of(context)!;
     _showNotification(localizations.greatJob, true);
@@ -114,6 +126,53 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
         _nextTrial();
       }
     });
+  }
+
+  void _startSessionTimer() {
+    _sessionTimer?.cancel();
+    _sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _timeRemaining--;
+        
+        // Show warning at 1 minute remaining
+        if (_timeRemaining == 60 && !_showTimeWarning) {
+          _showTimeWarning = true;
+          _showNotification('1 minute remaining!', false);
+        }
+        
+        // Time's up - end game gracefully
+        if (_timeRemaining <= 0) {
+          timer.cancel();
+          _endGameDueToTimeout();
+        }
+      });
+    });
+  }
+
+  void _endGameDueToTimeout() {
+    _responseTimeout?.cancel();
+    _feedbackTimer?.cancel();
+    _sessionTimer?.cancel();
+    
+    _showNotification('Time complete! Great job! 🎉', true);
+    
+    setState(() {
+      _gamePhase = 'complete';
+      _isProcessing = false;
+      _showFeedback = false;
+    });
+
+    _saveResults();
+  }
+
+  String _formatTime(int seconds) {
+    final minutes = seconds ~/ 60;
+    final secs = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 
   void _nextTrial() {
@@ -387,6 +446,7 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
   void dispose() {
     _responseTimeout?.cancel();
     _feedbackTimer?.cancel();
+    _sessionTimer?.cancel();
     GameSpeechService.stop();
     GameAudioService.stopBackgroundMusic();
     super.dispose();
@@ -461,6 +521,7 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
         ),
         child: Center(
           child: GameLanguageSelector(
+            gameType: 'frog-jump',
             onLanguageSelected: (languageCode) {
               setState(() {
                 _selectedLanguage = languageCode;
@@ -638,6 +699,40 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => Navigator.pop(context),
           ),
+          // Timer display (ASD-friendly: max 5 minutes)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: _timeRemaining <= 60 
+                  ? Colors.red.withOpacity(0.8) 
+                  : Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(
+                color: _timeRemaining <= 60 ? Colors.red : Colors.white, 
+                width: 3,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.timer, 
+                  color: _timeRemaining <= 60 ? Colors.white : const Color(0xFFFF6B9D),
+                  size: 22,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _formatTime(_timeRemaining),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: _timeRemaining <= 60 ? Colors.white : const Color(0xFFFF6B9D),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Score display
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(

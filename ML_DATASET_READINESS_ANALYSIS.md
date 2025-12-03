@@ -519,6 +519,36 @@ cfi = (post_switch_accuracy + mixed_accuracy) / 2 - (perseverative_rate * 0.5)
 
 ---
 
+---
+
+## 🏥 CLINICAL BEST PRACTICES IMPLEMENTED
+
+### Session Time Limits (ASD-Friendly)
+
+| Assessment | Max Duration | Reason |
+|------------|--------------|--------|
+| **DCCS Game** (5.5-6+) | 5 minutes | Prevents fatigue, maintains data quality |
+| **Frog Jump** (3.5-5) | 5 minutes | Avoids over-stimulation |
+| **Questionnaire** (2-3.5) | ~10 minutes | Parent-led, flexible timing |
+
+### Why 5-Minute Limit?
+
+1. **Fatigue Prevention**: ASD children tire quickly during structured tasks
+2. **Attention Span**: Optimal engagement is 3-5 minutes for this age
+3. **Data Quality**: Longer sessions = more random responses
+4. **Ethical Practice**: Minimize stress on children
+5. **Addiction Prevention**: Short sessions discourage over-engagement
+
+### Timer Features Implemented
+
+- ✅ Countdown timer displayed during games
+- ✅ 1-minute warning notification
+- ✅ Graceful session end at timeout
+- ✅ All data saved even if timeout occurs
+- ✅ Red warning color when <1 minute remaining
+
+---
+
 ## Summary
 
 ### Ready ✅
@@ -528,6 +558,7 @@ cfi = (post_switch_accuracy + mixed_accuracy) / 2 - (perseverative_rate * 0.5)
 - Questionnaire ML features (complete) - Age 2-3.5
 - Clinical reflection data (complete)
 - Data storage infrastructure (complete)
+- **Session time limits (5 min)** - Age 3.5-6+ games
 
 ### Missing ❌
 - CSV Export Service (create new)

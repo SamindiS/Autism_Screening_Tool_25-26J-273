@@ -469,6 +469,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
   Widget build(BuildContext context) {
     if (_gamePhase == 'language') {
       return GameLanguageSelector(
+        gameType: 'color-shape',
         onLanguageSelected: (language) async {
           await _initializeWithLanguage(language);
           setState(() {

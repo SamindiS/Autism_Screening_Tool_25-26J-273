@@ -1,6 +1,7 @@
 // lib/features/assessment/games/color_shape_game/services/game_speech_service.dart
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 
 /// Speech service for DCCS (Dimensional Change Card Sort) game
 /// Provides calm, clear voice instructions for children
@@ -8,6 +9,7 @@ class GameSpeechService {
   static final FlutterTts _tts = FlutterTts();
   static bool _initialized = false;
   static bool _speechEnabled = true;
+  static Completer<void>? _speechCompleter;
 
   /// Initializes the calmest, clearest voice for children with autism
   static Future<void> initialize({String language = 'en'}) async {
@@ -43,6 +45,13 @@ class GameSpeechService {
         await _tts.setLanguage('en-US');
       }
 
+      // Set up completion handler to properly wait for speech to finish
+      _tts.setCompletionHandler(() {
+        if (_speechCompleter != null && !_speechCompleter!.isCompleted) {
+          _speechCompleter!.complete();
+        }
+      });
+
       _initialized = true;
       debugPrint('DCCS Speech ready! Language: $ttsLanguage');
     } catch (e) {
@@ -52,7 +61,43 @@ class GameSpeechService {
   }
 
   static Future<void> setLanguage(String language) async {
-    await initialize(language: language);
+    if (!_initialized) {
+      await initialize(language: language);
+      return;
+    }
+    
+    // Just update the language without re-initializing everything
+    try {
+      String ttsLanguage;
+      switch (language) {
+        case 'si':
+          ttsLanguage = 'si-LK';
+          break;
+        case 'ta':
+          ttsLanguage = 'ta-IN';
+          break;
+        case 'en':
+        default:
+          ttsLanguage = 'en-US';
+          break;
+      }
+
+      final languages = await _tts.getLanguages;
+      if (languages.contains(ttsLanguage)) {
+        await _tts.setLanguage(ttsLanguage);
+        // Slightly slower rate for Sinhala/Tamil to ensure clarity
+        if (language == 'si' || language == 'ta') {
+          await _tts.setSpeechRate(0.38); // Even slower for non-English
+        } else {
+          await _tts.setSpeechRate(0.42); // Normal slow rate for English
+        }
+        debugPrint('Language set to: $ttsLanguage');
+      } else {
+        debugPrint('Language $ttsLanguage not available');
+      }
+    } catch (e) {
+      debugPrint('Error setting language: $e');
+    }
   }
 
   // ================================================
@@ -63,16 +108,19 @@ class GameSpeechService {
   static Future<void> speakInstructions(String language) async {
     if (!_speechEnabled || !_initialized) return;
     await _tts.stop();
+    
+    // Ensure language is set before speaking
+    await setLanguage(language);
 
     String text;
     switch (language) {
       case 'si':
         text = '''
 හායි පුංචි යාළුවා...
-අපි සෙල්ලමක්  කරමු...
-මේ තියෙන්නේ රතු  රවුමකුයි නිල් කොටුවකුයි ...
-මුලින්ම අපි පාට තෝරමු ...
-කාඩ්පත බැලුවාම, එකේ  පාටම තියෙන පෙට්ටිය තෝරන්න...
+අපි සෙල්ලමක් කරමු...
+මේ තියෙන්නේ රතු රවුමකුයි නිල් කොටුවකුයි...
+මුලින්ම අපි පාට තෝරමු...
+කාඩ්පත බැලුවාම, එකේ පාටම තියෙන පෙට්ටිය තෝරන්න...
 ඔයාට පුළුවන්!
 ''';
         break;
@@ -105,13 +153,16 @@ You can do it!
   static Future<void> speakRuleChange(String newRule, String language) async {
     if (!_speechEnabled || !_initialized) return;
     await _tts.stop();
+    
+    // Ensure language is set before speaking
+    await setLanguage(language);
 
     String text;
     switch (language) {
       case 'si':
         text = newRule == 'color'
             ? "දැන් පාට සෙල්ලම... එකම පාට තෝරන්න..."
-            : "දැන් හැඩතල සෙල්ලම ... එකම හැඩය තෝරන්න... රවුම්  නම් රවුම , හතරැස් නම් කොටුව...";
+            : "දැන් හැඩතල සෙල්ලම... එකම හැඩය තෝරන්න... රවුම් නම් රවුම, හතරැස් නම් කොටුව...";
         break;
       case 'ta':
         text = newRule == 'color'
@@ -132,6 +183,9 @@ You can do it!
   static Future<void> speakFeedback(bool isCorrect, String language) async {
     if (!_speechEnabled || !_initialized) return;
     await _tts.stop();
+    
+    // Ensure language is set before speaking
+    await setLanguage(language);
 
     String text;
     if (isCorrect) {
@@ -173,13 +227,16 @@ You can do it!
           break;
       }
     }
-    await _tts.speak(text);
+    await speak(text, language: language);
   }
 
   /// Speak phase transition message
   static Future<void> speakPhaseStart(String phase, String language) async {
     if (!_speechEnabled || !_initialized) return;
     await _tts.stop();
+    
+    // Ensure language is set before speaking
+    await setLanguage(language);
 
     String text;
     switch (phase) {
@@ -234,13 +291,16 @@ You can do it!
       default:
         return;
     }
-    await _tts.speak(text);
+    await speak(text, language: language);
   }
 
   /// Speak game completion message
   static Future<void> speakGameComplete(String language) async {
     if (!_speechEnabled || !_initialized) return;
     await _tts.stop();
+    
+    // Ensure language is set before speaking
+    await setLanguage(language);
 
     String text;
     switch (language) {
@@ -259,13 +319,69 @@ You can do it!
   }
 
   // Helper: speak slowly with small pauses for warmth
+  // Properly waits for each sentence to complete before speaking the next
   static Future<void> _speakSlowly(String text) async {
-    final sentences = text.split('...');
+    if (!_speechEnabled || !_initialized) return;
+    
+    // Split by ellipsis (...) or periods for natural pauses
+    // Keep the delimiter to maintain natural flow
+    final sentences = text.split(RegExp(r'(\.\.\.|\.)'));
+    final List<String> cleanSentences = [];
+    
+    // Reconstruct sentences with their punctuation
     for (int i = 0; i < sentences.length; i++) {
-      if (sentences[i].trim().isNotEmpty) {
-        await _tts.speak(sentences[i].trim());
-        // Wait for speech to complete
-        await Future.delayed(const Duration(milliseconds: 1500));
+      final part = sentences[i].trim();
+      if (part.isEmpty) continue;
+      
+      // Check if next part is punctuation
+      if (i + 1 < sentences.length && 
+          (sentences[i + 1] == '...' || sentences[i + 1] == '.')) {
+        cleanSentences.add(part + sentences[i + 1]);
+        i++; // Skip the punctuation in next iteration
+      } else {
+        cleanSentences.add(part);
+      }
+    }
+    
+    for (int i = 0; i < cleanSentences.length; i++) {
+      final sentence = cleanSentences[i].trim();
+      if (sentence.isEmpty) continue;
+      
+      // Create a completer for this sentence
+      _speechCompleter = Completer<void>();
+      
+      try {
+        // Speak the sentence
+        await _tts.speak(sentence);
+        
+        // Calculate timeout based on sentence length (longer sentences need more time)
+        // Sinhala/Tamil characters might need more time per character
+        final estimatedDuration = sentence.length * 150; // ~150ms per character
+        final timeoutDuration = Duration(
+          milliseconds: estimatedDuration.clamp(3000, 20000), // Min 3s, Max 20s
+        );
+        
+        // Wait for speech to actually complete (with adaptive timeout)
+        await _speechCompleter!.future.timeout(
+          timeoutDuration,
+          onTimeout: () {
+            debugPrint('Speech timeout for sentence (${sentence.length} chars): ${sentence.substring(0, sentence.length > 30 ? 30 : sentence.length)}...');
+          },
+        );
+        
+        // Add a pause between sentences for clarity
+        // Longer pause for longer sentences and non-English
+        final isLongSentence = sentence.length > 30;
+        final pauseDuration = isLongSentence 
+            ? const Duration(milliseconds: 1000) // 1 second for long sentences
+            : const Duration(milliseconds: 600);   // 600ms for shorter sentences
+        await Future.delayed(pauseDuration);
+        
+      } catch (e) {
+        debugPrint('Error speaking sentence: $e');
+        // Continue with next sentence even if one fails
+      } finally {
+        _speechCompleter = null;
       }
     }
   }
@@ -273,10 +389,31 @@ You can do it!
   // ================================================
   // CONTROLS
   // ================================================
-  static Future<void> speak(String text) async {
+  static Future<void> speak(String text, {String? language}) async {
     if (!_speechEnabled || !_initialized) return;
     await _tts.stop();
+    
+    // Set language if provided
+    if (language != null) {
+      await setLanguage(language);
+    }
+    
+    // Use completer to wait for completion
+    _speechCompleter = Completer<void>();
     await _tts.speak(text);
+    
+    try {
+      await _speechCompleter!.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('Speech timeout for: $text');
+        },
+      );
+    } catch (e) {
+      debugPrint('Error waiting for speech: $e');
+    } finally {
+      _speechCompleter = null;
+    }
   }
 
   static void setSpeechEnabled(bool enabled) {

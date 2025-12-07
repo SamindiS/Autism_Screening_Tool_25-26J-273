@@ -140,20 +140,42 @@ class ApiService {
   }
 
   /// Get current clinician info
+  /// Uses stored clinician ID from login, or falls back to /me endpoint
   static Future<Map<String, dynamic>> getClinicianInfo() async {
     try {
+      // First try to get stored clinician ID from login
+      final prefs = await SharedPreferences.getInstance();
+      final storedClinicianId = prefs.getString('clinician_id');
+      
       final url = await baseUrl;
-      final response = await http.get(
-        Uri.parse('$url/api/clinicians/me'),
-        headers: headers,
-      );
+      
+      if (storedClinicianId != null && storedClinicianId.isNotEmpty) {
+        // Use stored ID to get specific clinician
+        debugPrint('📋 Getting clinician info by ID: $storedClinicianId');
+        final response = await http.get(
+          Uri.parse('$url/api/clinicians/$storedClinicianId'),
+          headers: headers,
+        );
 
-      _handleError(response);
+        _handleError(response);
 
-      final data = jsonDecode(response.body);
-      return data['clinician'] as Map<String, dynamic>;
+        final data = jsonDecode(response.body);
+        return data['clinician'] as Map<String, dynamic>;
+      } else {
+        // Fallback to /me endpoint (for backward compatibility)
+        debugPrint('⚠️ No stored clinician ID, using /me endpoint');
+        final response = await http.get(
+          Uri.parse('$url/api/clinicians/me'),
+          headers: headers,
+        );
+
+        _handleError(response);
+
+        final data = jsonDecode(response.body);
+        return data['clinician'] as Map<String, dynamic>;
+      }
     } catch (e) {
-      debugPrint('Error getting clinician info: $e');
+      debugPrint('❌ Error getting clinician info: $e');
       rethrow;
     }
   }

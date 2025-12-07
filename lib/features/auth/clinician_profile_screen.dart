@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/api_service.dart';
@@ -41,7 +42,10 @@ class _ClinicianProfileScreenState extends State<ClinicianProfileScreen> {
     });
 
     try {
+      debugPrint('📋 Loading clinician profile data...');
       final clinician = await ApiService.getClinicianInfo();
+      debugPrint('✅ Clinician data loaded: ${clinician['name']} (ID: ${clinician['id']})');
+      
       setState(() {
         _clinicianData = clinician;
         _nameController.text = clinician['name']?.toString() ?? '';
@@ -49,8 +53,9 @@ class _ClinicianProfileScreenState extends State<ClinicianProfileScreen> {
         _loading = false;
       });
     } catch (e) {
+      debugPrint('❌ Error loading clinician data: $e');
       setState(() {
-        _errorMessage = 'Failed to load clinician data: $e';
+        _errorMessage = 'Failed to load clinician data. Please check your connection and try again.\n\nError: ${e.toString()}';
         _loading = false;
       });
     }

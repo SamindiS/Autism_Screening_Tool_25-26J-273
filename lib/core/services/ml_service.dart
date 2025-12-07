@@ -106,3 +106,4 @@ class MLPredictionResult {
   String get riskLevelUpper => riskLevel.toUpperCase();
 }
 
+

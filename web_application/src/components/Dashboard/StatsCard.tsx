@@ -29,3 +29,4 @@ const StatsCard = ({ title, value, color = 'primary' }: StatsCardProps) => {
 
 export default StatsCard
 
+

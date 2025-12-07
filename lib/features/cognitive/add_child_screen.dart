@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/auth_service.dart';
@@ -47,11 +48,11 @@ class _AddChildScreenState extends State<AddChildScreen> {
     'ta': 'Tamil',
   };
 
-  // Clinician Medical ID controller for ASD group (5-digit number like 10982)
-  final _clinicianIdCtrl = TextEditingController();
-  
-  // Hospital from registered account
+  // Hospital from registered account (auto-filled)
   String? _registeredHospital;
+  
+  // Clinician Medical ID controller for ASD group (manual input required)
+  final _clinicianIdCtrl = TextEditingController();
 
   @override
   void dispose() {
@@ -83,6 +84,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
       setState(() {
         _registeredHospital = clinicianInfo['hospital'];
       });
+      debugPrint('📋 Loaded hospital from account: ${clinicianInfo['hospital']}');
     }
   }
 
@@ -191,7 +193,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
         _clinicianIdCtrl.clear();
         _diagnosisSourceCtrl.text = 'Preschool screening';
       } else {
-        // Use hospital from registered account
+        // Automatically use hospital from registered account
         _diagnosisSourceCtrl.text = _registeredHospital ?? '';
       }
     });
@@ -230,6 +232,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
       return;
     }
 
+    // No longer need to validate clinician ID input since we use logged clinician automatically
+
     if (_isEditing) {
       await _updateChild();
     } else {
@@ -239,16 +243,24 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
   Future<void> _createChild() async {
     try {
-      // Determine diagnosis source based on group
+      // Determine diagnosis source and clinician info based on group
       String diagnosisSource;
       String? clinicianId;
+      String? hospitalId;
       
       if (_selectedGroup == ChildGroup.asd) {
-        diagnosisSource = _registeredHospital ?? 'Unknown Hospital'; // Hospital from account
-        clinicianId = _clinicianIdCtrl.text.trim(); // 5-digit Clinician Medical ID
+        // Automatically use hospital from registered account
+        diagnosisSource = _registeredHospital ?? 'Unknown Hospital';
+        hospitalId = _registeredHospital; // Set hospital_id from logged clinician's hospital
+        // Use manually entered Clinician Medical ID
+        clinicianId = _clinicianIdCtrl.text.trim();
+        debugPrint('✅ Creating ASD child with:');
+        debugPrint('   Hospital: $diagnosisSource (auto-filled from account)');
+        debugPrint('   Clinician ID: $clinicianId (manual entry)');
       } else {
         diagnosisSource = 'Preschool screening';
         clinicianId = null;
+        hospitalId = null;
       }
 
       final childData = await StorageService.saveChild(
@@ -261,11 +273,12 @@ class _AddChildScreenState extends State<AddChildScreen> {
         gender: _selectedGender!,
         language: _selectedLanguage!,
         age: _calculatedAge!,
+        hospitalId: hospitalId, // Auto-filled from logged clinician's hospital
         group: _selectedGroup,
         asdLevel: _selectedGroup == ChildGroup.asd ? _selectedAsdLevel : null,
-        diagnosisSource: diagnosisSource,
-        clinicianId: clinicianId,
-        clinicianName: null, // Not needed with simple ID approach
+        diagnosisSource: diagnosisSource, // Auto-filled from logged clinician's hospital
+        clinicianId: clinicianId, // Manual entry (Clinician Medical ID)
+        clinicianName: null, // Not needed
       );
 
       final childId = (childData?['id'] as String?) ??
@@ -309,16 +322,24 @@ class _AddChildScreenState extends State<AddChildScreen> {
       return;
     }
 
-    // Determine diagnosis source based on group
+    // Determine diagnosis source and clinician info based on group
     String diagnosisSource;
     String? clinicianId;
+    String? hospitalId;
     
     if (_selectedGroup == ChildGroup.asd) {
-      diagnosisSource = _registeredHospital ?? 'Unknown Hospital'; // Hospital from account
-      clinicianId = _clinicianIdCtrl.text.trim(); // 5-digit Clinician Medical ID
+      // Automatically use hospital from registered account
+      diagnosisSource = _registeredHospital ?? 'Unknown Hospital';
+      hospitalId = _registeredHospital ?? widget.child?['hospital_id'] as String?;
+      // Use manually entered Clinician Medical ID
+      clinicianId = _clinicianIdCtrl.text.trim();
+      debugPrint('✅ Updating ASD child with:');
+      debugPrint('   Hospital: $diagnosisSource (auto-filled from account)');
+      debugPrint('   Clinician ID: $clinicianId (manual entry)');
     } else {
       diagnosisSource = 'Preschool screening';
       clinicianId = null;
+      hospitalId = widget.child?['hospital_id'] as String?;
     }
 
     try {
@@ -333,12 +354,12 @@ class _AddChildScreenState extends State<AddChildScreen> {
         gender: _selectedGender!,
         language: _selectedLanguage!,
         age: _calculatedAge,
-        hospitalId: widget.child?['hospital_id'] as String?,
+        hospitalId: hospitalId, // Auto-filled from logged clinician's hospital
         group: _selectedGroup,
         asdLevel: _selectedGroup == ChildGroup.asd ? _selectedAsdLevel : null,
-        diagnosisSource: diagnosisSource,
-        clinicianId: clinicianId,
-        clinicianName: null,
+        diagnosisSource: diagnosisSource, // Auto-filled from logged clinician's hospital
+        clinicianId: clinicianId, // Manual entry (Clinician Medical ID)
+        clinicianName: null, // Not needed
       );
 
       if (!mounted) return;
@@ -896,7 +917,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Hospital (from registered account - read only)
+        // Hospital (from registered account - read only, auto-filled)
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -928,7 +949,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
                       ),
                     ),
                     Text(
-                      'From your registered account',
+                      'Automatically set from your account',
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.grey.shade600,
@@ -943,7 +964,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
         ),
         const SizedBox(height: 20),
         
-        // Clinician Medical ID (5-digit number)
+        // Clinician Medical ID (manual input required)
         Text(
           'Clinician Medical ID',
           style: TextStyle(
@@ -954,7 +975,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Enter the 5-digit clinician ID who diagnosed this child',
+          'Enter the clinician ID who diagnosed this child',
           style: TextStyle(
             fontSize: 12,
             color: Colors.grey.shade500,
@@ -964,25 +985,19 @@ class _AddChildScreenState extends State<AddChildScreen> {
         TextFormField(
           controller: _clinicianIdCtrl,
           keyboardType: TextInputType.number,
-          maxLength: 5,
           decoration: InputDecoration(
-            hintText: 'e.g., 10982',
+            hintText: 'e.g., 10552',
             prefixIcon: Icon(Icons.badge, color: _primaryColor),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
             filled: true,
             fillColor: Colors.white,
-            counterText: '', // Hide character counter
           ),
           validator: (v) {
             if (_selectedGroup == ChildGroup.asd && 
                 (v == null || v.trim().isEmpty)) {
               return 'Please enter Clinician Medical ID';
-            }
-            if (_selectedGroup == ChildGroup.asd && 
-                v != null && v.trim().length < 5) {
-              return 'Clinician ID should be 5 digits';
             }
             return null;
           },

@@ -167,3 +167,4 @@ Sessions are automatically classified into components:
 ✅ **Better organization** - Component dashboards for focused views
 ✅ **Enhanced child profiles** - Shows component type for each assessment
 
+

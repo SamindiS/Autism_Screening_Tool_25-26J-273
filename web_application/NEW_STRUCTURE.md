@@ -168,3 +168,5 @@ Sessions are automatically classified into components:
 ✅ **Enhanced child profiles** - Shows component type for each assessment
 
 
+
+

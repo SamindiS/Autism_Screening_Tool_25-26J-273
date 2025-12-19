@@ -24,14 +24,31 @@ router.get('/csv', async (req, res) => {
     console.log(`📊 Exporting data to CSV (format: ${format})`);
 
     // Get all children
-    let childrenQuery = childrenCollection.orderBy('created_at', 'desc');
+    // Note: When filtering by group, we can't use orderBy with where (requires index)
+    // So we fetch all and filter/sort in memory
+    let childrenQuery = childrenCollection;
     if (group) {
-      childrenQuery = childrenCollection.where('group', '==', group).orderBy('created_at', 'desc');
+      // Filter by group first (no orderBy to avoid index requirement)
+      childrenQuery = childrenCollection.where('group', '==', group);
     }
     const childrenSnap = await childrenQuery.get();
+    // Convert to array, sort by created_at, then convert to object
+    const childrenArray = childrenSnap.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    
+    // Sort by created_at descending
+    childrenArray.sort((a, b) => {
+      const aTime = a.created_at || 0;
+      const bTime = b.created_at || 0;
+      return bTime - aTime;
+    });
+    
+    // Convert back to object for easy lookup
     const children = {};
-    childrenSnap.docs.forEach(doc => {
-      children[doc.id] = { id: doc.id, ...doc.data() };
+    childrenArray.forEach(child => {
+      children[child.id] = child;
     });
 
     console.log(`   Found ${childrenSnap.size} children`);

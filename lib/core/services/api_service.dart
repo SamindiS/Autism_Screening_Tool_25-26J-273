@@ -691,6 +691,52 @@ class ApiService {
     }
   }
 
+  // ==================== CSV EXPORT ====================
+
+  /// Export data to CSV format
+  /// 
+  /// Parameters:
+  /// - format: 'ml' (for ML training) or 'raw' (raw data)
+  /// - group: Optional filter by group ('asd' or 'typically_developing')
+  /// - sessionType: Optional filter by session type
+  static Future<String> exportCSV({
+    String format = 'ml',
+    String? group,
+    String? sessionType,
+  }) async {
+    try {
+      final url = await baseUrl;
+      final queryParams = <String, String>{
+        'format': format,
+      };
+      
+      if (group != null) {
+        queryParams['group'] = group;
+      }
+      
+      if (sessionType != null) {
+        queryParams['sessionType'] = sessionType;
+      }
+      
+      final uri = Uri.parse('$url/api/export/csv').replace(queryParameters: queryParams);
+      debugPrint('📥 Exporting CSV: $uri');
+      
+      final response = await http.get(uri, headers: headers);
+      
+      _handleError(response);
+      
+      if (response.statusCode == 200) {
+        debugPrint('✅ CSV exported successfully (${response.body.length} bytes)');
+        return response.body;
+      } else {
+        throw Exception('Failed to export CSV: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error exporting CSV: $e');
+      rethrow;
+    }
+  }
+
   // ==================== HEALTH CHECK ====================
 
   /// Check if backend is available

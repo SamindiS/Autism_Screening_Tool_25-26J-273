@@ -172,3 +172,4 @@ ordinal_model.fit(X_train_s_scaled, y_train_s)
 
 
 
+

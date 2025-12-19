@@ -85,7 +85,7 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
       final ageGroup = AgeCalculator.getAgeGroup(widget.child.age);
       final sessionData = await StorageService.saveSession(
         childId: widget.child.id,
-        sessionType: 'frog-jump',
+        sessionType: 'frog_jump',  // Use backend-expected format
         ageGroup: ageGroup,
         startTime: DateTime.now(),
       );

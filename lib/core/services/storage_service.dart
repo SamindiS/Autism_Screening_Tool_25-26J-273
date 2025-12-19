@@ -416,9 +416,31 @@ class StorageService {
     double? riskScore,
     String? riskLevel,
   }) async {
+    // Normalize session type to match backend expectations
+    String normalizedSessionType = sessionType
+        .replaceAll('-', '_')  // Convert hyphens to underscores
+        .replaceAll('dccs_', '')  // Remove dccs prefix if present
+        .replaceAll('dccs-', '');  // Remove dccs prefix with hyphen
+    
+    // Map common variations to backend expected values
+    final sessionTypeMap = {
+      'color_shape': 'color_shape',
+      'color-shape': 'color_shape',
+      'dccs_color_shape': 'color_shape',
+      'dccs-color-shape': 'color_shape',
+      'frog_jump': 'frog_jump',
+      'frog-jump': 'frog_jump',
+      'ai_doctor_bot': 'ai_doctor_bot',
+      'ai-doctor-bot': 'ai_doctor_bot',
+      'manual_assessment': 'manual_assessment',
+      'manual-assessment': 'manual_assessment',
+    };
+    
+    normalizedSessionType = sessionTypeMap[normalizedSessionType] ?? normalizedSessionType;
+    
     final payload = {
       'child_id': childId,
-      'session_type': sessionType,
+      'session_type': normalizedSessionType,
       'age_group': ageGroup,
       'start_time': startTime.millisecondsSinceEpoch,
       'end_time': endTime?.millisecondsSinceEpoch,
@@ -433,7 +455,7 @@ class StorageService {
     try {
       final session = await ApiService.createSession(
         childId: childId,
-        sessionType: sessionType,
+        sessionType: normalizedSessionType,
         ageGroup: ageGroup,
         startTime: startTime,
         endTime: endTime,

@@ -83,7 +83,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
       final ageGroup = AgeCalculator.getAgeGroup(widget.child.age);
       final sessionData = await StorageService.saveSession(
         childId: widget.child.id,
-        sessionType: 'dccs-color-shape',
+        sessionType: 'color_shape',  // Use backend-expected format
         ageGroup: ageGroup,
         startTime: DateTime.now(),
       );

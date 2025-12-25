@@ -34,7 +34,21 @@ api.interceptors.response.use(
 
 // Children API
 export const childrenApi = {
-  getAll: () => api.get('/api/children'),
+  getAll: async () => {
+    try {
+      console.log('📡 Fetching all children from API...')
+      const response = await api.get('/api/children')
+      console.log('✅ Children API response:', {
+        count: response.data.count,
+        childrenCount: response.data.children?.length || 0,
+        firstChild: response.data.children?.[0] || null,
+      })
+      return response
+    } catch (error: any) {
+      console.error('❌ Error fetching children:', error)
+      throw error
+    }
+  },
   getById: (id: string) => api.get(`/api/children/${id}`),
   create: (data: any) => api.post('/api/children', data),
   update: (id: string, data: any) => api.put(`/api/children/${id}`, data),
@@ -45,12 +59,24 @@ export const childrenApi = {
 
 // Sessions API
 export const sessionsApi = {
-  getAll: (type?: string, hospital?: string) => {
-    const params = new URLSearchParams()
-    if (type) params.append('type', type)
-    if (hospital) params.append('hospital', hospital)
-    const query = params.toString()
-    return api.get(`/api/sessions${query ? `?${query}` : ''}`)
+  getAll: async (type?: string, hospital?: string) => {
+    try {
+      const params = new URLSearchParams()
+      if (type) params.append('type', type)
+      if (hospital) params.append('hospital', hospital)
+      const query = params.toString()
+      console.log('📡 Fetching sessions from API...', { type, hospital })
+      const response = await api.get(`/api/sessions${query ? `?${query}` : ''}`)
+      console.log('✅ Sessions API response:', {
+        count: response.data.count,
+        sessionsCount: response.data.sessions?.length || 0,
+        firstSession: response.data.sessions?.[0] || null,
+      })
+      return response
+    } catch (error: any) {
+      console.error('❌ Error fetching sessions:', error)
+      throw error
+    }
   },
   getById: (id: string) => api.get(`/api/sessions/${id}`),
   getByChild: (childId: string) => api.get(`/api/sessions/child/${childId}`),

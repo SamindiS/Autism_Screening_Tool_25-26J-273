@@ -26,15 +26,22 @@ const Login = () => {
     setLoading(true)
 
     try {
+      console.log('🔐 Login attempt with PIN:', pin?.substring(0, 2) + '***')
       // Allow admin123 or any PIN - let backend handle validation
       const result = await login(pin)
+      console.log('📥 Login result:', result)
+      
       if (result.success) {
-        navigate('/dashboard')
+        console.log('✅ Login successful, navigating to dashboard')
+        // Use replace to prevent back button from going to login
+        navigate('/dashboard', { replace: true })
       } else {
-        setError(result.error || t('invalid_pin'))
+        const errorMsg = result.error || t('invalid_pin')
+        console.error('❌ Login failed:', errorMsg)
+        setError(errorMsg)
       }
     } catch (err: any) {
-      console.error('Login error:', err)
+      console.error('❌ Login exception:', err)
       const errorMessage = err?.response?.data?.error || err?.message || t('error_occurred')
       setError(errorMessage)
     } finally {

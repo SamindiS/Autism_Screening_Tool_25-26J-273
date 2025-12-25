@@ -327,29 +327,49 @@ class StorageService {
   }
 
   static Future<List<Map<String, dynamic>>> getAllChildren() async {
+    // First, get local data immediately (for offline support)
+    final localChildren = await _getChildrenLocal();
+    
+    // Try to sync with backend if online
     try {
-      final children = await ApiService.getAllChildren();
-      final formatted = children
-          .map((child) => {
-                'id': child['id'],
-                'child_code': child['child_code'] ?? child['name'],
-                'name': child['name'],
-                'date_of_birth': child['date_of_birth'],
-                'age_in_months': child['age_in_months'],
-                'gender': child['gender'],
-                'language': child['language'],
-                'age': child['age'],
-                'hospital_id': child['hospital_id'],
-                'study_group': child['group'],
-                'asd_level': child['asd_level'],
-                'diagnosis_source': child['diagnosis_source'],
-                'created_at': child['created_at'],
-              })
-          .toList();
-      await _replaceChildrenLocal(formatted);
-      return formatted;
-    } catch (_) {
-      return await _getChildrenLocal();
+      // Check if backend is available (with timeout)
+      final isOnline = await ApiService.healthCheck()
+          .timeout(const Duration(seconds: 3), onTimeout: () => false);
+      
+      if (isOnline) {
+        final children = await ApiService.getAllChildren()
+            .timeout(const Duration(seconds: 10));
+        final formatted = children
+            .map((child) => {
+                  'id': child['id'],
+                  'child_code': child['child_code'] ?? child['name'],
+                  'name': child['name'],
+                  'date_of_birth': child['date_of_birth'],
+                  'age_in_months': child['age_in_months'],
+                  'gender': child['gender'],
+                  'language': child['language'],
+                  'age': child['age'],
+                  'hospital_id': child['hospital_id'],
+                  'study_group': child['group'],
+                  'asd_level': child['asd_level'],
+                  'diagnosis_source': child['diagnosis_source'],
+                  'created_at': child['created_at'],
+                })
+            .toList();
+        // Merge with local data (local data takes priority for offline entries)
+        await _mergeChildrenLocal(formatted, localChildren);
+        // Return merged data
+        return await _getChildrenLocal();
+      } else {
+        // Offline - return local data
+        debugPrint('📱 Offline mode: Returning ${localChildren.length} local children');
+        return localChildren;
+      }
+    } catch (e) {
+      // Any error - return local data (offline mode)
+      debugPrint('⚠️ Error fetching from backend: $e');
+      debugPrint('📱 Returning ${localChildren.length} local children');
+      return localChildren;
     }
   }
 
@@ -814,6 +834,36 @@ class StorageService {
   static Future<List<Map<String, dynamic>>> _getChildrenLocal() async {
     final db = await database;
     return await db.query('children', orderBy: 'created_at DESC');
+  }
+
+  /// Merge remote and local children, preserving offline entries
+  /// Offline entries have IDs starting with 'child_' (from _offlineId)
+  static Future<void> _mergeChildrenLocal(
+      List<Map<String, dynamic>> remoteChildren,
+      List<Map<String, dynamic>> localChildren) async {
+    final db = await database;
+    final batch = db.batch();
+    
+    // Identify offline entries (IDs starting with 'child_')
+    final offlineChildren = localChildren.where((child) {
+      final id = child['id'] as String;
+      return id.startsWith('child_');
+    }).toList();
+    
+    // First, update/insert all remote children
+    for (final remoteChild in remoteChildren) {
+      batch.insert('children', remoteChild,
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    
+    // Then, preserve offline entries (they won't conflict with remote IDs)
+    for (final offlineChild in offlineChildren) {
+      batch.insert('children', offlineChild,
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    
+    await batch.commit(noResult: true);
+    debugPrint('✅ Merged ${remoteChildren.length} remote + ${offlineChildren.length} offline children');
   }
 
   static Future<void> _upsertSessionLocal(Map<String, dynamic> session) async {

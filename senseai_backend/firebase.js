@@ -60,8 +60,22 @@ db.collection('_test').limit(1).get()
     console.log("✅ Firebase connection test successful!");
   })
   .catch((err) => {
-    console.error('⚠️  WARNING: Firebase connection test failed:', err.message);
-    console.error('   The app may still work, but some operations might fail.');
+    if (err.code === 16 || err.message.includes('UNAUTHENTICATED')) {
+      console.error('⚠️  WARNING: Firebase authentication error');
+      console.error('   Error:', err.message);
+      console.error('');
+      console.error('   🔧 To fix this:');
+      console.error('   1. Go to Firebase Console > Project Settings > Service Accounts');
+      console.error('   2. Click "Generate new private key"');
+      console.error('   3. Replace senseai_backend/serviceAccountKey.json with the new file');
+      console.error('   4. Ensure service account has "Firebase Admin SDK Administrator" role');
+      console.error('   5. Restart the backend');
+      console.error('');
+      console.error('   The app may still work, but some operations might fail.');
+    } else {
+      console.error('⚠️  WARNING: Firebase connection test failed:', err.message);
+      console.error('   The app may still work, but some operations might fail.');
+    }
   });
 
 module.exports = { db };

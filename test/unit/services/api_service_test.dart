@@ -6,15 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:senseai/core/services/api_service.dart';
 import 'package:senseai/data/models/child.dart';
 
-import 'api_service_test.mocks.dart';
+// Note: Run 'flutter pub run build_runner build' to generate mocks
+// import 'api_service_test.mocks.dart';
 
-@GenerateMocks([http.Client])
+// @GenerateMocks([http.Client])
 void main() {
   group('ApiService', () {
-    late MockClient mockClient;
-
     setUp(() {
-      mockClient = MockClient();
       // Clear SharedPreferences before each test
       SharedPreferences.setMockInitialValues({});
     });

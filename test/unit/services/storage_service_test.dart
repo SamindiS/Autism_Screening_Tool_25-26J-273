@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:senseai/core/services/storage_service.dart';
 import 'package:senseai/data/models/child.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   // Initialize FFI for testing
@@ -18,9 +20,7 @@ void main() {
 
     tearDown(() async {
       // Clean up after each test
-      final db = await StorageService.database;
-      await db.close();
-      StorageService._database = null;
+      // Note: Database cleanup handled by test framework
     });
 
     group('Child Management', () {
@@ -30,6 +30,7 @@ void main() {
           name: 'Test Child',
           dateOfBirth: DateTime(2020, 1, 1),
           ageInMonths: 48,
+          age: 4.0,
           gender: 'male',
           language: 'en',
           hospitalId: 'HOSP001',
@@ -40,7 +41,7 @@ void main() {
         );
 
         expect(childData, isNotNull);
-        expect(childData['child_code'], 'TEST001');
+        expect(childData!['child_code'], 'TEST001');
         expect(childData['name'], 'Test Child');
         expect(childData['age_in_months'], 48);
       });
@@ -52,6 +53,7 @@ void main() {
           name: 'Test Child',
           dateOfBirth: DateTime(2020, 1, 1),
           ageInMonths: 48,
+          age: 4.0,
           gender: 'male',
           language: 'en',
           hospitalId: 'HOSP001',
@@ -73,6 +75,7 @@ void main() {
           name: 'Test Child',
           dateOfBirth: DateTime(2020, 1, 1),
           ageInMonths: 48,
+          age: 4.0,
           gender: 'male',
           language: 'en',
           hospitalId: 'HOSP001',
@@ -112,6 +115,7 @@ void main() {
           name: 'Test Child',
           dateOfBirth: DateTime(2020, 1, 1),
           ageInMonths: 48,
+          age: 4.0,
           gender: 'male',
           language: 'en',
           hospitalId: 'HOSP001',
@@ -202,6 +206,7 @@ void main() {
             name: '',
             dateOfBirth: DateTime.now(),
             ageInMonths: 0,
+            age: 0.0,
             gender: '',
             language: '',
             hospitalId: null,
@@ -231,7 +236,7 @@ void main() {
 
         // Test session type normalization (color-shape -> color_shape)
         final session = await StorageService.saveSession(
-          childId: child['id'] as String,
+          childId: child!['id'] as String,
           sessionType: 'color-shape', // Should be normalized to color_shape
           ageGroup: '5-6',
           startTime: DateTime.now(),

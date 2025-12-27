@@ -1,6 +1,8 @@
 const express = require('express');
 const Joi = require('joi');
 const { db } = require('../firebase');
+const dataValidation = require('../services/dataValidation');
+const dataRecovery = require('../services/dataRecovery');
 
 const router = express.Router();
 const sessionsCollection = db.collection('sessions');
@@ -10,7 +12,7 @@ const trialsCollection = db.collection('trials');
 const sessionSchema = Joi.object({
   child_id: Joi.string().required(),
   session_type: Joi.string()
-    .valid('ai_doctor_bot', 'frog_jump', 'color_shape', 'manual_assessment')
+    .valid('ai_doctor_bot', 'frog_jump', 'color_shape', 'color-shape', 'manual_assessment', 'rrb', 'auditory', 'visual')
     .required(),
   age_group: Joi.string().allow(null, '').optional(),
   start_time: Joi.number().integer().positive().required(),
@@ -49,10 +51,38 @@ const deleteTrialsForSession = async (sessionId) => {
 router.post('/', async (req, res) => {
   try {
     console.log('📥 Received session creation request:', JSON.stringify(req.body, null, 2));
+    
+    // Normalize session_type: convert hyphen to underscore (color-shape -> color_shape)
+    // This must happen BEFORE Joi validation
+    if (req.body.session_type) {
+      req.body.session_type = req.body.session_type.replace(/-/g, '_');
+    }
+    
+    // Joi schema validation
     const { error, value } = sessionSchema.validate(req.body);
     if (error) {
       console.error('❌ Validation error:', error.details[0].message);
       return res.status(400).json({ error: error.details[0].message });
+    }
+
+    // Create backup before operation
+    const backup = await dataRecovery.createPreOperationBackup('create-session');
+    console.log(`📦 Pre-operation backup created: ${backup.backupId}`);
+    
+    // Enhanced validation (warnings don't block, only errors do)
+    const validationResult = await dataValidation.validateSession(value, false);
+    if (!validationResult.valid) {
+      console.error('❌ Enhanced validation failed:', validationResult.errors);
+      return res.status(400).json({
+        error: 'Data validation failed',
+        errors: validationResult.errors,
+        warnings: validationResult.warnings,
+      });
+    }
+    
+    // Log warnings but don't block creation
+    if (validationResult.warnings.length > 0) {
+      console.warn('⚠️  Validation warnings (non-blocking):', validationResult.warnings);
     }
 
     const childDoc = await childrenCollection.doc(value.child_id).get();

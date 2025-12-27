@@ -1,6 +1,8 @@
 const express = require('express');
 const Joi = require('joi');
 const { db } = require('../firebase');
+const dataValidation = require('../services/dataValidation');
+const dataRecovery = require('../services/dataRecovery');
 
 const router = express.Router();
 const childrenCollection = db.collection('children');
@@ -64,10 +66,32 @@ const deleteSessionsForChild = async (childId) => {
 router.post('/', async (req, res) => {
   try {
     console.log('📥 Received child creation request:', JSON.stringify(req.body, null, 2));
+    
+    // Create backup before operation
+    const backup = await dataRecovery.createPreOperationBackup('create-child');
+    console.log(`📦 Pre-operation backup created: ${backup.backupId}`);
+    
+    // Joi schema validation
     const { error, value } = childSchema.validate(req.body);
     if (error) {
       console.error('❌ Validation error:', error.details[0].message);
       return res.status(400).json({ error: error.details[0].message });
+    }
+    
+    // Enhanced validation (warnings don't block, only errors do)
+    const validationResult = await dataValidation.validateChild(value, false);
+    if (!validationResult.valid) {
+      console.error('❌ Enhanced validation failed:', validationResult.errors);
+      return res.status(400).json({
+        error: 'Data validation failed',
+        errors: validationResult.errors,
+        warnings: validationResult.warnings,
+      });
+    }
+    
+    // Log warnings but don't block creation
+    if (validationResult.warnings.length > 0) {
+      console.warn('⚠️  Validation warnings (non-blocking):', validationResult.warnings);
     }
 
     const now = Date.now();

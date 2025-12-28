@@ -546,40 +546,75 @@ class StorageService {
 
   static Future<List<Map<String, dynamic>>> getSessionsByChild(
       String childId) async {
+    // First, get local sessions (preserves offline data)
+    final db = await database;
+    final localRows = await db.query(
+      'sessions',
+      where: 'child_id = ?',
+      whereArgs: [childId],
+      orderBy: 'created_at DESC',
+    );
+    final localSessions = localRows.map((row) => row as Map<String, dynamic>).toList();
+    
+    // Try to sync with backend if online
     try {
-      final sessions = await ApiService.getSessionsByChild(childId);
-      final formatted = sessions
-          .map((session) => {
-                'id': session['id'],
-                'child_id': session['child_id'],
-                'session_type': session['session_type'],
-                'age_group': session['age_group'],
-                'start_time': session['start_time'],
-                'end_time': session['end_time'],
-                'metrics': jsonEncode(session['metrics'] ?? const {}),
-                'created_at': session['created_at'],
-              })
-          .toList();
-      await _replaceSessionsLocal(formatted);
-      return formatted;
-    } catch (_) {
-      final db = await database;
-      final rows = await db.query(
-        'sessions',
-        where: 'child_id = ?',
-        whereArgs: [childId],
-        orderBy: 'created_at DESC',
-      );
-      return rows
-          .map((row) => {
-                ...row,
-                'game_results': null,
-                'questionnaire_results': null,
-                'reflection_results': null,
-                'risk_score': null,
-                'risk_level': null,
-              })
-          .toList();
+      final isOnline = await ApiService.healthCheck()
+          .timeout(const Duration(seconds: 3), onTimeout: () => false);
+      
+      if (isOnline) {
+        final serverSessions = await ApiService.getSessionsByChild(childId)
+            .timeout(const Duration(seconds: 10));
+        
+        // Merge server sessions with local (server takes priority for conflicts)
+        final serverMap = <String, Map<String, dynamic>>{};
+        for (final session in serverSessions) {
+          final formatted = {
+            'id': session['id'],
+            'child_id': session['child_id'],
+            'session_type': session['session_type'],
+            'age_group': session['age_group'],
+            'start_time': session['start_time'],
+            'end_time': session['end_time'],
+            'metrics': jsonEncode(session['metrics'] ?? const {}),
+            'created_at': session['created_at'],
+          };
+          serverMap[session['id'] as String] = formatted;
+        }
+        
+        // Merge: server data takes priority, but keep local-only sessions
+        final mergedSessions = <String, Map<String, dynamic>>{};
+        for (final local in localSessions) {
+          final id = local['id'] as String;
+          mergedSessions[id] = local;
+        }
+        for (final entry in serverMap.entries) {
+          mergedSessions[entry.key] = entry.value;
+        }
+        
+        // Update local DB with merged data (upsert)
+        for (final session in mergedSessions.values) {
+          await _upsertSessionLocal(session);
+        }
+        
+        // Return merged list, sorted by created_at DESC
+        final result = mergedSessions.values.toList();
+        result.sort((a, b) {
+          final aTime = a['created_at'] as int? ?? 0;
+          final bTime = b['created_at'] as int? ?? 0;
+          return bTime.compareTo(aTime);
+        });
+        
+        return result;
+      } else {
+        // Offline - return local data
+        debugPrint('📱 Offline mode: Returning ${localSessions.length} local sessions');
+        return localSessions;
+      }
+    } catch (e) {
+      // Any error - return local data
+      debugPrint('⚠️ Error fetching sessions from backend: $e');
+      debugPrint('📱 Returning ${localSessions.length} local sessions');
+      return localSessions;
     }
   }
 
@@ -624,16 +659,22 @@ class StorageService {
         payload: payload,
       );
     } finally {
+      // Always update local DB to ensure end_time is saved
       final db = await database;
-      await db.update(
-        'sessions',
-        {
-          if (endTime != null) 'end_time': endTime.millisecondsSinceEpoch,
-          if (metrics != null) 'metrics': jsonEncode(metrics),
-        },
-        where: 'id = ?',
-        whereArgs: [id],
-      );
+      final updateData = <String, dynamic>{};
+      if (endTime != null) updateData['end_time'] = endTime.millisecondsSinceEpoch;
+      if (metrics != null) updateData['metrics'] = jsonEncode(metrics);
+      
+      // Update local session
+      if (updateData.isNotEmpty) {
+        await db.update(
+          'sessions',
+          updateData,
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+        debugPrint('✅ Updated local session $id with end_time: ${endTime != null}');
+      }
     }
   }
 
@@ -819,17 +860,6 @@ class StorageService {
     );
   }
 
-  static Future<void> _replaceChildrenLocal(
-      List<Map<String, dynamic>> children) async {
-    final db = await database;
-    final batch = db.batch();
-    batch.delete('children');
-    for (final child in children) {
-      batch.insert('children', child,
-          conflictAlgorithm: ConflictAlgorithm.replace);
-    }
-    await batch.commit(noResult: true);
-  }
 
   static Future<List<Map<String, dynamic>>> _getChildrenLocal() async {
     final db = await database;

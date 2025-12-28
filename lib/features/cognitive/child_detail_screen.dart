@@ -7,6 +7,7 @@ import '../../core/services/storage_service.dart';
 import '../../data/models/child.dart';
 import 'add_child_screen.dart';
 import 'age_select_screen.dart';
+import 'session_detail_screen.dart';
 
 class ChildDetailScreen extends StatefulWidget {
   final Map<String, dynamic> child;
@@ -652,7 +653,16 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
           color: Colors.grey.shade400,
         ),
         onTap: () {
-          // Reserved for future session detail screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SessionDetailScreen(
+                sessionId: session['id'] as String,
+                childName: _child['name'] as String? ?? 'Unknown',
+                primaryColor: _primaryColor,
+              ),
+            ),
+          );
         },
       ),
     );

@@ -158,3 +158,95 @@ class RRBDataLoaderEfficient:
         videos_train, videos_val = train_test_split(
             videos_train_val, test_size=val_size, random_state=42, stratify=train_val_labels
         )
+
+        # Create metadata splits
+        self.train_metadata = df[df['video_path'].isin(videos_train)].to_dict('records')
+        self.val_metadata = df[df['video_path'].isin(videos_val)].to_dict('records')
+        self.test_metadata = df[df['video_path'].isin(videos_test)].to_dict('records')
+        
+        logger.info(f"Train set: {len(self.train_metadata)} sequences from {len(videos_train)} videos")
+        logger.info(f"Validation set: {len(self.val_metadata)} sequences from {len(videos_val)} videos")
+        logger.info(f"Test set: {len(self.test_metadata)} sequences from {len(videos_test)} videos")
+        
+        # Store labels for compatibility
+        self.y_train = np.array([m['label'] for m in self.train_metadata])
+        self.y_val = np.array([m['label'] for m in self.val_metadata])
+        self.y_test = np.array([m['label'] for m in self.test_metadata])
+    
+    def get_class_weights(self) -> Dict[int, float]:
+        """
+        Calculate class weights for imbalanced dataset
+        
+        Returns:
+            Dictionary mapping class indices to weights
+        """
+        from sklearn.utils.class_weight import compute_class_weight
+        
+        classes = np.unique(self.y_train)
+        weights = compute_class_weight('balanced', classes=classes, y=self.y_train)
+        
+        class_weights = {int(cls): float(weight) for cls, weight in zip(classes, weights)}
+        
+        logger.info(f"Class weights: {class_weights}")
+        return class_weights
+    
+    def save_preprocessed_data(self, output_dir: str):
+        """
+        Save preprocessed metadata and label encoder
+        
+        Args:
+            output_dir: Directory to save preprocessed data
+        """
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Save metadata
+        metadata = {
+            'train': self.train_metadata,
+            'val': self.val_metadata,
+            'test': self.test_metadata
+        }
+        
+        with open(os.path.join(output_dir, 'metadata.json'), 'w') as f:
+            json.dump(metadata, f, indent=2)
+        
+        # Save label encoder
+        with open(os.path.join(output_dir, 'label_encoder.pkl'), 'wb') as f:
+            pickle.dump(self.label_encoder, f)
+        
+        logger.info(f"Saved preprocessed data to {output_dir}")
+    
+    def load_preprocessed_data(self, preprocessed_dir: str):
+        """
+        Load preprocessed metadata and label encoder
+        
+        Args:
+            preprocessed_dir: Directory containing preprocessed data
+        """
+        # Load metadata
+        with open(os.path.join(preprocessed_dir, 'metadata.json'), 'r') as f:
+            metadata = json.load(f)
+        
+        self.train_metadata = metadata['train']
+        self.val_metadata = metadata['val']
+        self.test_metadata = metadata['test']
+        
+        # Load label encoder
+        with open(os.path.join(preprocessed_dir, 'label_encoder.pkl'), 'rb') as f:
+            self.label_encoder = pickle.load(f)
+        
+        # Recreate labels
+        self.y_train = np.array([m['label'] for m in self.train_metadata])
+        self.y_val = np.array([m['label'] for m in self.val_metadata])
+        self.y_test = np.array([m['label'] for m in self.test_metadata])
+        
+        logger.info(f"Loaded preprocessed data from {preprocessed_dir}")
+        logger.info(f"Train: {len(self.train_metadata)}, Val: {len(self.val_metadata)}, Test: {len(self.test_metadata)}")
+    
+    def get_num_classes(self) -> int:
+        """Get number of classes"""
+        return len(self.label_encoder.classes_)
+    
+    def get_class_names(self) -> List[str]:
+        """Get class names"""
+        return list(self.label_encoder.classes_)
+

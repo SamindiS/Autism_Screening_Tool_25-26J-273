@@ -160,7 +160,12 @@ class _LoginScreenState extends State<LoginScreen>
     try {
       if (_isLogin) {
         // LOGIN
-        final result = await AuthService.login(_pinCtrl.text);
+        // Trim PIN to remove any whitespace
+        final pin = _pinCtrl.text.trim();
+        debugPrint('🔐 Login attempt with PIN: ${pin.length} digits');
+        debugPrint('🔐 PIN value (first 2): ${pin.length > 0 ? pin.substring(0, pin.length > 2 ? 2 : pin.length) + '***' : 'empty'}');
+        
+        final result = await AuthService.login(pin);
         success = result['success'] as bool? ?? false;
         message = success
             ? 'Welcome back!'
@@ -901,13 +906,17 @@ class _LoginScreenState extends State<LoginScreen>
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    _isLogin ? 'LOGIN' : 'REGISTER & CONTINUE',
-                    style: const TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
+                  Flexible(
+                    child: Text(
+                      _isLogin ? 'LOGIN' : 'REGISTER & CONTINUE',
+                      style: const TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 12),

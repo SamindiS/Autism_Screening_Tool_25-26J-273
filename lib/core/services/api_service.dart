@@ -114,16 +114,19 @@ class ApiService {
   }) async {
     try {
       final url = await baseUrl;
+      // Ensure PIN is trimmed and normalized
+      final normalizedPin = pin.trim();
       debugPrint('🔐 Attempting login to: $url/api/clinicians/login');
-      debugPrint('📌 PIN length: ${pin.length}');
+      debugPrint('📌 PIN length: ${normalizedPin.length}');
+      debugPrint('📌 PIN value (first 2): ${normalizedPin.length > 0 ? normalizedPin.substring(0, normalizedPin.length > 2 ? 2 : normalizedPin.length) + '***' : 'empty'}');
       
-      final requestBody = jsonEncode({'pin': pin});
-      debugPrint('📤 Request body: ${requestBody.replaceAll(pin, '***')}');
+      final requestBody = jsonEncode({'pin': normalizedPin});
+      debugPrint('📤 Request body: ${requestBody.replaceAll(normalizedPin, '***')}');
       
       final response = await http.post(
         Uri.parse('$url/api/clinicians/login'),
         headers: headers,
-        body: requestBody,
+        body: jsonEncode({'pin': normalizedPin}), // Use normalized PIN
       ).timeout(
         const Duration(seconds: 10),
         onTimeout: () {

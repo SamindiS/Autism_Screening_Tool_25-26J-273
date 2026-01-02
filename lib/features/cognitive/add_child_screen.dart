@@ -75,6 +75,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
     } else {
       // Default to "Preschool screening" for control group
       _diagnosisSourceCtrl.text = 'Preschool screening';
+      // Note: LRH ID will be auto-generated when user selects ASD group
     }
   }
 
@@ -85,6 +86,54 @@ class _AddChildScreenState extends State<AddChildScreen> {
         _registeredHospital = clinicianInfo['hospital'];
       });
       debugPrint('📋 Loaded hospital from account: ${clinicianInfo['hospital']}');
+    }
+  }
+
+  /// Generate the next sequential LRH-### ID for ASD children
+  Future<void> _generateNextAsdId() async {
+    try {
+      // Get all children
+      final allChildren = await StorageService.getAllChildren();
+      
+      // Filter ASD children and extract LRH-### codes
+      final asdChildren = allChildren.where((child) {
+        final groupStr = child['study_group'] as String? ?? child['group'] as String? ?? 'typically_developing';
+        return groupStr == 'asd';
+      }).toList();
+      
+      // Extract numbers from LRH-### pattern
+      final lrhPattern = RegExp(r'^LRH-(\d+)$', caseSensitive: false);
+      int maxNumber = 0;
+      
+      for (final child in asdChildren) {
+        final childCode = (child['child_code'] as String? ?? '').trim();
+        final match = lrhPattern.firstMatch(childCode);
+        if (match != null) {
+          final number = int.tryParse(match.group(1) ?? '0') ?? 0;
+          if (number > maxNumber) {
+            maxNumber = number;
+          }
+        }
+      }
+      
+      // Generate next ID
+      final nextNumber = maxNumber + 1;
+      final nextId = 'LRH-${nextNumber.toString().padLeft(3, '0')}';
+      
+      if (mounted) {
+        setState(() {
+          _childCodeCtrl.text = nextId;
+        });
+        debugPrint('✅ Auto-generated next ASD ID: $nextId (previous max: $maxNumber)');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error generating ASD ID: $e');
+      // Fallback to LRH-001 if error
+      if (mounted) {
+        setState(() {
+          _childCodeCtrl.text = 'LRH-001';
+        });
+      }
     }
   }
 
@@ -184,19 +233,20 @@ class _AddChildScreenState extends State<AddChildScreen> {
     return now.difference(date).inDays / 365.25;
   }
 
-  void _onGroupChanged(ChildGroup? group) {
-    if (group == null) return;
+  void _onGroupChanged(ChildGroup group) {
     setState(() {
       _selectedGroup = group;
-      if (group == ChildGroup.typicallyDeveloping) {
-        _selectedAsdLevel = null;
-        _clinicianIdCtrl.clear();
-        _diagnosisSourceCtrl.text = 'Preschool screening';
-      } else {
-        // Automatically use hospital from registered account
-        _diagnosisSourceCtrl.text = _registeredHospital ?? '';
-      }
     });
+    
+    // Auto-generate LRH ID when ASD group is selected (only for new children)
+    if (group == ChildGroup.asd && !_isEditing) {
+      _generateNextAsdId();
+    } else if (group == ChildGroup.typicallyDeveloping && !_isEditing) {
+      // Clear child code for control group (user will enter manually)
+      setState(() {
+        _childCodeCtrl.clear();
+      });
+    }
   }
 
   Future<void> _saveChild() async {
@@ -429,11 +479,21 @@ class _AddChildScreenState extends State<AddChildScreen> {
                   _buildTextField(
                     controller: _childCodeCtrl,
                     label: 'Child Code',
-                    hint: _selectedGroup == ChildGroup.asd ? 'e.g., LRH-027' : 'e.g., PRE-112',
+                    hint: _selectedGroup == ChildGroup.asd 
+                        ? 'Auto-generated (e.g., LRH-001)' 
+                        : 'e.g., PRE-112',
                     icon: Icons.badge_outlined,
+                    readOnly: _selectedGroup == ChildGroup.asd && !_isEditing, // Auto-generated for new ASD children
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
                         return 'Child code is required';
+                      }
+                      // Validate LRH format for ASD children
+                      if (_selectedGroup == ChildGroup.asd && !_isEditing) {
+                        final lrhPattern = RegExp(r'^LRH-\d{3}$', caseSensitive: false);
+                        if (!lrhPattern.hasMatch(v.trim())) {
+                          return 'ASD child code must be in format LRH-###';
+                        }
                       }
                       return null;
                     },
@@ -646,9 +706,11 @@ class _AddChildScreenState extends State<AddChildScreen> {
     String? hint,
     required IconData icon,
     String? Function(String?)? validator,
+    bool readOnly = false,
   }) {
     return TextFormField(
       controller: controller,
+      readOnly: readOnly,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -661,7 +723,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
           borderSide: BorderSide(color: _primaryColor, width: 2),
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: readOnly ? Colors.grey.shade100 : Colors.white,
       ),
       validator: validator,
     );

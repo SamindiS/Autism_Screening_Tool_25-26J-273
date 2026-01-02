@@ -140,8 +140,13 @@ router.post('/login', async (req, res) => {
     let matchedClinician = null;
 
     // Use the validated PIN from Joi, or fallback to original pin
+    // Important: Trim and normalize the PIN to match registration format
     const pinToCompare = String(value.pin || pin).trim();
     console.log(`🔍 Attempting login with PIN (length: ${pinToCompare.length})`);
+    console.log(`🔍 PIN to compare (first 2 chars): ${pinToCompare.substring(0, 2)}***`);
+    
+    // Debug: Log all clinicians and their PIN hashes (for troubleshooting)
+    console.log(`📋 Found ${allClinicians.docs.length} clinicians in database`);
 
     for (const doc of allClinicians.docs) {
       const data = doc.data();
@@ -153,11 +158,15 @@ router.post('/login', async (req, res) => {
       }
 
       // Compare PIN
+      // Debug: Log comparison attempt
+      console.log(`🔍 Comparing PIN for clinician ${doc.id} (${data.name})`);
       const match = await bcrypt.compare(pinToCompare, data.pin_hash);
       if (match) {
         matchedClinician = doc;
-        console.log(`✅ PIN match found for clinician: ${doc.id}`);
+        console.log(`✅ PIN match found for clinician: ${doc.id} (${data.name})`);
         break;
+      } else {
+        console.log(`❌ PIN mismatch for clinician ${doc.id} (${data.name})`);
       }
     }
 

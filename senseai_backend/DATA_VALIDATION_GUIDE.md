@@ -1,4 +1,4 @@
-# Data Validation, Integrity, and Recovery Guide
+ # Data Validation, Integrity, and Recovery Guide
 
 ## Overview
 

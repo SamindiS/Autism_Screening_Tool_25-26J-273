@@ -1,4 +1,5 @@
 // api_service.dart - Backend API Integration Service
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
@@ -113,28 +114,64 @@ class ApiService {
   }) async {
     try {
       final url = await baseUrl;
+      debugPrint('🔐 Attempting login to: $url/api/clinicians/login');
+      debugPrint('📌 PIN length: ${pin.length}');
+      
+      final requestBody = jsonEncode({'pin': pin});
+      debugPrint('📤 Request body: ${requestBody.replaceAll(pin, '***')}');
+      
       final response = await http.post(
         Uri.parse('$url/api/clinicians/login'),
         headers: headers,
-        body: jsonEncode({
-          'pin': pin,
-        }),
+        body: requestBody,
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('⏱️ Login request timeout after 10 seconds');
+          throw TimeoutException('Login request timed out');
+        },
       );
+
+      debugPrint('📥 Response status: ${response.statusCode}');
+      debugPrint('📥 Response body: ${response.body}');
 
       _handleError(response);
 
       final data = jsonDecode(response.body);
-      // Backend returns 'user' for both admin and clinician, but also includes 'clinician' for compatibility
-      // Try 'clinician' first (for backward compatibility), then 'user'
-      if (data.containsKey('clinician')) {
-        return data['clinician'] as Map<String, dynamic>;
-      } else if (data.containsKey('user')) {
-        return data['user'] as Map<String, dynamic>;
+      
+      // Check for success flag first
+      if (data.containsKey('success') && data['success'] == true) {
+        // Backend returns 'user' for both admin and clinician, but also includes 'clinician' for compatibility
+        // Try 'clinician' first (for backward compatibility), then 'user'
+        if (data.containsKey('clinician')) {
+          debugPrint('✅ Login successful - using clinician data');
+          return data['clinician'] as Map<String, dynamic>;
+        } else if (data.containsKey('user')) {
+          debugPrint('✅ Login successful - using user data');
+          return data['user'] as Map<String, dynamic>;
+        } else {
+          debugPrint('❌ Login response missing clinician/user data');
+          throw Exception('Invalid login response: missing clinician/user data');
+        }
       } else {
-        throw Exception('Invalid login response: missing clinician/user data');
+        // Login failed
+        final errorMsg = data['error'] ?? data['message'] ?? 'Login failed';
+        debugPrint('❌ Login failed: $errorMsg');
+        throw Exception(errorMsg);
       }
+    } on TimeoutException {
+      debugPrint('❌ Login timeout - check network connection');
+      rethrow;
     } catch (e) {
-      debugPrint('Error logging in clinician: $e');
+      debugPrint('❌ Error logging in clinician: $e');
+      debugPrint('   URL: ${await baseUrl}/api/clinicians/login');
+      if (e.toString().contains('SocketException')) {
+        debugPrint('   → Network error - cannot connect to server');
+      } else if (e.toString().contains('Failed host lookup')) {
+        debugPrint('   → Cannot resolve host - check IP address');
+      } else if (e.toString().contains('Connection refused')) {
+        debugPrint('   → Connection refused - check if backend is running');
+      }
       rethrow;
     }
   }
@@ -743,13 +780,35 @@ class ApiService {
   static Future<bool> healthCheck() async {
     try {
       final url = await baseUrl;
+      debugPrint('🔍 Health check: Testing connection to $url/health');
       final response = await http.get(
         Uri.parse('$url/health'),
         headers: headers,
+      ).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint('⏱️ Health check timeout after 5 seconds');
+          throw TimeoutException('Health check timed out');
+        },
       );
-      return response.statusCode == 200;
+      
+      final isHealthy = response.statusCode == 200;
+      debugPrint('${isHealthy ? "✅" : "❌"} Health check response: ${response.statusCode} - ${response.body}');
+      return isHealthy;
+    } on TimeoutException {
+      debugPrint('❌ Health check timeout - check network/firewall');
+      debugPrint('   URL attempted: ${await baseUrl}/health');
+      return false;
     } catch (e) {
-      debugPrint('Health check failed: $e');
+      debugPrint('❌ Health check failed: $e');
+      debugPrint('   URL attempted: ${await baseUrl}/health');
+      if (e.toString().contains('Failed host lookup')) {
+        debugPrint('   → Cannot resolve host - check IP address');
+      } else if (e.toString().contains('Connection refused')) {
+        debugPrint('   → Connection refused - check if backend is running');
+      } else if (e.toString().contains('Network is unreachable')) {
+        debugPrint('   → Network unreachable - check Wi-Fi connection');
+      }
       return false;
     }
   }

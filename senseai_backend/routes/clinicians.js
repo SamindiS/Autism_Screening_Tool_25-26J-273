@@ -89,11 +89,19 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   try {
+    console.log('\n' + '='.repeat(50));
+    console.log('🔐 LOGIN REQUEST RECEIVED');
+    console.log('='.repeat(50));
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('Request headers:', JSON.stringify(req.headers, null, 2));
+    
     // Get PIN from request body
     const pin = req.body?.pin || req.body;
+    console.log(`📌 PIN received: ${pin ? (pin.length > 0 ? pin.substring(0, 2) + '***' : 'empty') : 'null'}`);
     
     // Check if PIN is provided
     if (!pin) {
+      console.log('❌ Login failed: PIN is required');
       return res.status(400).json({ error: 'PIN is required' });
     }
 
@@ -106,6 +114,13 @@ router.post('/login', async (req, res) => {
         role: 'admin',
         isAdmin: true,
         user: {
+          id: 'admin',
+          name: 'Administrator',
+          hospital: 'All Hospitals',
+          role: 'admin',
+        },
+        // Also include 'clinician' for backward compatibility
+        clinician: {
           id: 'admin',
           name: 'Administrator',
           hospital: 'All Hospitals',

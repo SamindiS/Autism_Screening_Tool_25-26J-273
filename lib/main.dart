@@ -9,6 +9,11 @@ import 'features/common/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Note: Impeller can cause crashes on emulators with charts
+  // If you see rendering crashes, run with: flutter run --no-enable-impeller
+  // Or use a real device instead of emulator
+  
   await OfflineSyncService.init();
   OfflineSyncService.startSyncLoop();
   await StorageService.database;

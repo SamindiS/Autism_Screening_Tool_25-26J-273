@@ -740,25 +740,11 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   const SizedBox(height: 12),
                   SizedBox(
                     height: 150,
-                    child: PieChart(
-                      PieChartData(
-                        sections: [
-                          PieChartSectionData(
-                            value: correct.toDouble(),
-                            title: '${((correct / total) * 100).toStringAsFixed(0)}%',
-                            color: Colors.green,
-                            radius: 60,
-                          ),
-                          PieChartSectionData(
-                            value: incorrect.toDouble(),
-                            title: '${((incorrect / total) * 100).toStringAsFixed(0)}%',
-                            color: Colors.red,
-                            radius: 60,
-                          ),
-                        ],
-                        sectionsSpace: 2,
-                        centerSpaceRadius: 40,
-                      ),
+                    child: _buildSafePieChart(
+                      correct.toDouble(),
+                      incorrect.toDouble(),
+                      'Correct',
+                      'Incorrect',
                     ),
                   ),
                 ],
@@ -869,25 +855,11 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   const SizedBox(height: 12),
                   SizedBox(
                     height: 150,
-                    child: PieChart(
-                      PieChartData(
-                        sections: [
-                          PieChartSectionData(
-                            value: successfulJumps.toDouble(),
-                            title: '${successRate.toStringAsFixed(0)}%',
-                            color: Colors.green,
-                            radius: 60,
-                          ),
-                          PieChartSectionData(
-                            value: failedJumps.toDouble(),
-                            title: '${((failedJumps / totalJumps) * 100).toStringAsFixed(0)}%',
-                            color: Colors.red,
-                            radius: 60,
-                          ),
-                        ],
-                        sectionsSpace: 2,
-                        centerSpaceRadius: 40,
-                      ),
+                    child: _buildSafePieChart(
+                      successfulJumps.toDouble(),
+                      failedJumps.toDouble(),
+                      'Success',
+                      'Failed',
                     ),
                   ),
                 ],
@@ -1297,6 +1269,88 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         return Colors.green;
       default:
         return Colors.grey;
+    }
+  }
+
+  /// Safe pie chart wrapper that handles rendering errors gracefully
+  Widget _buildSafePieChart(
+    double value1,
+    double value2,
+    String label1,
+    String label2,
+  ) {
+    // Prevent division by zero and invalid values
+    final total = value1 + value2;
+    if (total <= 0) {
+      return Center(
+        child: Text(
+          'No data available',
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    try {
+      return PieChart(
+        PieChartData(
+          sections: [
+            PieChartSectionData(
+              value: value1,
+              title: '${((value1 / total) * 100).toStringAsFixed(0)}%',
+              color: Colors.green,
+              radius: 60,
+            ),
+            PieChartSectionData(
+              value: value2,
+              title: '${((value2 / total) * 100).toStringAsFixed(0)}%',
+              color: Colors.red,
+              radius: 60,
+            ),
+          ],
+          sectionsSpace: 2,
+          centerSpaceRadius: 40,
+        ),
+      );
+    } catch (e) {
+      // Fallback to simple text display if chart rendering fails
+      // This prevents crashes on emulators with Impeller issues
+      debugPrint('Chart rendering error: $e');
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text('$label1: ${value1.toInt()}'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text('$label2: ${value2.toInt()}'),
+            ],
+          ),
+        ],
+      );
     }
   }
 }

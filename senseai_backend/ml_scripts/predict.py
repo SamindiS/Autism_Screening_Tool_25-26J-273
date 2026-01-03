@@ -29,7 +29,14 @@ def load_models():
         feature_names = None
         if FEATURES_PATH.exists():
             with open(FEATURES_PATH, 'r') as f:
-                feature_names = json.load(f)
+                feature_data = json.load(f)
+                # Handle both formats: array or object with 'feature_names' key
+                if isinstance(feature_data, list):
+                    feature_names = feature_data
+                elif isinstance(feature_data, dict) and 'feature_names' in feature_data:
+                    feature_names = feature_data['feature_names']
+                else:
+                    feature_names = feature_data
         
         return model, scaler, feature_names
     except Exception as e:

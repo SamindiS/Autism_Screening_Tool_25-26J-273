@@ -131,3 +131,4 @@ node scripts/cleanup_firebase_data.js --delete-orphaned
 
 **Recommendation: Just upgrade to Blaze plan - it's the fastest and safest solution!** 🚀
 
+

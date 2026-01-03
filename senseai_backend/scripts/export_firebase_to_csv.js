@@ -117,13 +117,45 @@ async function exportData() {
 function formatForMLTraining(sessions, children) {
   const rows = [];
   
+  // Comprehensive header with all ML features
   const headers = [
+    // Basic identifiers
     'session_id', 'child_id', 'child_code', 'age_months', 'gender', 'group',
-    'session_type', 'age_group', 'completion_time_sec', 'accuracy_overall',
-    'total_score', 'risk_score', 'risk_level',
-    'primary_asd_marker_1', 'primary_asd_marker_2', 'primary_asd_marker_3',
+    'session_type', 'age_group', 'created_at',
+    
+    // Basic metrics
+    'completion_time_sec', 'accuracy_overall', 'total_score', 'risk_score', 'risk_level',
+    
+    // DCCS (Color-Shape) Features
+    'pre_switch_accuracy', 'post_switch_accuracy', 'mixed_block_accuracy',
+    'total_perseverative_errors', 'perseverative_error_rate_post_switch',
+    'avg_rt_pre_switch_ms', 'avg_rt_post_switch_correct_ms',
+    'switch_cost_ms', 'accuracy_drop_percent',
+    'number_of_consecutive_perseverations', 'total_rule_switch_errors',
+    'longest_streak_correct', 'avg_reaction_time_ms',
+    
+    // Frog Jump (Go/No-Go) Features
+    'go_accuracy', 'nogo_accuracy', 'overall_accuracy',
+    'commission_errors', 'omission_errors',
+    'commission_error_rate', 'omission_error_rate',
+    'avg_rt_go_ms', 'rt_variability',
+    'inhibition_failure_rate', 'anticipatory_responses', 'late_responses',
+    'anticipatory_rate', 'late_response_rate',
+    'longest_correct_streak', 'longest_error_streak', 'total_error_streak',
+    'fastest_rt_ms', 'slowest_rt_ms', 'rt_range',
+    
+    // Questionnaire Features
+    'critical_items_failed', 'critical_items_fail_rate',
+    'social_responsiveness_score', 'cognitive_flexibility_score',
+    'joint_attention_score', 'social_communication_score',
+    
+    // Reflection/Behavioral Features
     'attention_level', 'engagement_level', 'frustration_tolerance',
-    'instruction_following', 'overall_behavior', 'enhanced_risk_score', 'created_at',
+    'instruction_following', 'overall_behavior',
+    
+    // Legacy markers (for backward compatibility)
+    'primary_asd_marker_1', 'primary_asd_marker_2', 'primary_asd_marker_3',
+    'enhanced_risk_score',
   ];
 
   rows.push(headers.join(','));
@@ -134,7 +166,9 @@ function formatForMLTraining(sessions, children) {
 
     const mlFeatures = extractMLFeatures(session);
     
+    // Build row with all features in header order
     const row = [
+      // Basic identifiers
       session.id || '',
       session.child_id || '',
       child.child_code || child.name || '',
@@ -143,21 +177,72 @@ function formatForMLTraining(sessions, children) {
       child.group || 'unknown',
       session.session_type || '',
       session.age_group || '',
+      new Date(session.created_at).toISOString() || '',
+      
+      // Basic metrics
       mlFeatures.completion_time_sec || '',
       mlFeatures.accuracy_overall || '',
       mlFeatures.total_score || '',
       session.risk_score || '',
       session.risk_level || '',
-      mlFeatures.primary_asd_marker_1 || '',
-      mlFeatures.primary_asd_marker_2 || '',
-      mlFeatures.primary_asd_marker_3 || '',
+      
+      // DCCS Features
+      mlFeatures.pre_switch_accuracy || '',
+      mlFeatures.post_switch_accuracy || '',
+      mlFeatures.mixed_block_accuracy || '',
+      mlFeatures.total_perseverative_errors || '',
+      mlFeatures.perseverative_error_rate_post_switch || '',
+      mlFeatures.avg_rt_pre_switch_ms || '',
+      mlFeatures.avg_rt_post_switch_correct_ms || '',
+      mlFeatures.switch_cost_ms || '',
+      mlFeatures.accuracy_drop_percent || '',
+      mlFeatures.number_of_consecutive_perseverations || '',
+      mlFeatures.total_rule_switch_errors || '',
+      mlFeatures.longest_streak_correct || '',
+      mlFeatures.avg_reaction_time_ms || '',
+      
+      // Frog Jump Features
+      mlFeatures.go_accuracy || '',
+      mlFeatures.nogo_accuracy || '',
+      mlFeatures.overall_accuracy || '',
+      mlFeatures.commission_errors || '',
+      mlFeatures.omission_errors || '',
+      mlFeatures.commission_error_rate || '',
+      mlFeatures.omission_error_rate || '',
+      mlFeatures.avg_rt_go_ms || '',
+      mlFeatures.rt_variability || '',
+      mlFeatures.inhibition_failure_rate || '',
+      mlFeatures.anticipatory_responses || '',
+      mlFeatures.late_responses || '',
+      mlFeatures.anticipatory_rate || '',
+      mlFeatures.late_response_rate || '',
+      mlFeatures.longest_correct_streak || '',
+      mlFeatures.longest_error_streak || '',
+      mlFeatures.total_error_streak || '',
+      mlFeatures.fastest_rt_ms || '',
+      mlFeatures.slowest_rt_ms || '',
+      mlFeatures.rt_range || '',
+      
+      // Questionnaire Features
+      mlFeatures.critical_items_failed || '',
+      mlFeatures.critical_items_fail_rate || '',
+      mlFeatures.social_responsiveness_score || '',
+      mlFeatures.cognitive_flexibility_score || '',
+      mlFeatures.joint_attention_score || '',
+      mlFeatures.social_communication_score || '',
+      
+      // Reflection Features
       mlFeatures.attention_level || '',
       mlFeatures.engagement_level || '',
       mlFeatures.frustration_tolerance || '',
       mlFeatures.instruction_following || '',
       mlFeatures.overall_behavior || '',
+      
+      // Legacy markers
+      mlFeatures.primary_asd_marker_1 || '',
+      mlFeatures.primary_asd_marker_2 || '',
+      mlFeatures.primary_asd_marker_3 || '',
       mlFeatures.enhanced_risk_score || '',
-      new Date(session.created_at).toISOString() || '',
     ];
 
     rows.push(row.map(val => escapeCSVValue(val)).join(','));
@@ -169,6 +254,7 @@ function formatForMLTraining(sessions, children) {
 function extractMLFeatures(session) {
   const features = {};
 
+  // Extract from game_results (basic metrics)
   if (session.game_results) {
     const gr = session.game_results;
     features.accuracy_overall = gr.accuracy || gr.overall_accuracy || '';
@@ -176,18 +262,34 @@ function extractMLFeatures(session) {
       (session.end_time && session.start_time ? 
         Math.floor((session.end_time - session.start_time) / 1000) : '');
     features.total_score = gr.total_score || gr.correct_trials || '';
+    
+    // Legacy markers (for backward compatibility)
     features.primary_asd_marker_1 = gr.perseverative_errors || gr.commission_errors || '';
     features.primary_asd_marker_2 = gr.perseverative_error_rate || gr.commission_error_rate || '';
     features.primary_asd_marker_3 = gr.switch_cost || gr.switch_cost_ms || '';
   }
 
+  // Extract from questionnaire_results
   if (session.questionnaire_results) {
     const qr = session.questionnaire_results;
     features.total_score = qr.total_score || features.total_score || '';
     features.accuracy_overall = qr.percentage_score || features.accuracy_overall || '';
     features.risk_score = qr.risk_score || '';
+    
+    // Questionnaire-specific features
+    if (qr.critical_items) {
+      features.critical_items_failed = qr.critical_items.failed || '';
+      features.critical_items_fail_rate = qr.critical_items.fail_rate || '';
+    }
+    if (qr.domain_scores) {
+      features.social_responsiveness_score = qr.domain_scores.social_responsiveness || '';
+      features.cognitive_flexibility_score = qr.domain_scores.cognitive_flexibility || '';
+      features.joint_attention_score = qr.domain_scores.joint_attention || '';
+      features.social_communication_score = qr.domain_scores.social_communication || '';
+    }
   }
 
+  // Extract from reflection_results
   if (session.reflection_results) {
     const rr = session.reflection_results;
     features.attention_level = rr.attention_level || '';
@@ -197,6 +299,7 @@ function extractMLFeatures(session) {
     features.overall_behavior = rr.overall_behavior || '';
   }
 
+  // Extract ALL ML features from ml_features object (most comprehensive)
   if (session.game_results?.ml_features) {
     Object.assign(features, session.game_results.ml_features);
   }
@@ -204,6 +307,7 @@ function extractMLFeatures(session) {
     Object.assign(features, session.questionnaire_results.ml_features);
   }
 
+  // Calculate completion time if not available
   if (!features.completion_time_sec && session.start_time && session.end_time) {
     features.completion_time_sec = Math.floor((session.end_time - session.start_time) / 1000);
   }
@@ -253,6 +357,7 @@ exportData().then(() => {
   console.error('❌ Export failed:', err);
   process.exit(1);
 });
+
 
 
 

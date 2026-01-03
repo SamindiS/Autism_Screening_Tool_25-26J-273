@@ -160,3 +160,4 @@ curl -X POST http://localhost:3000/api/clinicians/login -H "Content-Type: applic
 
 **Try these first!**
 
+

@@ -214,3 +214,4 @@ curl -X POST http://localhost:3000/api/clinicians/login \
 
 **The enhanced logging will show exactly what's happening!**
 
+

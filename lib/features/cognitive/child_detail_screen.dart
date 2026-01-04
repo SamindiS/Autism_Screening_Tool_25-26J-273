@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/services/storage_service.dart';
+import '../../core/services/pdf_report_service.dart';
 import '../../data/models/child.dart';
 import 'add_child_screen.dart';
 import 'age_select_screen.dart';
@@ -100,6 +101,67 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
     }
   }
 
+  bool _generatingReport = false;
+
+  Future<void> _handleDownloadReport() async {
+    if (_generatingReport) return;
+
+    setState(() => _generatingReport = true);
+
+    try {
+      // Load sessions
+      final sessions = await _loadSessions();
+
+      // Show loading dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 20),
+                Text('Generating PDF report...'),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // Generate and share PDF
+      await PdfReportService.generateAndShareReport(
+        child: _child,
+        sessions: sessions,
+      );
+
+      // Close loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('PDF report generated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to generate PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _generatingReport = false);
+      }
+    }
+  }
+
   Future<void> _handleDelete() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -179,6 +241,11 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: _handleDownloadReport,
+            tooltip: 'Download PDF Report',
+          ),
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: _handleEdit,

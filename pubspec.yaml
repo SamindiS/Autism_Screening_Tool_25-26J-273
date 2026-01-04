@@ -48,6 +48,7 @@ dependencies:
   webview_flutter: ^4.9.0
   pdf: ^3.11.1
   printing: ^5.13.3
+  archive: ^4.0.0
   pull_to_refresh: ^2.0.0
   http: ^1.2.2
   share_plus: ^10.0.2

@@ -1,29 +1,51 @@
+/**
+ * ML Predictions Route - FastAPI Integration
+ * 
+ * This version uses the FastAPI ML Engine instead of spawning Python script
+ * 
+ * To use: Replace ml_predictions.js with this file, or update the existing file
+ */
+
 const express = require('express');
-const { spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+const axios = require('axios');
 const router = express.Router();
 
-// Check if ML models exist
-const MODEL_DIR = path.join(__dirname, '../models');
-const MODEL_PATH = path.join(MODEL_DIR, 'asd_detection_model.pkl');
-const SCALER_PATH = path.join(MODEL_DIR, 'feature_scaler.pkl');
-const FEATURES_PATH = path.join(MODEL_DIR, 'feature_names.json');
+// FastAPI ML Engine URL
+const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:8001';
 
-const ML_AVAILABLE = fs.existsSync(MODEL_PATH) && fs.existsSync(SCALER_PATH);
+// Check if ML engine is available
+let ML_AVAILABLE = false;
 
-if (!ML_AVAILABLE) {
-  console.log('⚠️  ML models not found. ML predictions will use fallback.');
-  console.log('   Place trained models in: senseai_backend/models/');
-  console.log('   Required files:');
-  console.log('     - asd_detection_model.pkl');
-  console.log('     - feature_scaler.pkl');
-  console.log('     - feature_names.json');
+// Check ML engine health on startup
+async function checkMLEngine() {
+  try {
+    const response = await axios.get(`${ML_ENGINE_URL}/health`, {
+      timeout: 5000
+    });
+    ML_AVAILABLE = response.data.models_loaded === true;
+    
+    if (ML_AVAILABLE) {
+      console.log('✅ FastAPI ML Engine is available and models are loaded');
+    } else {
+      console.log('⚠️  FastAPI ML Engine is running but models not loaded');
+    }
+  } catch (err) {
+    console.log('⚠️  FastAPI ML Engine not available, using fallback predictions');
+    console.log(`   URL: ${ML_ENGINE_URL}`);
+    console.log(`   Error: ${err.message}`);
+    ML_AVAILABLE = false;
+  }
 }
+
+// Check on startup
+checkMLEngine();
+
+// Recheck every 30 seconds
+setInterval(checkMLEngine, 30000);
 
 /**
  * POST /api/ml/predict
- * Predict ASD risk using trained ML model
+ * Predict ASD risk using FastAPI ML Engine
  * 
  * Body:
  * {
@@ -41,29 +63,55 @@ router.post('/predict', async (req, res) => {
       return res.status(400).json({ error: 'mlFeatures is required' });
     }
 
-    // If ML model not available, use fallback rule-based prediction
+    // If ML engine not available, use fallback rule-based prediction
     if (!ML_AVAILABLE) {
-      console.log('⚠️  Using fallback rule-based prediction (ML model not available)');
+      console.log('⚠️  Using fallback rule-based prediction (ML engine not available)');
       return res.json(fallbackPrediction(mlFeatures));
     }
 
-    // Prepare Python script input
-    const pythonScript = path.join(__dirname, '../ml_scripts/predict.py');
-    const inputData = {
-      features: mlFeatures,
-      age_group: ageGroup || 'unknown',
-      session_type: sessionType || 'unknown',
-    };
+    // Call FastAPI ML Engine
+    try {
+      const response = await axios.post(
+        `${ML_ENGINE_URL}/predict`,
+        {
+          age_months: mlFeatures.age_months || 36,
+          features: mlFeatures,
+          age_group: ageGroup || 'unknown',
+          session_type: sessionType || 'unknown'
+        },
+        {
+          timeout: 10000, // 10 second timeout
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
 
-    // Run Python prediction script
-    const python = spawn('python3', [pythonScript, JSON.stringify(inputData)]);
-    // Fallback to 'python' if 'python3' not found
-    if (!python.pid) {
-      const python2 = spawn('python', [pythonScript, JSON.stringify(inputData)]);
-      return handlePythonProcess(python2, res, mlFeatures);
+      const result = response.data;
+      console.log(
+        `✅ ML Prediction: ${result.prediction === 1 ? 'ASD Risk' : 'Control'}, ` +
+        `Score: ${result.risk_score.toFixed(1)}`
+      );
+
+      return res.json({
+        success: true,
+        prediction: result.prediction,
+        probability: result.probability,
+        confidence: result.confidence,
+        risk_level: result.risk_level,
+        risk_score: result.risk_score,
+        asd_probability: result.asd_probability,
+        method: 'ml', // Indicates ML was used
+      });
+
+    } catch (apiError) {
+      console.error('❌ FastAPI ML Engine error:', apiError.message);
+      if (apiError.response) {
+        console.error('   Response:', apiError.response.data);
+      }
+      console.log('⚠️  Falling back to rule-based prediction');
+      return res.json(fallbackPrediction(mlFeatures));
     }
-
-    return handlePythonProcess(python, res, mlFeatures);
 
   } catch (err) {
     console.error('❌ ML prediction error:', err);
@@ -75,54 +123,8 @@ router.post('/predict', async (req, res) => {
   }
 });
 
-function handlePythonProcess(python, res, mlFeatures) {
-  let output = '';
-  let error = '';
-
-  python.stdout.on('data', (data) => {
-    output += data.toString();
-  });
-
-  python.stderr.on('data', (data) => {
-    error += data.toString();
-  });
-
-  python.on('close', (code) => {
-    if (code !== 0) {
-      console.error('❌ Python script error:', error);
-      console.log('⚠️  Falling back to rule-based prediction');
-      return res.json(fallbackPrediction(mlFeatures));
-    }
-
-    try {
-      const result = JSON.parse(output.trim());
-      console.log(`✅ ML Prediction: ${result.prediction === 1 ? 'ASD Risk' : 'Control'}, Score: ${result.risk_score.toFixed(1)}`);
-      res.json({
-        success: true,
-        prediction: result.prediction,
-        probability: result.probability,
-        confidence: result.confidence,
-        risk_level: result.risk_level,
-        risk_score: result.risk_score,
-        asd_probability: result.asd_probability,
-        method: 'ml', // Indicates ML was used
-      });
-    } catch (e) {
-      console.error('❌ Failed to parse Python output:', e);
-      console.log('⚠️  Falling back to rule-based prediction');
-      res.json(fallbackPrediction(mlFeatures));
-    }
-  });
-
-  python.on('error', (err) => {
-    console.error('❌ Python process error:', err);
-    console.log('⚠️  Falling back to rule-based prediction');
-    res.json(fallbackPrediction(mlFeatures));
-  });
-}
-
 /**
- * Fallback rule-based prediction when ML model is not available
+ * Fallback rule-based prediction when ML engine is not available
  */
 function fallbackPrediction(mlFeatures) {
   // Extract key features
@@ -162,15 +164,31 @@ function fallbackPrediction(mlFeatures) {
  * GET /api/ml/health
  * Check if ML service is available
  */
-router.get('/health', (req, res) => {
-  res.json({
-    available: ML_AVAILABLE,
-    model_path: MODEL_PATH,
-    scaler_path: SCALER_PATH,
-    message: ML_AVAILABLE 
-      ? 'ML models loaded and ready' 
-      : 'ML models not found - using fallback predictions',
-  });
+router.get('/health', async (req, res) => {
+  try {
+    // Check FastAPI ML Engine
+    const response = await axios.get(`${ML_ENGINE_URL}/health`, {
+      timeout: 5000
+    });
+    
+    res.json({
+      available: response.data.models_loaded === true,
+      engine: 'fastapi',
+      engine_url: ML_ENGINE_URL,
+      engine_status: response.data,
+      message: response.data.models_loaded 
+        ? 'FastAPI ML Engine loaded and ready' 
+        : 'FastAPI ML Engine running but models not loaded',
+    });
+  } catch (err) {
+    res.json({
+      available: false,
+      engine: 'fastapi',
+      engine_url: ML_ENGINE_URL,
+      error: err.message,
+      message: 'FastAPI ML Engine not available - using fallback predictions',
+    });
+  }
 });
 
 module.exports = router;

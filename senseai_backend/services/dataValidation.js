@@ -109,7 +109,8 @@ const validateSession = async (sessionData, isUpdate = false) => {
     try {
       const childDoc = await childrenCollection.doc(sessionData.child_id).get();
       if (!childDoc.exists) {
-        errors.push(`Child ID ${sessionData.child_id} does not exist`);
+        // Make this a warning - child might exist locally but not in Firebase yet
+        warnings.push(`Child ID ${sessionData.child_id} not found in Firebase (may exist locally)`);
       } else {
         const childData = childDoc.data();
         
@@ -132,7 +133,14 @@ const validateSession = async (sessionData, isUpdate = false) => {
         }
       }
     } catch (err) {
-      errors.push(`Could not validate child ID: ${err.message}`);
+      // Firebase authentication errors should not block session creation
+      // System can work offline - make this a warning instead of error
+      if (err.code === 16 || err.message.includes('UNAUTHENTICATED') || err.message.includes('authentication')) {
+        warnings.push(`Could not validate child ID with Firebase (authentication issue - system will work offline): ${err.message}`);
+      } else {
+        // Other errors (network, etc.) also should not block - make warning
+        warnings.push(`Could not validate child ID: ${err.message} (system will continue)`);
+      }
     }
   } else if (!isUpdate) {
     errors.push('child_id is required');

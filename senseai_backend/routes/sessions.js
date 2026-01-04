@@ -85,9 +85,20 @@ router.post('/', async (req, res) => {
       console.warn('⚠️  Validation warnings (non-blocking):', validationResult.warnings);
     }
 
-    const childDoc = await childrenCollection.doc(value.child_id).get();
-    if (!childDoc.exists) {
-      return res.status(404).json({ error: 'Child not found' });
+    // Try to verify child exists in Firebase, but don't block if Firebase is unavailable
+    try {
+      const childDoc = await childrenCollection.doc(value.child_id).get();
+      if (!childDoc.exists) {
+        console.warn(`⚠️  Child ID ${value.child_id} not found in Firebase (may exist locally - allowing session creation)`);
+        // Don't block - child might exist locally but not synced to Firebase yet
+      }
+    } catch (err) {
+      // Firebase unavailable - allow session creation anyway (offline mode)
+      if (err.code === 16 || err.message.includes('UNAUTHENTICATED') || err.message.includes('authentication')) {
+        console.warn(`⚠️  Firebase authentication unavailable - allowing session creation in offline mode: ${err.message}`);
+      } else {
+        console.warn(`⚠️  Could not verify child in Firebase - allowing session creation anyway: ${err.message}`);
+      }
     }
 
     const session = {
@@ -96,10 +107,45 @@ router.post('/', async (req, res) => {
       updated_at: Date.now(),
     };
 
-    const ref = await sessionsCollection.add(session);
-    const saved = await ref.get();
-    console.log(`✅ Session created in Firebase: ${ref.id} (Type: ${session.session_type}, Child: ${session.child_id})`);
-    res.status(201).json({ session: toSession(saved) });
+    // Try to save to Firebase, but don't fail if Firebase is unavailable
+    try {
+      const ref = await sessionsCollection.add(session);
+      const saved = await ref.get();
+      console.log(`✅ Session created in Firebase: ${ref.id} (Type: ${session.session_type}, Child: ${session.child_id})`);
+      res.status(201).json({ 
+        session: toSession(saved),
+        saved_to_firebase: true,
+        warnings: validationResult.warnings
+      });
+    } catch (firebaseErr) {
+      // Firebase unavailable - return session data anyway (app will save locally)
+      if (firebaseErr.code === 16 || firebaseErr.message.includes('UNAUTHENTICATED') || firebaseErr.message.includes('authentication')) {
+        console.warn(`⚠️  Firebase authentication unavailable - session will be saved locally only: ${firebaseErr.message}`);
+        res.status(201).json({ 
+          session: {
+            ...session,
+            id: `local_${Date.now()}`,
+            saved_to_firebase: false
+          },
+          saved_to_firebase: false,
+          warning: 'Session saved locally only (Firebase unavailable)',
+          warnings: validationResult.warnings
+        });
+      } else {
+        // Other Firebase errors - still return session for local saving
+        console.warn(`⚠️  Firebase save failed - session will be saved locally: ${firebaseErr.message}`);
+        res.status(201).json({ 
+          session: {
+            ...session,
+            id: `local_${Date.now()}`,
+            saved_to_firebase: false
+          },
+          saved_to_firebase: false,
+          warning: 'Session saved locally only (Firebase error)',
+          warnings: validationResult.warnings
+        });
+      }
+    }
   } catch (err) {
     console.error('❌ Error creating session:', err);
     res.status(500).json({ error: err.message });

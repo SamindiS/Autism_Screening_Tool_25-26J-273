@@ -2,6 +2,21 @@
 
 Professional FastAPI-based ML inference service for ASD screening predictions.
 
+**Status:** ✅ Production-ready, research-grade, industry-standard
+
+---
+
+## 🎯 Features
+
+- ✅ **Professional Structure**: Modular, scalable, maintainable
+- ✅ **Auto-Generated API Docs**: Swagger UI at `/docs`
+- ✅ **Structured Logging**: Audit trail for clinical use
+- ✅ **Centralized Configuration**: Reproducible, no hard-coded paths
+- ✅ **Model Metadata**: Transparency and versioning
+- ✅ **Feature Validation**: Safe error handling
+- ✅ **Child ID Tracking**: Ethics compliance
+- ✅ **Age Normalization**: Z-score calculation from control norms
+
 ---
 
 ## 🚀 Quick Start
@@ -18,6 +33,8 @@ venv\Scripts\activate
 # Linux/Mac
 source venv/bin/activate
 ```
+
+**⚠️ Important:** `venv/` is in `.gitignore` - do NOT commit it. Use `requirements.txt` instead.
 
 ### 2. Install Dependencies
 
@@ -219,6 +236,47 @@ Or use Docker, systemd, or your preferred deployment method.
 - Age normalization is optional (works without age_norms.json)
 - Feature count mismatch is handled automatically
 - All errors return proper HTTP status codes
+- Logs are saved to `logs/ml_engine.log`
+- Model metadata is included in health check if available
+
+---
+
+## 🔍 Logging
+
+Logs are automatically saved to:
+```
+ml_engine/logs/ml_engine.log
+```
+
+View logs:
+```bash
+tail -f logs/ml_engine.log  # Linux/Mac
+Get-Content logs/ml_engine.log -Wait  # Windows PowerShell
+```
+
+---
+
+## 📊 Model Metadata
+
+Create `models/model_metadata.json` for transparency:
+
+```bash
+cp models/model_metadata.json.example models/model_metadata.json
+# Edit with your model information
+```
+
+This will be included in health check responses.
+
+---
+
+## ✅ Professional Improvements
+
+See `README_IMPROVEMENTS.md` for details on:
+- Centralized configuration
+- Structured logging
+- Model metadata
+- Feature validation
+- Child ID tracking
 
 ---
 

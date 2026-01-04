@@ -4,6 +4,8 @@ Feature preprocessing and age normalization
 
 from typing import Dict, Any, Optional
 import numpy as np
+from app.core.config import AGE_BANDS, FEATURES_TO_NORMALIZE
+from app.core.logger import logger
 
 def get_age_band(age_months: int) -> str:
     """
@@ -15,16 +17,10 @@ def get_age_band(age_months: int) -> str:
     Returns:
         Age band string (e.g., '24-36', '36-48', '48-60', '60-72')
     """
-    if age_months < 36:
-        return "24-36"
-    elif age_months < 48:
-        return "36-48"
-    elif age_months < 60:
-        return "48-60"
-    elif age_months < 72:
-        return "60-72"
-    else:
-        return "72+"  # Fallback
+    for band_name, (low, high) in AGE_BANDS.items():
+        if low <= age_months < high:
+            return band_name
+    return "72+"  # Fallback for older children
 
 def calculate_zscore(
     value: float,
@@ -92,31 +88,22 @@ def normalize_features(
         # No age norms available, return features as-is
         return normalized
     
-    # Features that need age normalization (create Z-scores)
-    features_to_normalize = [
-        'post_switch_accuracy',
-        'perseverative_error_rate_post_switch',
-        'switch_cost_ms',
-        'avg_rt_pre_switch_ms',
-        'avg_rt_post_switch_correct_ms',
-        'accuracy_drop_percent',
-        'nogo_accuracy',
-        'commission_error_rate',
-        'rt_variability',
-        'avg_rt_go_ms',
-    ]
-    
     # Calculate Z-scores for features that need normalization
-    for feature in features_to_normalize:
+    normalized_count = 0
+    for feature in FEATURES_TO_NORMALIZE:
         if feature in features_dict:
             raw_value = features_dict[feature]
             if raw_value is not None:
                 try:
                     zscore = calculate_zscore(float(raw_value), age_months, feature, age_norms)
                     normalized[f'{feature}_zscore'] = zscore
+                    normalized_count += 1
                 except (ValueError, TypeError):
                     # Skip if value can't be converted to float
                     normalized[f'{feature}_zscore'] = 0.0
+    
+    if normalized_count > 0:
+        logger.debug(f"Age-normalized {normalized_count} features for age {age_months} months")
     
     return normalized
 

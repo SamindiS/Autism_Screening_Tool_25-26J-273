@@ -6,17 +6,11 @@ import joblib
 import json
 from pathlib import Path
 from typing import Optional, Dict, Any
-
-# Get paths relative to this file
-ML_ENGINE_DIR = Path(__file__).parent.parent.parent
-MODEL_DIR = ML_ENGINE_DIR / "models"
-
-# Model file paths (supports both naming conventions)
-MODEL_PATH = MODEL_DIR / "asd_detection_model.pkl"
-MODEL_PATH_ALT = MODEL_DIR / "asd_screening_model_calibrated.pkl"
-SCALER_PATH = MODEL_DIR / "feature_scaler.pkl"
-FEATURES_PATH = MODEL_DIR / "feature_names.json"
-AGE_NORMS_PATH = MODEL_DIR / "age_norms.json"
+from app.core.config import (
+    MODEL_DIR, MODEL_PATH, MODEL_PATH_ALT, SCALER_PATH,
+    FEATURES_PATH, AGE_NORMS_PATH, MODEL_METADATA_PATH
+)
+from app.core.logger import logger
 
 # Global variables (loaded once at startup)
 _model = None
@@ -32,14 +26,17 @@ def load_models():
         # Already loaded
         return _model, _scaler, _feature_names, _age_norms
     
+    logger.info("Loading ML models...")
     try:
         # Load model
         if MODEL_PATH.exists():
             _model = joblib.load(MODEL_PATH)
             model_path_used = str(MODEL_PATH)
+            logger.info(f"Model loaded from: {MODEL_PATH.name}")
         elif MODEL_PATH_ALT.exists():
             _model = joblib.load(MODEL_PATH_ALT)
             model_path_used = str(MODEL_PATH_ALT)
+            logger.info(f"Model loaded from: {MODEL_PATH_ALT.name}")
         else:
             raise FileNotFoundError(
                 f"Model not found. Expected: {MODEL_PATH} or {MODEL_PATH_ALT}"
@@ -49,6 +46,7 @@ def load_models():
         if not SCALER_PATH.exists():
             raise FileNotFoundError(f"Scaler not found: {SCALER_PATH}")
         _scaler = joblib.load(SCALER_PATH)
+        logger.info(f"Scaler loaded: {SCALER_PATH.name} (expects {_scaler.n_features_in_} features)")
         
         # Load feature names
         _feature_names = None
@@ -67,17 +65,34 @@ def load_models():
         if AGE_NORMS_PATH.exists():
             with open(AGE_NORMS_PATH, 'r') as f:
                 _age_norms = json.load(f)
+            logger.info(f"Age norms loaded: {AGE_NORMS_PATH.name}")
+        else:
+            logger.warning(f"Age norms not found: {AGE_NORMS_PATH.name} (age normalization disabled)")
         
+        logger.info("✅ All models loaded successfully")
         return _model, _scaler, _feature_names, _age_norms
         
     except Exception as e:
+        logger.error(f"❌ Error loading models: {str(e)}")
         raise FileNotFoundError(f"Error loading models: {str(e)}")
+
+def load_model_metadata() -> Optional[Dict[str, Any]]:
+    """Load model metadata if available"""
+    if MODEL_METADATA_PATH.exists():
+        try:
+            with open(MODEL_METADATA_PATH, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.warning(f"Could not load model metadata: {e}")
+    return None
 
 def check_models_loaded() -> Dict[str, Any]:
     """Check if models are loaded and return status"""
     try:
         model, scaler, feature_names, age_norms = load_models()
-        return {
+        metadata = load_model_metadata()
+        
+        status = {
             "loaded": True,
             "model_path": str(MODEL_PATH) if MODEL_PATH.exists() else str(MODEL_PATH_ALT),
             "scaler_path": str(SCALER_PATH),
@@ -86,6 +101,11 @@ def check_models_loaded() -> Dict[str, Any]:
             "expected_features": scaler.n_features_in_ if scaler else None,
             "feature_names_count": len(feature_names) if feature_names else None
         }
+        
+        if metadata:
+            status["metadata"] = metadata
+        
+        return status
     except Exception as e:
         return {
             "loaded": False,

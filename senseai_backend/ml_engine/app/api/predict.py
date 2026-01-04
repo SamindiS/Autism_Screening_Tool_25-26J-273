@@ -3,6 +3,7 @@ Prediction endpoint for ASD risk assessment
 """
 
 from fastapi import APIRouter, HTTPException
+from app.core.logger import logger
 from app.schemas.request import PredictionRequest
 from app.schemas.response import PredictionResponse
 from app.ml.predictor import predict_asd
@@ -25,12 +26,15 @@ def predict_endpoint(request: PredictionRequest):
         result = predict_asd(request)
         return result
     except ValueError as e:
+        logger.error(f"Validation error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except FileNotFoundError as e:
+        logger.error(f"Model not found: {e}")
         raise HTTPException(
             status_code=503,
             detail=f"ML models not available: {str(e)}. Please ensure model files are in models/ directory."
         )
     except Exception as e:
+        logger.error(f"Prediction failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 

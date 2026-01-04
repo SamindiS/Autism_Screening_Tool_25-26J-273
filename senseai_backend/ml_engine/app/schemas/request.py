@@ -8,6 +8,11 @@ from typing import Dict, Any, Optional
 class PredictionRequest(BaseModel):
     """Request schema for ASD prediction"""
     
+    child_id: Optional[str] = Field(
+        None,
+        description="Child ID for longitudinal tracking and ethics traceability"
+    )
+    
     age_months: Optional[int] = Field(
         None,
         description="Child's age in months (for age normalization)",

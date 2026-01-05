@@ -266,10 +266,11 @@ SenseAI/
 
 1. **Start the app** on a mobile device
 2. **Enter child information** (name and age)
-3. **Calibration** - Child follows animated characters with eyes
-4. **Butterfly Game** (15 seconds) - Child follows butterfly with eyes
-5. **Bubble Game** (30 seconds) - Child pops bubbles by looking or touching
-6. **Results** - View risk assessment and download PDF report
+3. **Enter perant information** (name,email,contact number & relationship)
+4. **Calibration** - Child follows animated characters with eyes
+5. **Butterfly Game** (15 seconds) - Child follows butterfly with eyes
+6. **Bubble Game** (30 seconds) - Child pops bubbles by looking or touching
+7. **Results** - View risk assessment and download PDF report
 
 ### Interpreting Results
 

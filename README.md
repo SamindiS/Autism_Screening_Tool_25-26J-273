@@ -42,23 +42,42 @@ SenseAI is a research-grade autism screening tool that uses front-facing camera 
 ## Architecture
 
 ```
-+-------------------------------------------------------------+
-|                     Flutter Mobile App                       |
-|  +-------------+  +-------------+  +---------------------+   |
-|  | Child Info  |->| Calibration |->|  Games (Butterfly/  |   |
-|  |   Screen    |  |   Screen    |  |     Bubbles)        |   |
-|  +-------------+  +-------------+  +---------------------+   |
-|                            |                                 |
-|                   Gaze Data Collection                       |
-|            (ML Kit Face Detection + Iris Tracking)           |
-+----------------------------+---------------------------------+
++---------------------------------------------------------------------+
+|                         Flutter Mobile App                          |
+|                                                                     |
+|  +------------------+   +------------------+   +------------------+ |
+|  |   Child Info     |-->|  Parent Info     |-->|  Calibration     | |
+|  |   Screen         |   |  Screen          |   |  Screen          | |
+|  | (child name,     |   | (parent name,    |   | (9-point)        | |
+|  | age, gender)     |   | email, phone,    |   |                  | |
+|  +------------------+   | relationship)    |   +------------------+ |
+|                         +------------------+            |           |
+|                                                         v           |
+|                                             +---------------------+ |
+|                                             |   Games Screen      | |
+|                                             | (Butterfly /        | |
+|                                             |  Bubble Games)      | |
+|                                             +---------------------+ |
+|                                                           |         |
+|                                               Gaze Data Collection  |
+|                                    (ML Kit Face Detection + Iris)   |
+|                                                           |         |
+|                                                           v         |
+|                                             +---------------------+ |
+|                                             |   PDF Report        | |
+|                                             | (Child Info +       | |
+|                                             |  Parent Info +      | |
+|                                             |  Gaze Metrics)      | |
+|                                             +---------------------+ |
++---------------------------------------------------------------------+
+
                              | HTTP/REST API
                              v
 +-------------------------------------------------------------+
-|                    FastAPI Backend                           |
+|                    FastAPI Backend                          |
 |  +--------------+  +--------------+  +-----------------+    |
-|  | Gaze Pattern |->| ML Classifier |->|  PDF Report     |    |
-|  |   Analyzer   |  | (95.2% acc)   |  |  Generator      |    |
+|  | Gaze Pattern |->| ML Classifier |->|  PDF Report     |   |
+|  |   Analyzer   |  | (95.2% acc)   |  |  Generator      |   |
 |  +--------------+  +--------------+  +-----------------+    |
 +-------------------------------------------------------------+
 ```

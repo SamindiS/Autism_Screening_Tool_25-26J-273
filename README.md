@@ -1,188 +1,91 @@
-SenseAI – Auditory Response to Name (RTN) Module for Autism Screening
+# SenseAI – Clinical Auditory Response to Name (RTN) Screening Module
 
-SenseAI – Auditory RTN Module is a research-based autism screening component that analyzes a child’s auditory response when their name is called.
-The system uses parent-recorded videos, combining audio event detection and visual response analysis, to identify early auditory attention patterns associated with Autism Spectrum Disorder (ASD).
+**SenseAI** is a research-grade early autism screening system.  
+This repository contains the **Auditory Response to Name (RTN)** module — an objective, non-invasive tool that analyzes a child's behavioral response when their name is called, using synchronized audio-visual processing.
 
+The system is designed to support early detection of potential autism indicators through natural, home-based video recordings.
 
+## ✨ Key Features
 
+- Parent-friendly mobile application (Android & iOS)
+- Simple video recording & upload interface
+- Automatic name-call detection in audio
+- Computer vision analysis of child's response:
+  - Head turning
+  - Eye movement/gaze shift
+  - Face orientation change
+  - Response latency
+  - Response consistency
+- Machine learning-based risk classification
+- Professional PDF screening report generation
+- Completely **non-invasive** — no wearables or clinical setting required
 
+## 🏗️ Technology Stack
 
+| Layer               | Technology              |
+|---------------------|-------------------------|
+| Mobile App          | Flutter (Android + iOS) |
+| Backend API         | FastAPI (Python)        |
+| Audio Processing    | Python (librosa, etc.)  |
+| Computer Vision     | OpenCV / MediaPipe      |
+| Machine Learning    | Scikit-learn            |
+| Model File          | rtn_model.pkl           |
+| Report Generation   | ReportLab / FPDF        |
+| License             | Research Use Only       |
 
+## ⚠️ Important Clinical & Legal Notes
 
+> This tool is a **screening module only** — **NOT** a diagnostic instrument.  
+> Results should **never** be used as a standalone diagnosis.  
+> Always refer to qualified clinical professionals for autism assessment and diagnosis.
 
-Key Components
+## Risk Classification (Output)
 
-Flutter Mobile App – Parent video upload & instructions
+| Score Range | Risk Category     | Interpretation                     |
+|-------------|-------------------|------------------------------------|
+| 0–30        | Low Risk          | Typical response patterns          |
+| 31–60       | Moderate Risk     | Some atypical indicators           |
+| 61–100      | Elevated Risk     | Multiple atypical response markers |
 
-FastAPI Backend – Audio-video processing and feature extraction
-
-ML Classifier – Auditory response classification model
-
-Report Generator – Screening result & PDF report generation
-
-Features
-Auditory-Based Screening
-
-Parent uploads a short video calling the child’s name
-
-Automatic detection of name-calling audio event
-
-Analysis of child’s reaction:
-
-Head turning
-
-Eye movement
-
-Face orientation
-
-Response delay
-
-Clinical Analysis
-
-Audio–visual synchronization
-
-Response time measurement
-
-Consistency analysis across calls
-
-Risk assessment with confidence score
-
-Professional PDF report generation
-
-Child-Friendly & Non-Invasive
-
-Natural home environment
-
-No sensors or wearable devices
-
-Minimal child cooperation required
-
-Stress-free screening process
-
-Architecture
-+-------------------------------------------------------------+
-|                  Flutter Mobile Application                  |
-|                                                             |
-|  +-------------------+                                      |
-|  | Parent Video      |                                      |
-|  | Upload Screen     |                                      |
-|  | (Name Calling)    |                                      |
-|  +-------------------+                                      |
-|            |                                                |
-|     Video & Audio Data                                      |
-+------------|------------------------------------------------+
-             |
-             v
-+-------------------------------------------------------------+
-|                    FastAPI Backend                           |
-|                                                             |
-|  +-------------------+   +-------------------------------+ |
-|  | Audio Event       |-> | Response Feature Analyzer     | |
-|  | Detector          |   | (Head turn, eye movement,     | |
-|  | (Name Call)       |   |  response delay)              | |
-|  +-------------------+   +-------------------------------+ |
-|                 |                      |                    |
-|        Name Call Timestamp     Auditory Response Features   |
-|                 +----------+--------------------------------+
-|                            v                                 |
-|                 Machine Learning Classifier                  |
-|            (Auditory Response to Name Model)                 |
-+----------------------------+--------------------------------+
-                             |
-                             v
-+-------------------------------------------------------------+
-|                Risk Assessment & PDF Report                  |
-+-------------------------------------------------------------+
-
-Machine Learning Model
-Auditory Features Used
-
-Response Timing
-
-response_time – Delay after name call
-
-reaction_latency_variance
-
-Visual Response Indicators
-
-head_turn_detected
-
-eye_movement_detected
-
-face_orientation_change
-
-Attention Consistency
-
-response_frequency
-
-missed_responses
-
-response_stability
-
-Model Output
-Score Range	Risk Category
-0–30	Low Risk
-31–60	Moderate Risk
-61–100	Elevated Risk
-
-Note: This is a screening tool, not a diagnostic system.
-
-Project Structure
+## Project Structure
 Auditory_RTN/
 ├── README.md
+│
 ├── backend/
-│   ├── main.py                    # FastAPI endpoints
-│   ├── audio_detector.py          # Name-call detection
-│   ├── video_response_analyzer.py # Head & eye movement analysis
-│   ├── rtn_model.pkl              # Trained ML model
+│   ├── main.py                 # FastAPI application
+│   ├── audio_detector.py       # Name-call detection logic
+│   ├── response_analyzer.py    # Head/eye/face analysis
+│   ├── model/
+│   │   └── rtn_model.pkl       # Trained ML model
 │   ├── requirements.txt
-│   └── reports/                   # Generated PDF reports
+│   └── reports/                # Generated PDF reports (output)
 │
 └── frontend/
-    ├── lib/
-    │   ├── upload_video_screen.dart
-    │   ├── instruction_screen.dart
-    │   └── result_screen.dart
-    └── pubspec.yaml
+├── lib/
+│   ├── main.dart
+│   ├── screens/
+│   │   ├── instruction_screen.dart
+│   │   ├── upload_video_screen.dart
+│   │   └── result_screen.dart
+│   └── widgets/
+└── pubspec.yaml
 
-Usage Guide
-Running an Auditory RTN Session
 
-Parent records a short video calling the child’s name
+## 🚀 Quick Start (for Researchers)
 
-Video is uploaded via the mobile app
+1. Clone the repository
+```bash
+git clone https://github.com/YOUR-USERNAME/Auditory_RTN.git
 
-Backend detects the name call in audio
+##Backend setup
+cd backend
+python -m venv venv
+source venv/bin/activate    # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload
 
-Child’s response is analyzed using video frames
+##Frontend setup
+cd frontend
+flutter pub get
+flutter run
 
-Auditory response features are extracted
-
-ML model evaluates risk level
-
-PDF report is generated
-
-Clinical Importance
-
-Auditory Response to Name (RTN) is one of the earliest behavioral indicators of autism.
-Children with ASD may show:
-
-Delayed or absent response
-
-Reduced head turning
-
-Limited eye contact
-
-Inconsistent reactions
-
-This module enables objective, early, and accessible screening.
-
-Ethical & Research Considerations
-
-Parent consent required
-
-Data used strictly for research
-
-No invasive procedures
-
-Privacy and confidentiality ensured

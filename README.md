@@ -113,7 +113,7 @@ Here's the **correct version of your "Quick Start"** with **project dependencies
 
 ---
 
-## 🚀 Quick Start (for Researchers)
+## 🚀 Quick Start 
 
 ### 1. Clone the repository
 
@@ -174,88 +174,9 @@ flutter pub get
 * **flutter_ffmpeg**: For processing multimedia files (video and audio).
 
 ---
-Here's the **correct version of your "Quick Start"** with **project dependencies** added and properly formatted. I’ve fixed any issues and made sure the dependencies are properly aligned with each section.
 
 ---
 
-## 🚀 Quick Start (for Researchers)
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/YOUR-USERNAME/Auditory_RTN.git
-cd Auditory_RTN
-```
-
----
-
-
-### 2. Set up the backend
-
-#### Install Backend Dependencies
-
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate   # For Windows, use `venv\Scripts\activate`
-pip install -r requirements.txt
-```
-
-#### Required Backend Dependencies:
-
-* **FastAPI**: Framework for building APIs with Python.
-* **Uvicorn**: ASGI server for running FastAPI.
-* **Scikit-learn**: For machine learning model implementation.
-* **OpenCV**: For video processing.
-* **Pydantic**: For data validation.
-* **NumPy**: For numerical computations.
-* **Librosa**: For audio feature extraction.
-* **ReportLab**: For generating PDF reports.
-
----
-
-#### Run the backend server
-
-```bash
-uvicorn main:app --reload
-```
-
----
-
-### 3. Set up the frontend
-
-#### Install Frontend Dependencies
-
-```bash
-cd ../frontend
-flutter pub get
-```
-
-#### Required Frontend Dependencies:
-
-* **Flutter SDK**: For building cross-platform mobile applications.
-* **Dart**: Programming language used by Flutter.
-* **Provider**: For state management in the Flutter app.
-* **Path_provider**: For accessing device storage.
-* **flutter_ffmpeg**: For processing multimedia files (video and audio).
-
----
-
-#### Run the Flutter app
-
-```bash
-flutter run
-```
-
----
-
-### 4. Check the application
-
-* Open the app on your Android/iOS device and follow the instructions to **record a short video** calling the child’s name.
-* **Upload** the video through the app.
-* View the **screening result** and download the **PDF report** generated.
-
----
 
 
 ## Machine Learning Model

@@ -739,10 +739,12 @@ class ApiService {
   /// - format: 'ml' (for ML training) or 'raw' (raw data)
   /// - group: Optional filter by group ('asd' or 'typically_developing')
   /// - sessionType: Optional filter by session type
+  /// - ageGroup: Optional filter by age group ('2-3.5', '3.5-5.5', '5.5-6.9')
   static Future<String> exportCSV({
     String format = 'ml',
     String? group,
     String? sessionType,
+    String? ageGroup,
   }) async {
     try {
       final url = await baseUrl;
@@ -756,6 +758,10 @@ class ApiService {
       
       if (sessionType != null) {
         queryParams['sessionType'] = sessionType;
+      }
+      
+      if (ageGroup != null) {
+        queryParams['ageGroup'] = ageGroup;
       }
       
       final uri = Uri.parse('$url/api/export/csv').replace(queryParameters: queryParams);

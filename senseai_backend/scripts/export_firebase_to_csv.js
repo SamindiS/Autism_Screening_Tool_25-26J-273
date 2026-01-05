@@ -9,6 +9,7 @@
  *   --format=ml|raw     Export format (default: ml)
  *   --group=asd|typically_developing  Filter by group
  *   --sessionType=color_shape|frog_jump|ai_doctor_bot  Filter by type
+ *   --ageGroup=2-3.5|3.5-5.5|5.5-6.9  Filter by age group
  *   --output=filename.csv  Output filename (default: export_<timestamp>.csv)
  */
 
@@ -29,6 +30,7 @@ const options = {
   format: 'ml',
   group: null,
   sessionType: null,
+  ageGroup: null,
   output: null,
 };
 
@@ -39,6 +41,8 @@ args.forEach(arg => {
     options.group = arg.split('=')[1];
   } else if (arg.startsWith('--sessionType=')) {
     options.sessionType = arg.split('=')[1];
+  } else if (arg.startsWith('--ageGroup=')) {
+    options.ageGroup = arg.split('=')[1];
   } else if (arg.startsWith('--output=')) {
     options.output = arg.split('=')[1];
   }
@@ -53,6 +57,7 @@ console.log('='.repeat(50));
 console.log(`Format: ${options.format}`);
 console.log(`Group filter: ${options.group || 'all'}`);
 console.log(`Session type filter: ${options.sessionType || 'all'}`);
+console.log(`Age group filter: ${options.ageGroup || 'all'}`);
 console.log(`Output: ${options.output}`);
 console.log('='.repeat(50));
 
@@ -91,6 +96,30 @@ async function exportData() {
         const child = children[s.child_id];
         return child && child.group === options.group;
       });
+    }
+
+    // Filter by age group if specified
+    if (options.ageGroup) {
+      sessions = sessions.filter(s => {
+        // Check session age_group field first
+        if (s.age_group === options.ageGroup) {
+          return true;
+        }
+        // Also check child's age if age_group not set
+        const child = children[s.child_id];
+        if (child && child.age_in_months) {
+          const ageMonths = child.age_in_months;
+          if (options.ageGroup === '2-3.5' && ageMonths >= 24 && ageMonths < 42) {
+            return true;
+          } else if (options.ageGroup === '3.5-5.5' && ageMonths >= 42 && ageMonths < 66) {
+            return true;
+          } else if (options.ageGroup === '5.5-6.9' && ageMonths >= 66 && ageMonths < 83) {
+            return true;
+          }
+        }
+        return false;
+      });
+      console.log(`   After age group filter: ${sessions.length} sessions`);
     }
 
     console.log(`✅ Found ${sessions.length} sessions`);

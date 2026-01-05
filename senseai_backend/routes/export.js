@@ -14,14 +14,19 @@ const trialsCollection = db.collection('trials');
  * - format: 'ml' (for ML training) or 'raw' (raw data export)
  * - sessionType: Filter by session type (optional)
  * - group: Filter by study group (optional)
+ * - ageGroup: Filter by age group (optional: '2-3.5', '3.5-5.5', '5.5-6.9')
  */
 router.get('/csv', async (req, res) => {
   try {
     const format = req.query.format || 'ml'; // 'ml' or 'raw'
     const sessionType = req.query.sessionType; // Optional filter
     const group = req.query.group; // Optional filter (asd, typically_developing)
+    const ageGroup = req.query.ageGroup; // Optional filter (2-3.5, 3.5-5.5, 5.5-6.9)
 
     console.log(`📊 Exporting data to CSV (format: ${format})`);
+    if (ageGroup) {
+      console.log(`   Age Group filter: ${ageGroup}`);
+    }
 
     // Get all children
     // Note: When filtering by group, we can't use orderBy with where (requires index)
@@ -68,13 +73,37 @@ router.get('/csv', async (req, res) => {
 
     console.log(`   Found ${sessions.length} sessions`);
 
-    // Filter sessions by group if specified
+    // Filter sessions by group and age group if specified
     let filteredSessions = sessions;
     if (group) {
-      filteredSessions = sessions.filter(s => {
+      filteredSessions = filteredSessions.filter(s => {
         const child = children[s.child_id];
         return child && child.group === group;
       });
+    }
+    
+    // Filter by age group if specified
+    if (ageGroup) {
+      filteredSessions = filteredSessions.filter(s => {
+        // Check session age_group field first
+        if (s.age_group === ageGroup) {
+          return true;
+        }
+        // Also check child's age if age_group not set
+        const child = children[s.child_id];
+        if (child && child.age_in_months) {
+          const ageMonths = child.age_in_months;
+          if (ageGroup === '2-3.5' && ageMonths >= 24 && ageMonths < 42) {
+            return true;
+          } else if (ageGroup === '3.5-5.5' && ageMonths >= 42 && ageMonths < 66) {
+            return true;
+          } else if (ageGroup === '5.5-6.9' && ageMonths >= 66 && ageMonths < 83) {
+            return true;
+          }
+        }
+        return false;
+      });
+      console.log(`   After age group filter: ${filteredSessions.length} sessions`);
     }
 
     if (format === 'ml') {

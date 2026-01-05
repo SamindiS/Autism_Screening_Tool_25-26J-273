@@ -635,12 +635,46 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                 ],
               ),
               const SizedBox(height: 16),
+              // Age Group Filter Selection
+              Text(
+                'Filter by Age Group:',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blue.shade700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildAgeGroupFilterChip('All', null),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildAgeGroupFilterChip('2-3.5', '2-3.5'),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildAgeGroupFilterChip('3.5-5.5', '3.5-5.5'),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildAgeGroupFilterChip('5.5-6.9', '5.5-6.9'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               // Action Buttons
               Row(
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => _viewCSV(format: 'ml', group: _selectedGroup),
+                      onPressed: () => _viewCSV(
+                        format: 'ml',
+                        group: _selectedGroup,
+                        ageGroup: _selectedAgeGroup,
+                      ),
                       icon: const Icon(Icons.visibility, size: 18),
                       label: const Text('View'),
                       style: ElevatedButton.styleFrom(
@@ -653,7 +687,11 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => _exportCSV(format: 'ml', group: _selectedGroup),
+                      onPressed: () => _exportCSV(
+                        format: 'ml',
+                        group: _selectedGroup,
+                        ageGroup: _selectedAgeGroup,
+                      ),
                       icon: const Icon(Icons.download, size: 18),
                       label: const Text('Download'),
                       style: ElevatedButton.styleFrom(
@@ -673,6 +711,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
   }
 
   String? _selectedGroup;
+  String? _selectedAgeGroup;
 
   Widget _buildGroupFilterChip(String label, String? groupValue) {
     final isSelected = _selectedGroup == groupValue;
@@ -706,7 +745,44 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
     );
   }
 
-  Future<void> _viewCSV({required String format, String? group}) async {
+  Widget _buildAgeGroupFilterChip(String label, String? ageGroupValue) {
+    final isSelected = _selectedAgeGroup == ageGroupValue;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedAgeGroup = ageGroupValue;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blue.shade700 : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? Colors.blue.shade700 : Colors.grey.shade300,
+            width: 2,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey.shade700,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              fontSize: 12,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _viewCSV({
+    required String format,
+    String? group,
+    String? ageGroup,
+  }) async {
     try {
       // Show loading dialog
       showDialog(
@@ -730,7 +806,11 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
       );
 
       // Export CSV from backend
-      final csvContent = await ApiService.exportCSV(format: format, group: group);
+      final csvContent = await ApiService.exportCSV(
+        format: format,
+        group: group,
+        ageGroup: ageGroup,
+      );
       
       // Close loading dialog
       if (mounted) {
@@ -739,7 +819,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
       
       // Show CSV preview
       if (mounted) {
-        _showCSVPreview(csvContent, format, group);
+        _showCSVPreview(csvContent, format, group, ageGroup);
       }
     } catch (e) {
       // Close loading dialog if still open
@@ -759,15 +839,23 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
     }
   }
 
-  void _showCSVPreview(String csvContent, String format, String? group) {
+  void _showCSVPreview(
+    String csvContent,
+    String format,
+    String? group,
+    String? ageGroup,
+  ) {
     final lines = csvContent.split('\n');
     final previewLines = lines.take(20).toList(); // Show first 20 lines
     final totalLines = lines.length;
     final groupLabel = group == null 
-        ? 'All Data' 
+        ? 'All Groups' 
         : group == 'asd' 
             ? 'ASD Group' 
             : 'Control Group';
+    final ageLabel = ageGroup == null 
+        ? 'All Ages' 
+        : 'Age $ageGroup';
     
     showDialog(
       context: context,
@@ -795,7 +883,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '$groupLabel • $totalLines rows • ${format.toUpperCase()} format',
+                        '$groupLabel • $ageLabel • $totalLines rows • ${format.toUpperCase()} format',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade600,
@@ -873,7 +961,11 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
     );
   }
 
-  Future<void> _exportCSV({required String format, String? group}) async {
+  Future<void> _exportCSV({
+    required String format,
+    String? group,
+    String? ageGroup,
+  }) async {
     try {
       // Show loading dialog
       showDialog(
@@ -897,7 +989,11 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
       );
 
       // Export CSV from backend
-      final csvContent = await ApiService.exportCSV(format: format, group: group);
+      final csvContent = await ApiService.exportCSV(
+        format: format,
+        group: group,
+        ageGroup: ageGroup,
+      );
       
       // Get temporary directory for file
       final tempDir = await getTemporaryDirectory();
@@ -908,9 +1004,12 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
           : group == 'asd' 
               ? 'asd' 
               : 'control';
+      final ageSuffix = ageGroup == null 
+          ? 'all_ages' 
+          : ageGroup.replaceAll('.', '_').replaceAll('-', '_');
       final fileName = format == 'ml' 
-          ? 'ml_training_data_${groupSuffix}_$timestamp.csv'
-          : 'raw_data_${groupSuffix}_$timestamp.csv';
+          ? 'ml_training_data_${groupSuffix}_${ageSuffix}_$timestamp.csv'
+          : 'raw_data_${groupSuffix}_${ageSuffix}_$timestamp.csv';
       final file = File('${tempDir.path}/$fileName');
       
       // Write CSV to file

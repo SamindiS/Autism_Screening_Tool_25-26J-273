@@ -68,6 +68,7 @@ SenseAI consists of **four integrated screening modules**, each developed in a *
 **Developer:** Karunathilaka S.M
 
 * Camera-based eye-tracking
+* Eye Calibration
 * Butterfly Chase & Bubble Pop games
 * Fixation, saccade & attention metrics
 * Gradient Boosting classifier trained on clinical data

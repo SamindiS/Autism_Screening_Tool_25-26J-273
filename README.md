@@ -6,7 +6,6 @@ This repository contains the **Auditory Response to Name (RTN) Screening Module*
 Auditory Response to Name is one of the **earliest and most reliable behavioral indicators** associated with Autism Spectrum Disorder (ASD).
 This module enables **non-invasive, home-based screening** using a short parent-recorded video.
 
-> ⚠️ **Disclaimer:** This system is a **screening tool only**, not a diagnostic device.
 
 ---
 
@@ -112,6 +111,20 @@ This module enables **non-invasive, home-based screening** using a short parent-
 ---
 
 ## Machine Learning Model
+### Features Used
+- response_time
+- head_turn_detected
+- eye_movement_detected
+- face_orientation_change
+- response_consistency
+- missed_responses
+
+### Risk Levels
+| Score Range | Risk Category |
+|------------|--------------|
+| 0–30       | Low Risk     |
+| 31–60      | Moderate Risk|
+| 61–100     | Elevated Risk|
 
 ### Auditory & Behavioral Features Used
 
@@ -156,6 +169,7 @@ Auditory_RTN/
 ```
 
 ---
+
 
 ## Usage Guide
 

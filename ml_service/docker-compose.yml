@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  ml_service:
+    build: .
+    container_name: rrb_ml_service
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./models:/app/models
+      - ./uploads:/app/uploads
+      - ./processed:/app/processed
+      - ./logs:/app/logs
+      - ./outputs:/app/outputs
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      - PORT=5000
+      - MODEL_PATH=models/rrb_classifier.h5
+      - LABEL_ENCODER_PATH=preprocessed_data/label_encoder.pkl
+      - CONFIDENCE_THRESHOLD=0.70
+      - MIN_DETECTION_DURATION=3.0
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+

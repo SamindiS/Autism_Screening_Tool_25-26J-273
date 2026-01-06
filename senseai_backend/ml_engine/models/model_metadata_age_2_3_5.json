@@ -1,0 +1,27 @@
+{
+  "model_type": "LogisticRegression",
+  "age_group": "2-3.5",
+  "session_type": "ai_doctor_bot",
+  "features": [
+    "age_months",
+    "critical_items_failed",
+    "completion_time_sec",
+    "social_responsiveness_zscore",
+    "joint_attention_zscore",
+    "total_score_zscore",
+    "low_attention_flag",
+    "high_critical_items_flag",
+    "low_social_flag"
+  ],
+  "test_accuracy": 0.05555555555555555,
+  "test_precision": 0.0,
+  "test_recall": 0.0,
+  "test_f1": 0.0,
+  "test_roc_auc": 0.11111111111111116,
+  "train_samples": 72,
+  "test_samples": 18,
+  "unique_children_train": 6,
+  "unique_children_test": 3,
+  "loco_cv_accuracy_mean": 0.8523809523809524,
+  "loco_cv_accuracy_std": 0.3022590680487305
+}

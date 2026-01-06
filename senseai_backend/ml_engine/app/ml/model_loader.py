@@ -69,11 +69,11 @@ def load_models():
         else:
             logger.warning(f"Age norms not found: {AGE_NORMS_PATH.name} (age normalization disabled)")
         
-        logger.info("✅ All models loaded successfully")
+        logger.info("[OK] All models loaded successfully")
         return _model, _scaler, _feature_names, _age_norms
         
     except Exception as e:
-        logger.error(f"❌ Error loading models: {str(e)}")
+        logger.error(f"[ERROR] Error loading models: {str(e)}")
         raise FileNotFoundError(f"Error loading models: {str(e)}")
 
 def load_model_metadata() -> Optional[Dict[str, Any]]:

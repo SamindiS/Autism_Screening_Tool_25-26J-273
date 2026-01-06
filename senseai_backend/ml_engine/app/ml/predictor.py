@@ -1,11 +1,12 @@
 """
-Main prediction logic
+Main prediction logic with age-specific model routing
 """
 
 import numpy as np
-from app.ml.model_loader import load_models
+from app.ml.age_specific_loader import load_age_specific_model
+from app.ml.model_loader import load_models  # Legacy support
 from app.ml.preprocessing import normalize_features, prepare_features
-from app.core.config import RISK_THRESHOLDS
+from app.core.config import RISK_THRESHOLDS, get_age_group
 from app.core.logger import logger
 from app.schemas.request import PredictionRequest
 from app.schemas.response import PredictionResponse
@@ -34,7 +35,7 @@ def validate_features(features_dict: dict, feature_names: list) -> None:
 
 def predict_asd(request: PredictionRequest) -> PredictionResponse:
     """
-    Predict ASD risk from ML features
+    Predict ASD risk from ML features using age-specific models
     
     Args:
         request: PredictionRequest with age_months and features
@@ -43,9 +44,6 @@ def predict_asd(request: PredictionRequest) -> PredictionResponse:
         PredictionResponse with risk score, level, and probabilities
     """
     logger.info(f"Prediction requested: age={request.age_months}, child_id={request.child_id or 'N/A'}")
-    
-    # Load models (cached after first load)
-    model, scaler, feature_names, age_norms = load_models()
     
     # Extract age_months
     age_months = request.age_months
@@ -58,15 +56,31 @@ def predict_asd(request: PredictionRequest) -> PredictionResponse:
     except (ValueError, TypeError):
         age_months = 36  # Default
     
+    # Determine age group
+    age_group = get_age_group(age_months)
+    
+    # Try to load age-specific model first
+    try:
+        model, scaler, feature_names, metadata = load_age_specific_model(age_months)
+        logger.info(f"Using age-specific model for age group: {age_group}")
+    except (FileNotFoundError, ValueError) as e:
+        # Fallback to legacy model if age-specific model not found
+        logger.warning(f"Age-specific model not found for {age_group}, trying legacy model: {e}")
+        try:
+            model, scaler, feature_names, age_norms = load_models()
+            logger.info("Using legacy unified model")
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                f"No model available for age {age_months} months (age group: {age_group}). "
+                f"Please ensure model files are in models/ directory. "
+                f"Error: {str(e)}"
+            )
+    
     # Validate features
     validate_features(request.features, feature_names)
     
-    # Perform age normalization if norms are available
+    # Prepare features (skip age normalization for age-specific models as they're already age-normalized)
     features_dict = request.features.copy()
-    if age_norms is not None:
-        features_dict = normalize_features(features_dict, age_months, age_norms)
-    else:
-        logger.debug("Age normalization skipped (age_norms.json not available)")
     
     # Get expected number of features from scaler
     expected_n_features = scaler.n_features_in_
@@ -102,7 +116,7 @@ def predict_asd(request: PredictionRequest) -> PredictionResponse:
         risk_level = "low"
     
     logger.info(
-        f"Prediction complete: {risk_level.upper()} risk "
+        f"Prediction complete ({age_group or 'legacy'}): {risk_level.upper()} risk "
         f"(score={risk_score:.1f}%, prob={asd_probability:.3f})"
     )
     

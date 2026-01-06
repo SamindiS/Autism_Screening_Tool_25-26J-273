@@ -83,12 +83,29 @@ router.get('/csv', async (req, res) => {
     }
     
     // Filter by age group if specified
+    // IMPORTANT: Each age group must only include its corresponding session type
+    // Age 2-3.5 → ai_doctor_bot (Questionnaire)
+    // Age 3.5-5.5 → frog_jump (Go/No-Go)
+    // Age 5.5-6.9 → color_shape (DCCS)
     if (ageGroup) {
+      // Map age group to required session type
+      const requiredSessionType = {
+        '2-3.5': 'ai_doctor_bot',
+        '3.5-5.5': 'frog_jump',
+        '5.5-6.9': 'color_shape'
+      }[ageGroup];
+
       filteredSessions = filteredSessions.filter(s => {
-        // Check session age_group field first
+        // CRITICAL: Must match the required session type for this age group
+        if (s.session_type !== requiredSessionType) {
+          return false;
+        }
+
+        // Additional validation: Check age_group field or child's age
         if (s.age_group === ageGroup) {
           return true;
         }
+        
         // Also check child's age if age_group not set
         const child = children[s.child_id];
         if (child && child.age_in_months) {
@@ -103,7 +120,7 @@ router.get('/csv', async (req, res) => {
         }
         return false;
       });
-      console.log(`   After age group filter: ${filteredSessions.length} sessions`);
+      console.log(`   After age group filter (${ageGroup} → ${requiredSessionType}): ${filteredSessions.length} sessions`);
     }
 
     if (format === 'ml') {

@@ -27,9 +27,15 @@ async def startup_event():
     try:
         from app.ml.model_loader import load_models
         load_models()
-        logger.info("✅ ML Engine ready")
+        logger.info("[OK] ML Engine ready")
+        
+        # Check age-specific models
+        from app.ml.age_specific_loader import check_age_specific_models
+        age_models_status = check_age_specific_models()
+        ready_count = sum(1 for status in age_models_status.values() if status['ready'])
+        logger.info(f"Age-specific models: {ready_count}/3 ready")
     except Exception as e:
-        logger.error(f"❌ Failed to load models: {e}")
+        logger.error(f"[ERROR] Failed to load models: {e}")
         logger.warning("Service will start but predictions will fail until models are available")
 
 # CORS middleware (allow backend to call this service)

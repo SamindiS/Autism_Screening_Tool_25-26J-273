@@ -11,7 +11,7 @@ const axios = require('axios');
 const router = express.Router();
 
 // FastAPI ML Engine URL
-const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:8001';
+const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:8002';
 
 // Check if ML engine is available
 let ML_AVAILABLE = false;
@@ -22,12 +22,27 @@ async function checkMLEngine() {
     const response = await axios.get(`${ML_ENGINE_URL}/health`, {
       timeout: 5000
     });
-    ML_AVAILABLE = response.data.models_loaded === true;
+    
+    // Check if any models are ready (age-specific or legacy)
+    const ageModels = response.data.age_specific_models || {};
+    const ageModelsReady = Object.values(ageModels).some(status => status.ready === true);
+    const legacyReady = response.data.legacy_model?.loaded === true;
+    const statusOK = response.data.status === 'OK';
+    
+    ML_AVAILABLE = ageModelsReady || legacyReady || statusOK;
     
     if (ML_AVAILABLE) {
-      console.log('✅ FastAPI ML Engine is available and models are loaded');
+      const readyModels = Object.entries(ageModels)
+        .filter(([_, status]) => status.ready)
+        .map(([age, _]) => age);
+      console.log(`✅ FastAPI ML Engine is available and models are loaded`);
+      if (readyModels.length > 0) {
+        console.log(`   Ready models: ${readyModels.join(', ')}`);
+      }
     } else {
       console.log('⚠️  FastAPI ML Engine is running but models not loaded');
+      console.log(`   Status: ${response.data.status}`);
+      console.log(`   Age-specific models:`, ageModels);
     }
   } catch (err) {
     console.log('⚠️  FastAPI ML Engine not available, using fallback predictions');

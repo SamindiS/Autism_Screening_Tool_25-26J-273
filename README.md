@@ -42,23 +42,42 @@ SenseAI is a research-grade autism screening tool that uses front-facing camera 
 ## Architecture
 
 ```
-+-------------------------------------------------------------+
-|                     Flutter Mobile App                       |
-|  +-------------+  +-------------+  +---------------------+   |
-|  | Child Info  |->| Calibration |->|  Games (Butterfly/  |   |
-|  |   Screen    |  |   Screen    |  |     Bubbles)        |   |
-|  +-------------+  +-------------+  +---------------------+   |
-|                            |                                 |
-|                   Gaze Data Collection                       |
-|            (ML Kit Face Detection + Iris Tracking)           |
-+----------------------------+---------------------------------+
++---------------------------------------------------------------------+
+|                         Flutter Mobile App                          |
+|                                                                     |
+|  +------------------+   +------------------+   +------------------+ |
+|  |   Child Info     |-->|  Parent Info     |-->|  Calibration     | |
+|  |   Screen         |   |  Screen          |   |  Screen          | |
+|  | (child name,     |   | (parent name,    |   | (9-point)        | |
+|  | age, gender)     |   | email, phone,    |   |                  | |
+|  +------------------+   | relationship)    |   +------------------+ |
+|                         +------------------+            |           |
+|                                                         v           |
+|                                             +---------------------+ |
+|                                             |   Games Screen      | |
+|                                             | (Butterfly /        | |
+|                                             |  Bubble Games)      | |
+|                                             +---------------------+ |
+|                                                           |         |
+|                                               Gaze Data Collection  |
+|                                    (ML Kit Face Detection + Iris)   |
+|                                                           |         |
+|                                                           v         |
+|                                             +---------------------+ |
+|                                             |   PDF Report        | |
+|                                             | (Child Info +       | |
+|                                             |  Parent Info +      | |
+|                                             |  Gaze Metrics)      | |
+|                                             +---------------------+ |
++---------------------------------------------------------------------+
+
                              | HTTP/REST API
                              v
 +-------------------------------------------------------------+
-|                    FastAPI Backend                           |
+|                    FastAPI Backend                          |
 |  +--------------+  +--------------+  +-----------------+    |
-|  | Gaze Pattern |->| ML Classifier |->|  PDF Report     |    |
-|  |   Analyzer   |  | (95.2% acc)   |  |  Generator      |    |
+|  | Gaze Pattern |->| ML Classifier |->|  PDF Report     |   |
+|  |   Analyzer   |  | (95.2% acc)   |  |  Generator      |   |
 |  +--------------+  +--------------+  +-----------------+    |
 +-------------------------------------------------------------+
 ```
@@ -266,10 +285,11 @@ SenseAI/
 
 1. **Start the app** on a mobile device
 2. **Enter child information** (name and age)
-3. **Calibration** - Child follows animated characters with eyes
-4. **Butterfly Game** (15 seconds) - Child follows butterfly with eyes
-5. **Bubble Game** (30 seconds) - Child pops bubbles by looking or touching
-6. **Results** - View risk assessment and download PDF report
+3. **Enter perant information** (name,email,contact number & relationship)
+4. **Calibration** - Child follows animated characters with eyes
+5. **Butterfly Game** (15 seconds) - Child follows butterfly with eyes
+6. **Bubble Game** (30 seconds) - Child pops bubbles by looking or touching
+7. **Results** - View risk assessment and download PDF report
 
 ### Interpreting Results
 

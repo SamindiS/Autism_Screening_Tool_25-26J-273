@@ -9,7 +9,6 @@
 
 ---
 
-<p align="center">
   [![License: Research & Academic Use Only](https://img.shields.io/badge/License-Research%20%26%20Academic%20Use%20Only-blue)](LICENSE)
   &nbsp;&nbsp;
   [![Institution: SLIIT](https://img.shields.io/badge/Institution-SLIIT-orange)](https://www.sliit.lk/)
@@ -23,8 +22,6 @@
   [![Last Commit](https://img.shields.io/github/last-commit/SamindiS/Autism_Screening_Tool_25-26J-273)](https://github.com/SamindiS/Autism_Screening_Tool_25-26J-273/commits/main)
   &nbsp;&nbsp;
   [![Made with ❤️](https://img.shields.io/badge/Made%20with%20❤️-ff69b4)](https://github.com/SamindiS/Autism_Screening_Tool_25-26J-273)
-</p>
-
 
 ## 📌 Project Overview
 

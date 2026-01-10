@@ -238,6 +238,9 @@ Not approved for diagnostic or commercial deployment.
 
 ---
 
+[![License: Research Only](https://img.shields.io/badge/License-Research%20Only-blue)](LICENSE)
+[![SLIIT](https://img.shields.io/badge/Institution-SLIIT-orange)](https://www.sliit.lk/)
+
 **Built with ❤️ to support early autism screening and intervention**
 
 *Last Updated: 2026*

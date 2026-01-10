@@ -118,6 +118,10 @@ Web Admin Portal (React)
 
 ---
 
+## 🏗️ Planned Conceptual Model (All 4 Modules Integrated)
+
+![SenseAI Conceptual Model](assets/senseai-conceptual-model.png)
+
 ## 🧰 Technology Stack & Project Dependencies
 
 ### 📱 Mobile Application

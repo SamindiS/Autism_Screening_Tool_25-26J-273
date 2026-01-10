@@ -14,15 +14,11 @@
   [![Institution: SLIIT](https://img.shields.io/badge/Institution-SLIIT-orange)](https://www.sliit.lk/)
   &nbsp;&nbsp;
   [![Project Status: In Development](https://img.shields.io/badge/Project%20Status-In%20Development-yellow)](https://github.com/SamindiS/Autism_Screening_Tool_25-26J-273)
-  <br><br>
   [![Flutter](https://img.shields.io/badge/Flutter-3.38+-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
   &nbsp;&nbsp;
   [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
   &nbsp;&nbsp;
-  [![Last Commit](https://img.shields.io/github/last-commit/SamindiS/Autism_Screening_Tool_25-26J-273)](https://github.com/SamindiS/Autism_Screening_Tool_25-26J-273/commits/main)
-  &nbsp;&nbsp;
-  [![Made with ❤️](https://img.shields.io/badge/Made%20with%20❤️-ff69b4)](https://github.com/SamindiS/Autism_Screening_Tool_25-26J-273)
-
+  
 ## 📌 Project Overview
 
 **SenseAI** is a **research-grade, AI-powered early screening system for Autism Spectrum Disorder (ASD)** designed for children aged **2–6 years**.

@@ -9,6 +9,10 @@
 
 ---
 
+[![License: Research Only](https://img.shields.io/badge/License-Research%20Only-blue)](LICENSE)
+[![SLIIT](https://img.shields.io/badge/Institution-SLIIT-orange)](https://www.sliit.lk/)
+
+
 ## 📌 Project Overview
 
 **SenseAI** is a **research-grade, AI-powered early screening system for Autism Spectrum Disorder (ASD)** designed for children aged **2–6 years**.
@@ -237,9 +241,6 @@ Not approved for diagnostic or commercial deployment.
 * Open-source community
 
 ---
-
-[![License: Research Only](https://img.shields.io/badge/License-Research%20Only-blue)](LICENSE)
-[![SLIIT](https://img.shields.io/badge/Institution-SLIIT-orange)](https://www.sliit.lk/)
 
 **Built with ❤️ to support early autism screening and intervention**
 

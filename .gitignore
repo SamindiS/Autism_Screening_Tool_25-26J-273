@@ -44,3 +44,20 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Python virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# Java heap dumps and crash logs
+*.hprof
+hs_err_pid*.log
+replay_pid*.log
+
+# Android local configuration (contains local paths)
+android/local.properties
+
+# IntelliJ module files in android folder
+android/*.iml

@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:supercharged/supercharged.dart';
 import '../auth/login_screen.dart';
+import '../../core/services/auth_service.dart';
+import '../dashboard/dashboard_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -81,9 +83,12 @@ class _SplashScreenState extends State<SplashScreen>
       ));
     }
 
-    // Navigate to login after animation completes
+    // Navigate after animation completes
     _controller.forward().then((_) async {
       if (!mounted) return;
+      
+      // Check if user is already logged in (with valid session)
+      final isLoggedIn = await AuthService.isLoggedIn();
       
       // Start exit fade-out animation
       await _exitController.forward();
@@ -91,11 +96,13 @@ class _SplashScreenState extends State<SplashScreen>
       // Wait a moment for fade to complete
       await Future.delayed(const Duration(milliseconds: 100));
       
-      // Navigate to login screen
+      // Navigate based on auth state
       if (mounted) {
+        final destination = isLoggedIn ? const DashboardScreen() : const LoginScreen();
+        
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const LoginScreen(),
+            pageBuilder: (_, __, ___) => destination,
             transitionDuration: const Duration(milliseconds: 300),
             transitionsBuilder: (_, animation, __, child) {
               return FadeTransition(

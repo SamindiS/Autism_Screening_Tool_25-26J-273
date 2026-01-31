@@ -1,10 +1,31 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
 import 'api_service.dart';
 
 class AuthService {
+  // Secure storage for sensitive data (tokens, session info)
+  static final _secureStorage = FlutterSecureStorage(
+    aOptions: const AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+    iOptions: const IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock_this_device,
+    ),
+  );
+  
+  // SharedPreferences for non-sensitive data (backward compatibility)
   static const String _keyIsLoggedIn = 'is_logged_in';
   static const String _keyClinicianId = 'clinician_id';
+  
+  // Secure storage keys
+  static const String _keySessionToken = 'session_token';
+  static const String _keyLoginTimestamp = 'login_timestamp';
+  static const String _keyClinicianData = 'clinician_data';
+  
+  // Session expiry: 7 days (configurable)
+  static const Duration _sessionExpiry = Duration(days: 7);
 
   // Check if user is registered (check backend)
   static Future<bool> isRegistered() async {
@@ -24,10 +45,70 @@ class AuthService {
     }
   }
 
-  // Check if user is logged in
+  // Check if user is logged in (with session expiry check)
   static Future<bool> isLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_keyIsLoggedIn) ?? false;
+    try {
+      // Check if session token exists
+      final sessionToken = await _secureStorage.read(key: _keySessionToken);
+      if (sessionToken == null || sessionToken.isEmpty) {
+        debugPrint('No session token found');
+        return false;
+      }
+      
+      // Check if session is expired
+      final loginTimestampStr = await _secureStorage.read(key: _keyLoginTimestamp);
+      if (loginTimestampStr == null || loginTimestampStr.isEmpty) {
+        debugPrint('No login timestamp found, clearing session');
+        await _clearSession();
+        return false;
+      }
+      
+      final loginTimestamp = DateTime.parse(loginTimestampStr);
+      final now = DateTime.now();
+      final sessionAge = now.difference(loginTimestamp);
+      
+      if (sessionAge > _sessionExpiry) {
+        debugPrint('Session expired (${sessionAge.inDays} days old). Max allowed: ${_sessionExpiry.inDays} days');
+        await _clearSession();
+        return false;
+      }
+      
+      debugPrint('Session valid (${sessionAge.inDays} days old)');
+      return true;
+    } catch (e) {
+      debugPrint('Error checking login status: $e');
+      return false;
+    }
+  }
+  
+  // Clear session data (secure storage)
+  static Future<void> _clearSession() async {
+    try {
+      await _secureStorage.delete(key: _keySessionToken);
+      await _secureStorage.delete(key: _keyLoginTimestamp);
+      await _secureStorage.delete(key: _keyClinicianData);
+      
+      // Also clear SharedPreferences for backward compatibility
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_keyIsLoggedIn, false);
+      await prefs.remove(_keyClinicianId);
+    } catch (e) {
+      debugPrint('Error clearing session: $e');
+    }
+  }
+  
+  // Get stored clinician data
+  static Future<Map<String, dynamic>?> getStoredClinicianData() async {
+    try {
+      final clinicianDataStr = await _secureStorage.read(key: _keyClinicianData);
+      if (clinicianDataStr == null || clinicianDataStr.isEmpty) {
+        return null;
+      }
+      return jsonDecode(clinicianDataStr) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('Error getting stored clinician data: $e');
+      return null;
+    }
   }
 
   // Register new clinician (via API)
@@ -54,7 +135,16 @@ class AuthService {
         pin: pin,
       );
 
-      // Save login state locally
+      // Generate session token (simple UUID-like string)
+      final sessionToken = _generateSessionToken();
+      final loginTimestamp = DateTime.now().toIso8601String();
+      
+      // Save to secure storage (encrypted)
+      await _secureStorage.write(key: _keySessionToken, value: sessionToken);
+      await _secureStorage.write(key: _keyLoginTimestamp, value: loginTimestamp);
+      await _secureStorage.write(key: _keyClinicianData, value: jsonEncode(clinician));
+      
+      // Also save to SharedPreferences for backward compatibility
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyIsLoggedIn, true);
       if (clinician['id'] != null) {
@@ -62,6 +152,7 @@ class AuthService {
       }
       
       debugPrint('Clinician registered successfully: ${clinician['id']}');
+      debugPrint('Session token saved. Session expires in ${_sessionExpiry.inDays} days');
       return {
         'success': true,
         'clinician': clinician,
@@ -119,7 +210,16 @@ class AuthService {
       // Login via API
       final clinician = await ApiService.loginClinician(pin: pin);
 
-      // Save login state locally
+      // Generate session token (simple UUID-like string)
+      final sessionToken = _generateSessionToken();
+      final loginTimestamp = DateTime.now().toIso8601String();
+      
+      // Save to secure storage (encrypted)
+      await _secureStorage.write(key: _keySessionToken, value: sessionToken);
+      await _secureStorage.write(key: _keyLoginTimestamp, value: loginTimestamp);
+      await _secureStorage.write(key: _keyClinicianData, value: jsonEncode(clinician));
+      
+      // Also save to SharedPreferences for backward compatibility
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyIsLoggedIn, true);
       if (clinician['id'] != null) {
@@ -127,6 +227,7 @@ class AuthService {
       }
       
       debugPrint('Clinician logged in successfully: ${clinician['id']}');
+      debugPrint('Session token saved. Session expires in ${_sessionExpiry.inDays} days');
       return {
         'success': true,
         'clinician': clinician,
@@ -187,11 +288,38 @@ class AuthService {
     }
   }
 
-  // Logout
+  // Logout (clears all session data)
   static Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_keyIsLoggedIn, false);
-    await prefs.remove(_keyClinicianId);
+    debugPrint('Logging out...');
+    await _clearSession();
+    debugPrint('Logout complete. All session data cleared.');
+  }
+  
+  // Generate a simple session token (UUID-like)
+  static String _generateSessionToken() {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final random = (timestamp * 1000 + (timestamp % 1000)).toString();
+    return 'session_${timestamp}_${random.substring(random.length - 6)}';
+  }
+  
+  // Get remaining session time
+  static Future<Duration?> getRemainingSessionTime() async {
+    try {
+      final loginTimestampStr = await _secureStorage.read(key: _keyLoginTimestamp);
+      if (loginTimestampStr == null || loginTimestampStr.isEmpty) {
+        return null;
+      }
+      
+      final loginTimestamp = DateTime.parse(loginTimestampStr);
+      final now = DateTime.now();
+      final sessionAge = now.difference(loginTimestamp);
+      final remaining = _sessionExpiry - sessionAge;
+      
+      return remaining.isNegative ? Duration.zero : remaining;
+    } catch (e) {
+      debugPrint('Error getting remaining session time: $e');
+      return null;
+    }
   }
 }
 

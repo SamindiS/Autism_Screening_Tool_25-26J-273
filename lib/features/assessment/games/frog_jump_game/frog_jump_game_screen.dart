@@ -6,6 +6,7 @@ import '../../../../data/models/child.dart';
 import '../../../../data/models/game_results.dart' show GameResults, TrialData;
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/utils/age_calculator.dart';
+import '../../../../core/services/ml_service.dart';
 import 'package:senseai/l10n/app_localizations.dart';
 import '../../../../core/providers/language_provider.dart';
 import '../../../cognitive/reflection_screen.dart';
@@ -321,8 +322,45 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
 
   Future<void> _saveResults() async {
     try {
-      final results = _calculateResults();
+      var results = _calculateResults();
       final endTime = DateTime.now();
+
+      // ✅ Get ML prediction from trained model
+      MLPredictionResult? mlResult;
+      try {
+        if (results.mlFeatures != null && results.mlFeatures!.isNotEmpty) {
+          mlResult = await MLService.predict(
+            mlFeatures: results.mlFeatures!,
+            ageGroup: AgeCalculator.getAgeGroup(widget.child.age),
+            sessionType: 'frog_jump',
+          );
+          
+          if (mlResult != null && mlResult.method == 'ml') {
+            debugPrint('✅ ML Prediction: ${mlResult.riskLevel} (${mlResult.riskScore.toStringAsFixed(1)}%)');
+            // Update results with ML prediction
+            results = results.copyWith(
+              riskScore: mlResult.riskScore,
+              riskLevel: mlResult.riskLevel,
+              mlPrediction: {
+                'isASD': mlResult.isASD,
+                'asdProbability': mlResult.asdProbability,
+                'controlProbability': mlResult.controlProbability,
+                'confidence': mlResult.confidence,
+                'riskLevel': mlResult.riskLevel,
+                'riskScore': mlResult.riskScore,
+                'method': mlResult.method,
+              },
+            );
+          } else {
+            debugPrint('⚠️  ML prediction unavailable, using rule-based');
+          }
+        } else {
+          debugPrint('⚠️  No ML features available for prediction');
+        }
+      } catch (e) {
+        debugPrint('⚠️  ML prediction error: $e - using rule-based');
+        // Continue with rule-based (graceful fallback)
+      }
 
       if (_sessionId != null) {
         await StorageService.updateSession(

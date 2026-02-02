@@ -6,6 +6,7 @@ import '../../../../data/models/child.dart';
 import '../../../../data/models/game_results.dart' show GameResults, TrialData;
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/utils/age_calculator.dart';
+import '../../../../core/services/ml_service.dart';
 // App localizations not used in clinical DCCS game - uses hardcoded English
 import 'package:senseai/core/providers/language_provider.dart';
 import '../../../cognitive/reflection_screen.dart';
@@ -363,7 +364,30 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
       final summary = _calculateSummary();
       final endTime = DateTime.now();
 
-      // Convert to GameResults for compatibility
+      // ✅ Get ML prediction from trained model
+      MLPredictionResult? mlResult;
+      try {
+        if (summary.mlFeatures.isNotEmpty) {
+          mlResult = await MLService.predict(
+            mlFeatures: summary.mlFeatures,
+            ageGroup: AgeCalculator.getAgeGroup(widget.child.age),
+            sessionType: 'color_shape',
+          );
+          
+          if (mlResult != null && mlResult.method == 'ml') {
+            debugPrint('✅ ML Prediction: ${mlResult.riskLevel} (${mlResult.riskScore.toStringAsFixed(1)}%)');
+          } else {
+            debugPrint('⚠️  ML prediction unavailable, using rule-based');
+          }
+        } else {
+          debugPrint('⚠️  No ML features available for prediction');
+        }
+      } catch (e) {
+        debugPrint('⚠️  ML prediction error: $e - using rule-based');
+        // Continue with rule-based (graceful fallback)
+      }
+
+      // Convert to GameResults for compatibility (use ML result if available)
       final gameResults = GameResults(
         gameType: 'dccs-color-shape',
         totalTrials: summary.totalTrials,
@@ -385,6 +409,18 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
           isPerseverativeError: t.isPerseverativeError,
         )).toList(),
         mlFeatures: summary.mlFeatures,
+        // ✅ Add ML prediction data
+        riskScore: mlResult?.riskScore,
+        riskLevel: mlResult?.riskLevel,
+        mlPrediction: mlResult != null ? {
+          'isASD': mlResult.isASD,
+          'asdProbability': mlResult.asdProbability,
+          'controlProbability': mlResult.controlProbability,
+          'confidence': mlResult.confidence,
+          'riskLevel': mlResult.riskLevel,
+          'riskScore': mlResult.riskScore,
+          'method': mlResult.method,
+        } : null,
       );
 
       if (_sessionId != null) {

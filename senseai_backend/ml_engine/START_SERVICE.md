@@ -246,3 +246,4 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 
 Then open http://localhost:8001/docs in your browser! 🚀
 
+

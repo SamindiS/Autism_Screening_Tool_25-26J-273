@@ -60,3 +60,4 @@ class PredictionResponse(BaseModel):
             }
         }
 
+

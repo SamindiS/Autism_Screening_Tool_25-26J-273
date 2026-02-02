@@ -106,3 +106,4 @@ python test_predict.py
 
 The script can be improved to handle input from stdin. Let me update it:
 
+

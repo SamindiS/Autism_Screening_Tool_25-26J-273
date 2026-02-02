@@ -199,3 +199,4 @@ const response = await axios.post('http://localhost:8001/predict', {
 
 **Your choice!** Both are correct. Current is simpler and works great for your use case.
 
+

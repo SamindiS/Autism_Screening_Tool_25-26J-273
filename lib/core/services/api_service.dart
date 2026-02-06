@@ -118,7 +118,7 @@ class ApiService {
       final normalizedPin = pin.trim();
       debugPrint('🔐 Attempting login to: $url/api/clinicians/login');
       debugPrint('📌 PIN length: ${normalizedPin.length}');
-      debugPrint('📌 PIN value (first 2): ${normalizedPin.length > 0 ? normalizedPin.substring(0, normalizedPin.length > 2 ? 2 : normalizedPin.length) + '***' : 'empty'}');
+      debugPrint('📌 PIN value (first 2): ${normalizedPin.isNotEmpty ? '${normalizedPin.substring(0, normalizedPin.length > 2 ? 2 : normalizedPin.length)}***' : 'empty'}');
       
       final requestBody = jsonEncode({'pin': normalizedPin});
       debugPrint('📤 Request body: ${requestBody.replaceAll(normalizedPin, '***')}');
@@ -558,10 +558,12 @@ class ApiService {
       if (endTime != null) body['end_time'] = endTime.millisecondsSinceEpoch;
       if (metrics != null) body['metrics'] = metrics;
       if (gameResults != null) body['game_results'] = gameResults;
-      if (questionnaireResults != null)
+      if (questionnaireResults != null) {
         body['questionnaire_results'] = questionnaireResults;
-      if (reflectionResults != null)
+      }
+      if (reflectionResults != null) {
         body['reflection_results'] = reflectionResults;
+      }
       if (riskScore != null) body['risk_score'] = riskScore;
       if (riskLevel != null) body['risk_level'] = riskLevel;
 

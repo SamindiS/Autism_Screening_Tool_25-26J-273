@@ -1,0 +1,38 @@
+buildscript {
+    ext.kotlin_version = '2.1.0'  // Updated for Flutter 3.38 compatibility
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.6.0'  // Updated for Flutter 3.38 compatibility
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+// Android 10 compatibility settings
+ext {
+    compileSdkVersion = 34  // Compile against latest SDK for plugin compatibility
+    targetSdkVersion = 34  // Target Android 10 (API 29) - app runs on Android 10 devices
+    minSdkVersion = 21
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = '../build'
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(':app')
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.layout.buildDirectory
+}

@@ -1,0 +1,27 @@
+{
+  "model_type": "Logistic Regression (Calibrated)",
+  "trained_on": "2026-01-02",
+  "trained_by": "Your Name",
+  "dataset_size": {
+    "asd": 20,
+    "control": 33,
+    "total": 53
+  },
+  "features": 18,
+  "evaluation": {
+    "cv_recall": 0.84,
+    "cv_precision": 0.78,
+    "cv_f1": 0.81,
+    "cv_auc": 0.81,
+    "cv_accuracy": 0.79
+  },
+  "preprocessing": {
+    "age_normalization": true,
+    "feature_scaling": "StandardScaler",
+    "missing_value_handling": "median_imputation"
+  },
+  "notes": "Pilot screening model for ASD risk assessment. Trained on small dataset with child-level cross-validation.",
+  "version": "1.0.0"
+}
+
+

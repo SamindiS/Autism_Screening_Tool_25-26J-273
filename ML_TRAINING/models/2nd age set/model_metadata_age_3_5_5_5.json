@@ -1,0 +1,22 @@
+{
+  "model_type": "LogisticRegression",
+  "age_group": "3.5-5.5",
+  "session_type": "frog_jump",
+  "features": [
+    "age_months",
+    "behavioral_regulation_index",
+    "high_commission_error_flag",
+    "low_nogo_accuracy_flag",
+    "high_rt_variability_flag",
+    "attention_level",
+    "engagement_level"
+  ],
+  "test_accuracy": 0.8,
+  "test_precision": 0.9285714285714286,
+  "test_recall": 0.7222222222222222,
+  "test_f1": 0.8125,
+  "test_roc_auc": 0.8842592592592593,
+  "train_samples": 81,
+  "test_samples": 30,
+  "clinical_risk_logic": "hybrid_ml_normative_deviation"
+}

@@ -1,0 +1,29 @@
+{
+  "age_months": 48,
+  "features": {
+    "age_months": 48,
+    "post_switch_accuracy": 65,
+    "perseverative_error_rate_post_switch": 35,
+    "switch_cost_ms": 450,
+    "commission_error_rate": 28,
+    "rt_variability": 280,
+    "nogo_accuracy": 70,
+    "avg_rt_pre_switch_ms": 800,
+    "avg_rt_post_switch_correct_ms": 1200,
+    "accuracy_drop_percent": 15,
+    "go_accuracy": 85,
+    "avg_rt_go_ms": 600,
+    "critical_items_failed": 2,
+    "social_responsiveness_score": 60,
+    "joint_attention_score": 55,
+    "attention_level": 3,
+    "engagement_level": 4,
+    "frustration_tolerance": 3,
+    "accuracy_overall": 70,
+    "completion_time_sec": 180
+  },
+  "age_group": "4-5",
+  "session_type": "color_shape"
+}
+
+

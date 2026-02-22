@@ -1,0 +1,5 @@
+age_months,task,mean_accuracy,std_accuracy,mean_completion_time_sec
+36,DCCS,85,7,120
+42,DCCS,88,6,110
+48,DCCS,91,5,100
+54,DCCS,93,4,95

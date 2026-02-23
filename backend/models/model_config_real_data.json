@@ -1,0 +1,83 @@
+{
+  "model_type": "GradientBoostingClassifier",
+  "trained_on": "Toddler ASD Eye-Tracking Dataset (Zenodo)",
+  "n_subjects": 27,
+  "age_range_months": "18-33",
+  "target_age_range": "2-6 years",
+  "feature_mapping": {
+    "app_feature": "dataset_equivalent",
+    "fixation_duration_target": [
+      "FD_TO_RJA_T0",
+      "FD_TO_IJA1_T0"
+    ],
+    "saccade_count": [
+      "freq_RJA_T0",
+      "freq_IJA1_T0"
+    ],
+    "smooth_pursuit_ratio": [
+      "TransFTO_RJA_T0",
+      "transFTO_IJA1_T0"
+    ],
+    "gaze_variability": [
+      "DS_RJA_T0",
+      "DS_IJA1_T0"
+    ],
+    "social_attention": [
+      "FD_F_RJA_T0",
+      "FD_F_IJA1_T0"
+    ]
+  },
+  "top_features": [
+    {
+      "feature": "FD_O_IJA1_T0",
+      "importance": 0.6770328605410441
+    },
+    {
+      "feature": "FD_F_IJA2_T0",
+      "importance": 0.11172982411105545
+    },
+    {
+      "feature": "social_attention_index",
+      "importance": 0.04503036572732259
+    },
+    {
+      "feature": "FD_TO_IJA1_T0",
+      "importance": 0.032605215361518065
+    },
+    {
+      "feature": "transFTO_IJA2_T0",
+      "importance": 0.026008691232791956
+    },
+    {
+      "feature": "AgeT0",
+      "importance": 0.025409032749338076
+    },
+    {
+      "feature": "DS_IJA1_T0",
+      "importance": 0.02121887580615859
+    },
+    {
+      "feature": "transFO_RJA_T0",
+      "importance": 0.01829111249874247
+    },
+    {
+      "feature": "transTOF_IJA1_T0",
+      "importance": 0.00853244822848011
+    },
+    {
+      "feature": "transTOO_IJA1_T0",
+      "importance": 0.007608574345726928
+    }
+  ],
+  "interpretation": {
+    "0": {
+      "label": "Low Risk",
+      "description": "Typical Development Pattern"
+    },
+    "1": {
+      "label": "High Risk",
+      "description": "ASD-like Gaze Pattern"
+    }
+  },
+  "trained_date": "2026-01-28T12:30:36.664881"
+}

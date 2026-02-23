@@ -1,0 +1,66 @@
+[
+  {
+    "child_id": "child_0",
+    "child_name": "",
+    "answers": {
+      "social_communication": {
+        "sc1": true,
+        "sc2": false,
+        "sc3": true,
+        "sc4": false,
+        "sc5": null
+      },
+      "repetitive_behaviors": {
+        "rb1": null,
+        "rb2": null,
+        "rb3": null,
+        "rb4": null
+      },
+      "sensory_sensitivities": {
+        "ss1": null,
+        "ss2": null,
+        "ss3": null,
+        "ss4": null
+      },
+      "rtn_history": {
+        "rtn1": null,
+        "rtn2": null,
+        "rtn3": null,
+        "rtn4": null
+      }
+    },
+    "timestamp": "2026-02-23T01:34:55.061957"
+  },
+  {
+    "child_id": "child_0",
+    "child_name": "",
+    "answers": {
+      "social_communication": {
+        "sc1": true,
+        "sc2": false,
+        "sc3": true,
+        "sc4": false,
+        "sc5": null
+      },
+      "repetitive_behaviors": {
+        "rb1": null,
+        "rb2": null,
+        "rb3": null,
+        "rb4": null
+      },
+      "sensory_sensitivities": {
+        "ss1": null,
+        "ss2": null,
+        "ss3": null,
+        "ss4": null
+      },
+      "rtn_history": {
+        "rtn1": null,
+        "rtn2": null,
+        "rtn3": null,
+        "rtn4": null
+      }
+    },
+    "timestamp": "2026-02-23T01:35:00.824945"
+  }
+]

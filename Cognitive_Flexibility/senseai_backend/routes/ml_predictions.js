@@ -11,7 +11,8 @@ const axios = require('axios');
 const router = express.Router();
 
 // FastAPI ML Engine URL
-const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:8002';
+// NOTE: start script `start_python_engine.ps1` runs on port 8001 by default.
+const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:8001';
 
 // Check if ML engine is available
 let ML_AVAILABLE = false;
@@ -116,6 +117,8 @@ router.post('/predict', async (req, res) => {
         risk_level: result.risk_level,
         risk_score: result.risk_score,
         asd_probability: result.asd_probability,
+        model_age_group: result.model_age_group,
+        explanations: result.explanations,
         method: 'ml', // Indicates ML was used
       });
 

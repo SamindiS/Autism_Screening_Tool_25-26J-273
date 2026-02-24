@@ -3,7 +3,16 @@ Response schemas for API endpoints
 """
 
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
+
+
+class ExplanationItem(BaseModel):
+    """Simple explanation item for model output"""
+
+    feature: str = Field(..., description="Feature name")
+    value: float = Field(..., description="Feature value used for prediction")
+    contribution: float = Field(..., description="Signed contribution score (approximate)")
+    direction: str = Field(..., description="'increases_risk' or 'decreases_risk'")
 
 class PredictionResponse(BaseModel):
     """Response schema for ASD prediction"""
@@ -46,6 +55,16 @@ class PredictionResponse(BaseModel):
         description="Probability of ASD (0-1)",
         ge=0.0,
         le=1.0
+    )
+
+    model_age_group: Optional[str] = Field(
+        default=None,
+        description="Age group model used: '2-3.5', '3.5-5.5', '5.5-6.9', or null if legacy"
+    )
+
+    explanations: Optional[List[ExplanationItem]] = Field(
+        default=None,
+        description="Optional simple explanation of top factors affecting the prediction"
     )
     
     class Config:

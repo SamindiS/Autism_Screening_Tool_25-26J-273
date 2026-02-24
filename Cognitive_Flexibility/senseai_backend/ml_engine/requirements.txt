@@ -2,7 +2,9 @@ fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 numpy>=1.24.0
 pandas>=2.0.0
-scikit-learn>=1.3.0
+# IMPORTANT: keep sklearn version aligned between training and serving to avoid
+# model unpickle incompatibilities.
+scikit-learn==1.6.1
 joblib>=1.3.0
 pydantic>=2.0.0
 python-dotenv>=1.0.0

@@ -75,10 +75,16 @@ def load_age_specific_model(age_months: int) -> Tuple[Any, Any, list, Optional[D
     
     # Load scaler
     if not scaler_path.exists():
-        raise FileNotFoundError(
-            f"Scaler not found for age group {age_group}: {scaler_path}\n"
-            f"Please ensure the scaler file exists. Expected path: {scaler_path}"
-        )
+        # Support alternate naming used by some notebooks: scaler_model_<model_name>.pkl
+        alt_scaler_path = scaler_path.parent / f"scaler_model_{model_path.stem}.pkl"
+        if alt_scaler_path.exists():
+            logger.warning(f"Scaler not found at expected path, using alternate: {alt_scaler_path.name}")
+            scaler_path = alt_scaler_path
+        else:
+            raise FileNotFoundError(
+                f"Scaler not found for age group {age_group}: {scaler_path}\n"
+                f"Please ensure the scaler file exists. Expected path: {scaler_path}"
+            )
     scaler = joblib.load(scaler_path)
     logger.info(f"Scaler loaded: {scaler_path.name} (expects {scaler.n_features_in_} features)")
     
@@ -96,6 +102,14 @@ def load_age_specific_model(age_months: int) -> Tuple[Any, Any, list, Optional[D
         logger.info(f"Features loaded: {features_path.name} ({len(feature_names)} features)")
     else:
         logger.warning(f"Features file not found: {features_path.name}")
+
+    # Fallback: infer feature names from fitted scaler if available
+    if not feature_names and hasattr(scaler, "feature_names_in_"):
+        try:
+            feature_names = list(getattr(scaler, "feature_names_in_"))
+            logger.info(f"Features inferred from scaler.feature_names_in_: {len(feature_names)} features")
+        except Exception as e:
+            logger.warning(f"Could not infer feature names from scaler: {e}")
     
     # Load metadata (optional)
     metadata = None
@@ -141,7 +155,8 @@ def check_age_specific_models() -> Dict[str, Any]:
             "scaler_exists": scaler_path.exists(),
             "features_exists": features_path.exists(),
             "model_path": str(model_path),
-            "ready": model_path.exists() and scaler_path.exists() and features_path.exists()
+            # Features file is recommended, but we can infer from scaler.feature_names_in_ at runtime
+            "ready": model_path.exists() and scaler_path.exists()
         }
     
     return status

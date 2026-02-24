@@ -1,1 +1,24 @@
-["age_months", "switch_cost_ms", "completion_time_sec", "switch_cost_zscore", "cognitive_flexibility_index", "behavioral_regulation_index", "high_perseverative_error_flag", "low_post_switch_accuracy_flag", "high_switch_cost_flag", "attention_level", "engagement_level", "frustration_tolerance"]
+[
+  "age_months",
+  "pre_switch_accuracy",
+  "post_switch_accuracy",
+  "mixed_block_accuracy",
+  "switch_cost_ms",
+  "total_perseverative_errors",
+  "perseverative_error_rate_post_switch",
+  "number_of_consecutive_perseverations",
+  "avg_rt_pre_switch_ms",
+  "avg_rt_post_switch_ms",
+  "attention_level",
+  "engagement_level",
+  "frustration_tolerance",
+  "instruction_following",
+  "overall_behavior",
+  "questionnaire_score",
+  "critical_items_failed",
+  "social_responsiveness_score",
+  "cognitive_flexibility_index",
+  "perseveration_index",
+  "cognitive_flexibility_zscore",
+  "perseveration_zscore"
+]

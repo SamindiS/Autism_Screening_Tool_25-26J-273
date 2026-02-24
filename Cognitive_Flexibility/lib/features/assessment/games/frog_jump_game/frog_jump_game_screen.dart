@@ -330,7 +330,10 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
       try {
         if (results.mlFeatures != null && results.mlFeatures!.isNotEmpty) {
           mlResult = await MLService.predict(
-            mlFeatures: results.mlFeatures!,
+            mlFeatures: {
+              ...results.mlFeatures!,
+              'age_months': (widget.child.age * 12).round(),
+            },
             ageGroup: AgeCalculator.getAgeGroup(widget.child.age),
             sessionType: 'frog_jump',
           );
@@ -349,6 +352,15 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
                 'riskLevel': mlResult.riskLevel,
                 'riskScore': mlResult.riskScore,
                 'method': mlResult.method,
+                'modelAgeGroup': mlResult.modelAgeGroup,
+                'explanations': mlResult.explanations
+                    .map((e) => {
+                          'feature': e.feature,
+                          'value': e.value,
+                          'contribution': e.contribution,
+                          'direction': e.direction,
+                        })
+                    .toList(),
               },
             );
           } else {

@@ -369,7 +369,10 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
       try {
         if (summary.mlFeatures.isNotEmpty) {
           mlResult = await MLService.predict(
-            mlFeatures: summary.mlFeatures,
+            mlFeatures: {
+              ...summary.mlFeatures,
+              'age_months': (widget.child.age * 12).round(),
+            },
             ageGroup: AgeCalculator.getAgeGroup(widget.child.age),
             sessionType: 'color_shape',
           );
@@ -420,6 +423,15 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
           'riskLevel': mlResult.riskLevel,
           'riskScore': mlResult.riskScore,
           'method': mlResult.method,
+          'modelAgeGroup': mlResult.modelAgeGroup,
+          'explanations': mlResult.explanations
+              .map((e) => {
+                    'feature': e.feature,
+                    'value': e.value,
+                    'contribution': e.contribution,
+                    'direction': e.direction,
+                  })
+              .toList(),
         } : null,
       );
 

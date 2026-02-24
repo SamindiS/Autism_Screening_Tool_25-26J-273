@@ -211,7 +211,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
         'session_id': finalSessionId,
         'reflection_data': reflectionData,
         'game_results': widget.gameResults.toJson(),
-        'enhanced_risk_score': enhancedRiskScore,
+        'enhanced_risk_score': finalRiskScore,
         'risk_level': riskLevel,
       });
 
@@ -224,7 +224,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
               sessionId: finalSessionId,
               gameResults: widget.gameResults,
               reflectionData: reflectionData,
-              riskScore: enhancedRiskScore,
+              riskScore: finalRiskScore,
               riskLevel: riskLevel,
             ),
           ),

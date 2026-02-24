@@ -118,6 +118,20 @@ class AppLocalizations {
   String get viewReportsComingSoon => translate('view_reports_coming_soon');
   String get retry => translate('retry');
   String get logoutConfirmation => translate('logout_confirmation');
+
+  // Game UI strings (used by assessment games)
+  String get greatJob => translate('greatJob');
+  String get tryAgain => translate('tryAgain');
+  String get wellDone => translate('wellDone');
+
+  // Frog Jump game
+  String get frogJumpGameTitle => translate('frogJumpGameTitle');
+  String get frogJumpGameInstructions => translate('frogJumpGameInstructions');
+  String get tapMe => translate('tapMe');
+  String get dontTap => translate('dontTap');
+  String get getReady => translate('getReady');
+  String get tapHappyFrog => translate('tapMe'); // fallback: same meaning
+  String get dontTapSleepyTurtle => translate('dontTapSleepyTurtle');
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

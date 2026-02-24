@@ -29,6 +29,7 @@ class ResultScreen extends StatefulWidget {
 
 class _ResultScreenState extends State<ResultScreen> {
   late ConfettiController _confettiController;
+  bool _showExplanation = false;
 
   @override
   void initState() {
@@ -105,6 +106,13 @@ class _ResultScreenState extends State<ResultScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final mlPrediction = widget.gameResults?.mlPrediction;
+    final questionnaireMlPrediction = widget.questionnaireResults?['ml_prediction'] as Map<String, dynamic>?;
+    final effectiveMlPrediction = mlPrediction ?? questionnaireMlPrediction;
+    final explanations = (effectiveMlPrediction?['explanations'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Assessment Results'),
@@ -139,6 +147,11 @@ class _ResultScreenState extends State<ResultScreen> {
                     // Risk Level Card
                     _buildRiskCard(),
                     const SizedBox(height: 24),
+                    // Explainable AI (optional)
+                    if (explanations.isNotEmpty) ...[
+                      _buildExplainableCard(explanations),
+                      const SizedBox(height: 24),
+                    ],
                     // Questionnaire Results (for ages 2-3.5)
                     if (widget.questionnaireResults != null) _buildQuestionnaireCard(),
                     const SizedBox(height: 24),
@@ -238,6 +251,102 @@ class _ResultScreenState extends State<ResultScreen> {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExplainableCard(List<Map<String, dynamic>> explanations) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _primaryColor.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lightbulb_outline, color: _primaryColor),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Why this result?',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              TextButton(
+                onPressed: () => setState(() => _showExplanation = !_showExplanation),
+                child: Text(_showExplanation ? 'Hide' : 'Show'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'These are the strongest factors the model used for this screening result.',
+            style: TextStyle(color: Colors.grey.shade700),
+          ),
+          if (_showExplanation) ...[
+            const SizedBox(height: 16),
+            ...explanations.take(6).map((e) {
+              final feature = (e['feature'] as String?) ?? '';
+              final direction = (e['direction'] as String?) ?? 'increases_risk';
+              final contribution = (e['contribution'] as num?)?.toDouble() ?? 0.0;
+              final value = (e['value'] as num?)?.toDouble() ?? 0.0;
+              final isUp = direction == 'increases_risk';
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: (isUp ? Colors.red : Colors.green).withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: (isUp ? Colors.red : Colors.green).withOpacity(0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      isUp ? Icons.trending_up : Icons.trending_down,
+                      color: isUp ? Colors.red : Colors.green,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            feature.replaceAll('_', ' '),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Value: ${value.toStringAsFixed(2)}  •  Impact: ${contribution.toStringAsFixed(4)}',
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 8),
+            Text(
+              'Note: This is a screening explanation (not a diagnosis).',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ],
         ],
       ),
     );

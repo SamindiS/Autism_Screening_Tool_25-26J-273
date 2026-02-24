@@ -1,1 +1,24 @@
-["age_months", "behavioral_regulation_index", "high_commission_error_flag", "low_nogo_accuracy_flag", "high_rt_variability_flag", "attention_level", "engagement_level"]
+[
+  "age_months",
+  "go_accuracy",
+  "nogo_accuracy",
+  "overall_accuracy",
+  "commission_errors",
+  "commission_error_rate",
+  "omission_errors",
+  "omission_error_rate",
+  "avg_rt_go_ms",
+  "rt_variability",
+  "attention_level",
+  "engagement_level",
+  "frustration_tolerance",
+  "instruction_following",
+  "overall_behavior",
+  "questionnaire_score",
+  "critical_items_failed",
+  "social_responsiveness_score",
+  "inhibition_control_index",
+  "response_control_index",
+  "inhibition_control_zscore",
+  "response_control_zscore"
+]

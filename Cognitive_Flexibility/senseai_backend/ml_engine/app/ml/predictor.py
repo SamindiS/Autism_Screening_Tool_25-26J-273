@@ -11,6 +11,58 @@ from app.core.logger import logger
 from app.schemas.request import PredictionRequest
 from app.schemas.response import PredictionResponse
 
+
+def _build_explanations(
+    model: any,
+    feature_names: list,
+    features_scaled: np.ndarray,
+    features_dict: dict,
+    top_k: int = 6,
+) -> list | None:
+    """
+    Build a simple explanation list for linear models (e.g. LogisticRegression).
+    Uses signed contribution ~= coef_i * x_i (on scaled features).
+    """
+    try:
+        if not hasattr(model, "coef_"):
+            return None
+        coefs = getattr(model, "coef_")
+        if coefs is None or len(coefs) == 0:
+            return None
+
+        coef_vec = np.array(coefs[0], dtype=float)
+        x = np.array(features_scaled[0], dtype=float)
+        n = min(len(coef_vec), len(x), len(feature_names))
+        if n <= 0:
+            return None
+
+        contrib = coef_vec[:n] * x[:n]
+        # Rank by absolute contribution
+        idx_sorted = np.argsort(np.abs(contrib))[::-1][:top_k]
+
+        explanations = []
+        for i in idx_sorted:
+            fname = str(feature_names[i])
+            val = features_dict.get(fname, 0)
+            try:
+                val_f = float(val) if val is not None else 0.0
+            except Exception:
+                val_f = 0.0
+            c = float(contrib[i])
+            explanations.append(
+                {
+                    "feature": fname,
+                    "value": val_f,
+                    "contribution": round(c, 4),
+                    "direction": "increases_risk" if c >= 0 else "decreases_risk",
+                }
+            )
+
+        return explanations
+    except Exception as e:
+        logger.warning(f"Could not build explanations: {e}")
+        return None
+
 def validate_features(features_dict: dict, feature_names: list) -> None:
     """
     Validate that required features are present
@@ -119,6 +171,14 @@ def predict_asd(request: PredictionRequest) -> PredictionResponse:
         f"Prediction complete ({age_group or 'legacy'}): {risk_level.upper()} risk "
         f"(score={risk_score:.1f}%, prob={asd_probability:.3f})"
     )
+
+    explanations = _build_explanations(
+        model=model,
+        feature_names=feature_names,
+        features_scaled=features_scaled,
+        features_dict=features_dict,
+        top_k=6,
+    )
     
     return PredictionResponse(
         prediction=int(prediction),
@@ -126,6 +186,8 @@ def predict_asd(request: PredictionRequest) -> PredictionResponse:
         confidence=confidence,
         risk_level=risk_level,
         risk_score=round(risk_score, 1),
-        asd_probability=round(asd_probability, 3)
+        asd_probability=round(asd_probability, 3),
+        model_age_group=age_group,
+        explanations=explanations,
     )
 

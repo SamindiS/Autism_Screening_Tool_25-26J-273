@@ -76,6 +76,8 @@ class MLPredictionResult {
   final String riskLevel; // 'low', 'moderate', 'high'
   final double riskScore; // 0-100
   final String method; // 'ml' or 'fallback'
+  final String? modelAgeGroup; // '2-3.5', '3.5-5.5', '5.5-6.9'
+  final List<MLExplanationItem> explanations;
 
   MLPredictionResult({
     required this.isASD,
@@ -85,11 +87,14 @@ class MLPredictionResult {
     required this.riskLevel,
     required this.riskScore,
     required this.method,
+    required this.modelAgeGroup,
+    required this.explanations,
   });
 
   factory MLPredictionResult.fromJson(Map<String, dynamic> json) {
     final prediction = json['prediction'] as int? ?? 0;
     final probabilities = json['probability'] as List<dynamic>? ?? [0.5, 0.5];
+    final explanationsJson = json['explanations'] as List<dynamic>? ?? const [];
     
     return MLPredictionResult(
       isASD: prediction == 1,
@@ -99,11 +104,39 @@ class MLPredictionResult {
       riskLevel: json['risk_level'] as String? ?? 'moderate',
       riskScore: (json['risk_score'] as num?)?.toDouble() ?? 50.0,
       method: json['method'] as String? ?? 'unknown',
+      modelAgeGroup: json['model_age_group'] as String?,
+      explanations: explanationsJson
+          .whereType<Map<String, dynamic>>()
+          .map(MLExplanationItem.fromJson)
+          .toList(),
     );
   }
 
   /// Convert risk level to uppercase for compatibility
   String get riskLevelUpper => riskLevel.toUpperCase();
+}
+
+class MLExplanationItem {
+  final String feature;
+  final double value;
+  final double contribution;
+  final String direction; // increases_risk | decreases_risk
+
+  const MLExplanationItem({
+    required this.feature,
+    required this.value,
+    required this.contribution,
+    required this.direction,
+  });
+
+  factory MLExplanationItem.fromJson(Map<String, dynamic> json) {
+    return MLExplanationItem(
+      feature: json['feature'] as String? ?? '',
+      value: (json['value'] as num?)?.toDouble() ?? 0.0,
+      contribution: (json['contribution'] as num?)?.toDouble() ?? 0.0,
+      direction: json['direction'] as String? ?? 'increases_risk',
+    );
+  }
 }
 
 

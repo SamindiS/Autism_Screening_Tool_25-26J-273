@@ -4,6 +4,7 @@ import '../../data/models/child.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
 import '../../core/services/translation_helper.dart';
+import '../../core/services/ml_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/language_selector.dart';
 import '../settings/settings_screen.dart';
@@ -281,9 +282,48 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
         completionTimeSec: completionTimeSec,
       );
       
-      // Use ML-enhanced risk level
-      final riskScore = summary.riskScore;
-      final riskLevel = summary.riskLevel;
+      // ✅ Get ML prediction from backend (age 2–3.5 model) using summary.mlFeatures
+      // Fallback to rule-based summary if ML fails.
+      double riskScore = summary.riskScore;
+      String riskLevel = summary.riskLevel;
+      Map<String, dynamic>? mlPrediction;
+
+      try {
+        final mlResult = await MLService.predict(
+          mlFeatures: {
+            ...summary.mlFeatures,
+            // Ensure age_months is present for the backend router
+            'age_months': (widget.child.age * 12).round(),
+          },
+          ageGroup: '2-3.5',
+          sessionType: 'ai_doctor_bot',
+        );
+
+        if (mlResult != null && mlResult.method == 'ml') {
+          riskScore = mlResult.riskScore;
+          riskLevel = mlResult.riskLevel.toUpperCase();
+          mlPrediction = {
+            'isASD': mlResult.isASD,
+            'asdProbability': mlResult.asdProbability,
+            'controlProbability': mlResult.controlProbability,
+            'confidence': mlResult.confidence,
+            'riskLevel': mlResult.riskLevel,
+            'riskScore': mlResult.riskScore,
+            'method': mlResult.method,
+            'modelAgeGroup': mlResult.modelAgeGroup,
+            'explanations': mlResult.explanations
+                .map((e) => {
+                      'feature': e.feature,
+                      'value': e.value,
+                      'contribution': e.contribution,
+                      'direction': e.direction,
+                    })
+                .toList(),
+          };
+        }
+      } catch (e) {
+        debugPrint('⚠️  ML prediction error (questionnaire): $e - using rule-based');
+      }
 
       // Convert _answers Map<int, int> to Map<String, int> for JSON encoding
       final responsesMap = <String, int>{};
@@ -305,6 +345,7 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
         'percentage_score': summary.percentageScore,
         'risk_score': riskScore,
         'risk_level': riskLevel,
+        'ml_prediction': mlPrediction,
         'category_scores': summary.categoryScores.map((k, v) => MapEntry(k, v.percentage)),
         'completion_time': DateTime.now().millisecondsSinceEpoch,
         'completion_time_sec': completionTimeSec,

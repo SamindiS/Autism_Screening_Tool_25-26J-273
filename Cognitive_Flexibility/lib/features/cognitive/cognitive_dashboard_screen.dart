@@ -851,8 +851,8 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
     final groupLabel = group == null 
         ? 'All Groups' 
         : group == 'asd' 
-            ? 'ASD Group' 
-            : 'Control Group';
+            ? 'Existing ASD Diagnosis' 
+            : 'Screening (No Prior Diagnosis)';
     final ageLabel = ageGroup == null 
         ? 'All Ages' 
         : 'Age $ageGroup';

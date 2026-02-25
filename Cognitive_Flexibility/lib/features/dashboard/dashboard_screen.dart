@@ -671,7 +671,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             children: [
               Expanded(
                 child: _buildStudyGroupCard(
-                  title: 'ASD Group',
+                  title: 'Existing ASD Diagnosis',
                   count: _asdGroupCount,
                   target: '30-50',
                   color: const Color(0xFF6366F1),
@@ -682,7 +682,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStudyGroupCard(
-                  title: 'Control Group',
+                  title: 'Screening (No Prior Diagnosis)',
                   count: _controlGroupCount,
                   target: '40-60',
                   color: const Color(0xFF10B981),

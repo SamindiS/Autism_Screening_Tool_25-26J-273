@@ -6,15 +6,14 @@ import '../../core/services/auth_service.dart';
 import '../../data/models/child.dart';
 import 'age_select_screen.dart';
 
-/// Child Profile Screen for pilot study data collection
+/// Child Profile Screen for clinical ASD screening
 /// 
 /// Captures:
 /// - Child code (e.g., LRH-027, PRE-112)
 /// - Age (in months)
 /// - Gender
-/// - Group (ASD or Typically Developing)
-/// - ASD Level (Level 1/2/3) - only shown for ASD group
-/// - Diagnosis source (hospital name or "Preschool screening")
+/// - Prior diagnosis status (existing ASD diagnosis vs screening)
+/// - Diagnosis source (hospital / clinic or screening context)
 class AddChildScreen extends StatefulWidget {
   final Map<String, dynamic>? child;
 
@@ -37,9 +36,10 @@ class _AddChildScreenState extends State<AddChildScreen> {
   double? _calculatedAge;
   int? _calculatedAgeInMonths;
   
-  // Study-specific fields
+  // Clinical fields
+  // ChildGroup is still used internally to distinguish
+  // children with an existing ASD diagnosis vs screening cases.
   ChildGroup _selectedGroup = ChildGroup.typicallyDeveloping;
-  AsdLevel? _selectedAsdLevel;
 
   final List<String> _genders = ['Male', 'Female', 'Other'];
   final Map<String, String> _languages = {
@@ -169,11 +169,6 @@ class _AddChildScreenState extends State<AddChildScreen> {
       _selectedGroup = ChildGroup.fromJson(groupStr);
     }
 
-    final asdLevelStr = child['asd_level'] as String?;
-    if (asdLevelStr != null) {
-      _selectedAsdLevel = AsdLevel.fromJson(asdLevelStr);
-    }
-
     _diagnosisSourceCtrl.text = child['diagnosis_source'] as String? ?? 
         (_selectedGroup == ChildGroup.asd ? '' : 'Preschool screening');
     
@@ -268,13 +263,6 @@ class _AddChildScreenState extends State<AddChildScreen> {
       return;
     }
 
-    if (_selectedGroup == ChildGroup.asd && _selectedAsdLevel == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select ASD level for ASD group')),
-      );
-      return;
-    }
-
     if (_selectedGroup == ChildGroup.asd && _clinicianIdCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter the Clinician Medical ID')),
@@ -325,7 +313,9 @@ class _AddChildScreenState extends State<AddChildScreen> {
         age: _calculatedAge!,
         hospitalId: hospitalId, // Auto-filled from logged clinician's hospital
         group: _selectedGroup,
-        asdLevel: _selectedGroup == ChildGroup.asd ? _selectedAsdLevel : null,
+        // Clinical version: we no longer capture ASD severity level
+        // in the app; this was only needed for pilot data collection.
+        asdLevel: null,
         diagnosisSource: diagnosisSource, // Auto-filled from logged clinician's hospital
         clinicianId: clinicianId, // Manual entry (Clinician Medical ID)
         clinicianName: null, // Not needed
@@ -338,8 +328,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_selectedGroup == ChildGroup.asd 
-              ? 'ASD child profile added successfully!' 
-              : 'Control child profile added successfully!'),
+              ? 'Child with existing ASD diagnosis added successfully!' 
+              : 'Screening profile added successfully!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -406,7 +396,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
         age: _calculatedAge,
         hospitalId: hospitalId, // Auto-filled from logged clinician's hospital
         group: _selectedGroup,
-        asdLevel: _selectedGroup == ChildGroup.asd ? _selectedAsdLevel : null,
+        // Clinical version: we no longer capture ASD severity level
+        asdLevel: null,
         diagnosisSource: diagnosisSource, // Auto-filled from logged clinician's hospital
         clinicianId: clinicianId, // Manual entry (Clinician Medical ID)
         clinicianName: null, // Not needed
@@ -521,12 +512,6 @@ class _AddChildScreenState extends State<AddChildScreen> {
                   _buildGenderSelector(),
                   const SizedBox(height: 16),
                   
-                  // ASD Level (only shown for ASD group)
-                  if (_selectedGroup == ChildGroup.asd) ...[
-                    _buildAsdLevelSelector(),
-                    const SizedBox(height: 16),
-                  ],
-                  
                   // Diagnosis Source
                   _buildDiagnosisSourceField(),
                   const SizedBox(height: 16),
@@ -568,8 +553,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
             Expanded(
               child: _buildGroupOption(
                 group: ChildGroup.asd,
-                title: 'ASD Group',
-                subtitle: 'Clinical diagnosis',
+                title: 'Existing ASD diagnosis',
+                subtitle: 'Already diagnosed by clinician',
                 icon: Icons.medical_services_outlined,
                 color: const Color(0xFF6366F1),
               ),
@@ -578,8 +563,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
             Expanded(
               child: _buildGroupOption(
                 group: ChildGroup.typicallyDeveloping,
-                title: 'Control Group',
-                subtitle: 'Typically developing',
+                title: 'Screening',
+                subtitle: 'No prior ASD diagnosis',
                 icon: Icons.school_outlined,
                 color: const Color(0xFF10B981),
               ),
@@ -686,8 +671,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
           Expanded(
             child: Text(
               isAsd
-                  ? 'For children with existing autism diagnosis from a hospital/clinic'
-                  : 'For typically developing children from preschools (no diagnosis)',
+                  ? 'For children with a confirmed autism diagnosis from a hospital/clinic'
+                  : 'For children referred for ASD screening (no prior diagnosis)',
               style: TextStyle(
                 color: _primaryColor.withOpacity(0.9),
                 fontSize: 13,
@@ -828,107 +813,6 @@ class _AddChildScreenState extends State<AddChildScreen> {
           }).toList(),
         ),
       ],
-    );
-  }
-
-  Widget _buildAsdLevelSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'ASD Level / Severity',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade700,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'Required for ASD',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.red.shade700,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ...AsdLevel.values.map((level) => _buildAsdLevelOption(level)),
-      ],
-    );
-  }
-
-  Widget _buildAsdLevelOption(AsdLevel level) {
-    final isSelected = _selectedAsdLevel == level;
-    String description;
-    switch (level) {
-      case AsdLevel.level1:
-        description = 'Requiring support - Mild';
-        break;
-      case AsdLevel.level2:
-        description = 'Requiring substantial support - Moderate';
-        break;
-      case AsdLevel.level3:
-        description = 'Requiring very substantial support - Severe';
-        break;
-    }
-
-    return GestureDetector(
-      onTap: () => setState(() => _selectedAsdLevel = level),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? _primaryColor.withOpacity(0.1) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? _primaryColor : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Radio<AsdLevel>(
-              value: level,
-              groupValue: _selectedAsdLevel,
-              onChanged: (v) => setState(() => _selectedAsdLevel = v),
-              activeColor: _primaryColor,
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    level.shortName,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? _primaryColor : Colors.black87,
-                    ),
-                  ),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1147,11 +1031,10 @@ class _AddChildScreenState extends State<AddChildScreen> {
           _buildSummaryRow('Gender', _selectedGender ?? '-'),
           _buildSummaryRow('Group', _selectedGroup.displayName),
           if (_selectedGroup == ChildGroup.asd) ...[
-            _buildSummaryRow('ASD Level', _selectedAsdLevel?.shortName ?? '-'),
             _buildSummaryRow('Clinician ID', _clinicianIdCtrl.text.isNotEmpty ? _clinicianIdCtrl.text : '-'),
             _buildSummaryRow('Hospital', _registeredHospital ?? '-'),
           ] else
-            _buildSummaryRow('Source', 'Preschool screening'),
+            _buildSummaryRow('Screening Context', 'No prior ASD diagnosis reported'),
         ],
       ),
     );

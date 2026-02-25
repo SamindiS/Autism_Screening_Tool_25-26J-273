@@ -445,7 +445,7 @@ class _ResultScreenState extends State<ResultScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                'Control Group - Typically Developing',
+                'Screening – No Prior ASD Diagnosis',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -463,7 +463,7 @@ class _ResultScreenState extends State<ResultScreen> {
               ),
             ),
           const SizedBox(height: 12),
-          // Pilot study data collection note
+          // Clinical context note
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -472,11 +472,11 @@ class _ResultScreenState extends State<ResultScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.science, color: Colors.blue.shade700, size: 20),
+                Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Data collected for pilot study research',
+                    'This screening result is intended to support, not replace, a full clinical assessment.',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.blue.shade700,
@@ -717,31 +717,36 @@ class _ResultScreenState extends State<ResultScreen> {
     Color recColor;
 
     if (widget.child.isControlGroup) {
-      // Control group specific recommendation
-      recommendation = 'This child is part of the Control Group (typically developing). '
-          'The assessment data will be used as baseline comparison for the pilot study. '
-          'No concerns identified based on parent screening.';
+      // Screening-specific recommendation for children without a prior ASD diagnosis
+      recommendation =
+          'Based on this screening, no significant ASD-related cognitive concerns were detected. '
+          'Continue routine developmental monitoring and repeat screening if new concerns arise.';
       recColor = const Color(0xFF10B981);
     } else {
-      // ASD group recommendations based on risk level
+      // Recommendations for children with an existing ASD diagnosis
       switch (widget.riskLevel) {
         case 'low':
-          recommendation = 'ASD Group child showing good performance. Continue monitoring and '
-              'document any changes in behavior patterns.';
+          recommendation =
+              'Child with an existing ASD diagnosis showing generally good performance in this session. '
+              'Continue current supports and document any changes in behavior patterns.';
           recColor = Colors.green;
           break;
         case 'moderate':
-          recommendation = 'ASD Group child shows some areas requiring attention. Review specific '
-              'metrics with clinical team and consider targeted interventions.';
+          recommendation =
+              'Child with an existing ASD diagnosis shows some areas requiring attention. '
+              'Review specific metrics with the clinical team and consider targeted interventions.';
           recColor = Colors.orange;
           break;
         case 'high':
-          recommendation = 'ASD Group child shows significant indicators consistent with diagnosis. '
-              'Data supports existing clinical assessment. Continue comprehensive support.';
+          recommendation =
+              'Child with an existing ASD diagnosis shows significant indicators of cognitive difficulty in this session. '
+              'Use these results to refine and intensify individualized support plans.';
           recColor = Colors.red;
           break;
         default:
-          recommendation = 'Assessment completed for ASD Group child. Review results with clinical team.';
+          recommendation =
+              'Assessment completed for a child with an existing ASD diagnosis. '
+              'Review detailed results with the clinical team for care planning.';
           recColor = Colors.grey;
       }
     }
@@ -763,7 +768,7 @@ class _ResultScreenState extends State<ResultScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.child.isControlGroup ? 'Control Group Note' : 'Clinical Note',
+                  widget.child.isControlGroup ? 'Screening Note' : 'Clinical Note',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

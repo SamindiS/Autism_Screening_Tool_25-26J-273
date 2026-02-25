@@ -1,7 +1,6 @@
-/// Child profile model for autism screening pilot study
+/// Child profile model for clinical autism screening
 /// 
-/// Captures data for both ASD group (clinical diagnosis) and 
-/// Control group (typically developing children from preschools)
+/// Captures data for children with and without a prior ASD diagnosis.
 class Child {
   final String id;
   final String childCode; // e.g., LRH-027, PRE-112
@@ -16,8 +15,8 @@ class Child {
   
   // Study-specific fields
   final ChildGroup group; // ASD or Typically Developing
-  final AsdLevel? asdLevel; // Only for ASD group
-  final String diagnosisSource; // Hospital name or "Preschool screening"
+  final AsdLevel? asdLevel; // Only for ASD group (legacy / optional)
+  final String diagnosisSource; // Hospital/clinic name or referral context
   final String? clinicianId; // Clinician ID for ASD group (e.g., DR_001_LRH)
   final String? clinicianName; // Clinician name for ASD group
 
@@ -126,8 +125,9 @@ class Child {
     return months;
   }
 
-  /// Get display string for the child's group
-  String get groupDisplayName => group == ChildGroup.asd ? 'ASD' : 'Typically Developing';
+  /// Get display string for the child's diagnosis status
+  String get groupDisplayName =>
+      group == ChildGroup.asd ? 'Previously diagnosed with ASD' : 'No prior ASD diagnosis';
 
   /// Get display string for ASD level (if applicable)
   String? get asdLevelDisplayName => asdLevel?.displayName;
@@ -135,11 +135,11 @@ class Child {
   /// Check if this child is in the ASD group
   bool get isAsdGroup => group == ChildGroup.asd;
 
-  /// Check if this child is in the control (TD) group
+  /// Check if this child has no prior ASD diagnosis (screening case)
   bool get isControlGroup => group == ChildGroup.typicallyDeveloping;
 }
 
-/// Represents the study group for a child
+/// Represents prior diagnosis status for a child
 enum ChildGroup {
   asd,
   typicallyDeveloping;
@@ -169,9 +169,9 @@ enum ChildGroup {
   String get displayName {
     switch (this) {
       case ChildGroup.asd:
-        return 'ASD';
+        return 'Previously diagnosed with ASD';
       case ChildGroup.typicallyDeveloping:
-        return 'Typically Developing';
+        return 'No prior ASD diagnosis';
     }
   }
 }

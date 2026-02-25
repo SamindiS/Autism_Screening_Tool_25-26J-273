@@ -37,8 +37,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
   int? _calculatedAgeInMonths;
   
   // Clinical fields
-  // ChildGroup is still used internally to distinguish
-  // children with an existing ASD diagnosis vs screening cases.
+  // ChildGroup is kept for backward compatibility and analytics,
+  // but the form itself does not branch by group.
   ChildGroup _selectedGroup = ChildGroup.typicallyDeveloping;
 
   final List<String> _genders = ['Male', 'Female', 'Other'];
@@ -72,10 +72,6 @@ class _AddChildScreenState extends State<AddChildScreen> {
     _loadRegisteredHospital();
     if (_isEditing) {
       _prefillChildData();
-    } else {
-      // Default to "Preschool screening" for control group
-      _diagnosisSourceCtrl.text = 'Preschool screening';
-      // Note: LRH ID will be auto-generated when user selects ASD group
     }
   }
 
@@ -89,53 +85,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
     }
   }
 
-  /// Generate the next sequential LRH-### ID for ASD children
-  Future<void> _generateNextAsdId() async {
-    try {
-      // Get all children
-      final allChildren = await StorageService.getAllChildren();
-      
-      // Filter ASD children and extract LRH-### codes
-      final asdChildren = allChildren.where((child) {
-        final groupStr = child['study_group'] as String? ?? child['group'] as String? ?? 'typically_developing';
-        return groupStr == 'asd';
-      }).toList();
-      
-      // Extract numbers from LRH-### pattern
-      final lrhPattern = RegExp(r'^LRH-(\d+)$', caseSensitive: false);
-      int maxNumber = 0;
-      
-      for (final child in asdChildren) {
-        final childCode = (child['child_code'] as String? ?? '').trim();
-        final match = lrhPattern.firstMatch(childCode);
-        if (match != null) {
-          final number = int.tryParse(match.group(1) ?? '0') ?? 0;
-          if (number > maxNumber) {
-            maxNumber = number;
-          }
-        }
-      }
-      
-      // Generate next ID
-      final nextNumber = maxNumber + 1;
-      final nextId = 'LRH-${nextNumber.toString().padLeft(3, '0')}';
-      
-      if (mounted) {
-        setState(() {
-          _childCodeCtrl.text = nextId;
-        });
-        debugPrint('✅ Auto-generated next ASD ID: $nextId (previous max: $maxNumber)');
-      }
-    } catch (e) {
-      debugPrint('⚠️ Error generating ASD ID: $e');
-      // Fallback to LRH-001 if error
-      if (mounted) {
-        setState(() {
-          _childCodeCtrl.text = 'LRH-001';
-        });
-      }
-    }
-  }
+  // LRH auto-ID generator kept in history; not used in the current clinical flow.
 
   void _prefillChildData() {
     final child = widget.child!;
@@ -169,8 +119,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
       _selectedGroup = ChildGroup.fromJson(groupStr);
     }
 
-    _diagnosisSourceCtrl.text = child['diagnosis_source'] as String? ?? 
-        (_selectedGroup == ChildGroup.asd ? '' : 'Preschool screening');
+    _diagnosisSourceCtrl.text = child['diagnosis_source'] as String? ?? '';
     
     // Prefill clinician ID for ASD children
     _clinicianIdCtrl.text = child['clinician_id'] as String? ?? '';
@@ -228,22 +177,6 @@ class _AddChildScreenState extends State<AddChildScreen> {
     return now.difference(date).inDays / 365.25;
   }
 
-  void _onGroupChanged(ChildGroup group) {
-    setState(() {
-      _selectedGroup = group;
-    });
-    
-    // Auto-generate LRH ID when ASD group is selected (only for new children)
-    if (group == ChildGroup.asd && !_isEditing) {
-      _generateNextAsdId();
-    } else if (group == ChildGroup.typicallyDeveloping && !_isEditing) {
-      // Clear child code for control group (user will enter manually)
-      setState(() {
-        _childCodeCtrl.clear();
-      });
-    }
-  }
-
   Future<void> _saveChild() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -263,7 +196,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
       return;
     }
 
-    if (_selectedGroup == ChildGroup.asd && _clinicianIdCtrl.text.trim().isEmpty) {
+    // Clinical system: clinician ID is always required.
+    if (_clinicianIdCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter the Clinician Medical ID')),
       );
@@ -286,20 +220,12 @@ class _AddChildScreenState extends State<AddChildScreen> {
       String? clinicianId;
       String? hospitalId;
       
-      if (_selectedGroup == ChildGroup.asd) {
-        // Automatically use hospital from registered account
-        diagnosisSource = _registeredHospital ?? 'Unknown Hospital';
-        hospitalId = _registeredHospital; // Set hospital_id from logged clinician's hospital
-        // Use manually entered Clinician Medical ID
-        clinicianId = _clinicianIdCtrl.text.trim();
-        debugPrint('✅ Creating ASD child with:');
-        debugPrint('   Hospital: $diagnosisSource (auto-filled from account)');
-        debugPrint('   Clinician ID: $clinicianId (manual entry)');
-      } else {
-        diagnosisSource = 'Preschool screening';
-        clinicianId = null;
-        hospitalId = null;
-      }
+      // Attach hospital and clinician info for this clinical system.
+      diagnosisSource = _diagnosisSourceCtrl.text.trim().isNotEmpty
+          ? _diagnosisSourceCtrl.text.trim()
+          : (_registeredHospital ?? 'Unknown Hospital');
+      hospitalId = _registeredHospital;
+      clinicianId = _clinicianIdCtrl.text.trim();
 
       final childData = await StorageService.saveChild(
         childCode: _childCodeCtrl.text.trim(),
@@ -326,10 +252,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_selectedGroup == ChildGroup.asd 
-              ? 'Child with existing ASD diagnosis added successfully!' 
-              : 'Screening profile added successfully!'),
+        const SnackBar(
+          content: Text('Child profile added successfully!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -367,20 +291,11 @@ class _AddChildScreenState extends State<AddChildScreen> {
     String? clinicianId;
     String? hospitalId;
     
-    if (_selectedGroup == ChildGroup.asd) {
-      // Automatically use hospital from registered account
-      diagnosisSource = _registeredHospital ?? 'Unknown Hospital';
-      hospitalId = _registeredHospital ?? widget.child?['hospital_id'] as String?;
-      // Use manually entered Clinician Medical ID
-      clinicianId = _clinicianIdCtrl.text.trim();
-      debugPrint('✅ Updating ASD child with:');
-      debugPrint('   Hospital: $diagnosisSource (auto-filled from account)');
-      debugPrint('   Clinician ID: $clinicianId (manual entry)');
-    } else {
-      diagnosisSource = 'Preschool screening';
-      clinicianId = null;
-      hospitalId = widget.child?['hospital_id'] as String?;
-    }
+    diagnosisSource = _diagnosisSourceCtrl.text.trim().isNotEmpty
+        ? _diagnosisSourceCtrl.text.trim()
+        : (_registeredHospital ?? widget.child?['diagnosis_source'] as String? ?? 'Unknown Hospital');
+    hospitalId = _registeredHospital ?? widget.child?['hospital_id'] as String?;
+    clinicianId = _clinicianIdCtrl.text.trim();
 
     try {
       await StorageService.updateChild(
@@ -458,10 +373,6 @@ class _AddChildScreenState extends State<AddChildScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Study Group Selector (Most Important - First)
-                  _buildGroupSelector(),
-                  const SizedBox(height: 24),
-                  
                   // Info Banner
                   _buildInfoBanner(),
                   const SizedBox(height: 24),
@@ -535,121 +446,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
     );
   }
 
-  Widget _buildGroupSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Study Group',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade800,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildGroupOption(
-                group: ChildGroup.asd,
-                title: 'Existing ASD diagnosis',
-                subtitle: 'Already diagnosed by clinician',
-                icon: Icons.medical_services_outlined,
-                color: const Color(0xFF6366F1),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildGroupOption(
-                group: ChildGroup.typicallyDeveloping,
-                title: 'Screening',
-                subtitle: 'No prior ASD diagnosis',
-                icon: Icons.school_outlined,
-                color: const Color(0xFF10B981),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGroupOption({
-    required ChildGroup group,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-  }) {
-    final isSelected = _selectedGroup == group;
-    return GestureDetector(
-      onTap: () => _onGroupChanged(group),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? color : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 32,
-              color: isSelected ? color : Colors.grey.shade400,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: isSelected ? color : Colors.grey.shade700,
-              ),
-            ),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 11,
-                color: isSelected ? color.withOpacity(0.8) : Colors.grey.shade500,
-              ),
-            ),
-            if (isSelected)
-              Container(
-                margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'Selected',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
+  // prior ASD diagnosis is now inferred from clinician/hospital fields, so no explicit selector UI
 
   Widget _buildInfoBanner() {
     final isAsd = _selectedGroup == ChildGroup.asd;
@@ -817,49 +614,6 @@ class _AddChildScreenState extends State<AddChildScreen> {
   }
 
   Widget _buildDiagnosisSourceField() {
-    final isAsd = _selectedGroup == ChildGroup.asd;
-    
-    if (!isAsd) {
-      // For control group, show read-only field
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.school, color: Colors.grey.shade600),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Data Collection Source',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  const Text(
-                    'Preschool screening (no clinician needed)',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.check_circle, color: Colors.green.shade600),
-          ],
-        ),
-      );
-    }
-
-    // For ASD group, show hospital (from account) and clinician ID input
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -941,12 +695,33 @@ class _AddChildScreenState extends State<AddChildScreen> {
             fillColor: Colors.white,
           ),
           validator: (v) {
-            if (_selectedGroup == ChildGroup.asd && 
-                (v == null || v.trim().isEmpty)) {
+            if (v == null || v.trim().isEmpty) {
               return 'Please enter Clinician Medical ID';
             }
             return null;
           },
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Diagnosis / Referral context (optional)',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _diagnosisSourceCtrl,
+          decoration: InputDecoration(
+            hintText: 'e.g., LRH Neurology Clinic, school referral, parent concern',
+            prefixIcon: Icon(Icons.notes, color: _primaryColor),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            filled: true,
+            fillColor: Colors.white,
+          ),
         ),
       ],
     );

@@ -35,6 +35,9 @@ class _AddChildScreenState extends State<AddChildScreen> {
   DateTime? _selectedDate;
   double? _calculatedAge;
   int? _calculatedAgeInMonths;
+
+  // Diagnosis type: existing diagnosis vs new (suspected) case
+  String _diagnosisType = 'new'; // 'existing' or 'new'
   
   // Clinical fields
   // ChildGroup is kept for backward compatibility and analytics,
@@ -722,6 +725,53 @@ class _AddChildScreenState extends State<AddChildScreen> {
             filled: true,
             fillColor: Colors.white,
           ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Diagnosis type',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            ChoiceChip(
+              label: const Text('Diagnosis before'),
+              selected: _diagnosisType == 'existing',
+              selectedColor: _primaryColor,
+              onSelected: (_) {
+                setState(() {
+                  _diagnosisType = 'existing';
+                });
+              },
+              labelStyle: TextStyle(
+                color: _diagnosisType == 'existing' ? Colors.white : Colors.black87,
+                fontWeight: _diagnosisType == 'existing'
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+              ),
+            ),
+            const SizedBox(width: 12),
+            ChoiceChip(
+              label: const Text('New diagnosis'),
+              selected: _diagnosisType == 'new',
+              selectedColor: _primaryColor,
+              onSelected: (_) {
+                setState(() {
+                  _diagnosisType = 'new';
+                });
+              },
+              labelStyle: TextStyle(
+                color: _diagnosisType == 'new' ? Colors.white : Colors.black87,
+                fontWeight: _diagnosisType == 'new'
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
       ],
     );

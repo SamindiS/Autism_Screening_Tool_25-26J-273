@@ -1,0 +1,51 @@
+name: flutter_app
+description: A new Flutter application.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_config:
+    path: packages/shared_config
+  cupertino_icons: ^1.0.2
+  
+  # Video upload and playback
+  file_picker: ^8.1.2
+  video_player: ^2.8.2
+  image_picker: ^1.0.7
+  camera: ^0.11.0+2
+  
+  # File handling
+  path_provider: ^2.1.2
+  path: ^1.8.3
+  
+  # Permissions
+  permission_handler: ^11.3.0
+  
+  # HTTP for video upload to server
+  http: ^1.2.0
+  
+  # Audio playback for game sounds
+  audioplayers: ^6.0.0
+  
+  # Charts and visualizations
+  fl_chart: ^0.68.0
+  
+  # Note: ffmpeg_kit_flutter removed due to Android Gradle compatibility issues
+  # If needed, use a newer version or alternative video processing library
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/
+

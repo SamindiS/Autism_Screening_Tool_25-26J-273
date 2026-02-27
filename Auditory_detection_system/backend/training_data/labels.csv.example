@@ -1,0 +1,31 @@
+video_path,label,child_age,notes
+training_data/autism/video1.mp4,autism,3,Diagnosed at age 2
+training_data/autism/video2.mp4,autism,4,ADOS confirmed
+training_data/typical/video1.mp4,typical,3,Typically developing
+training_data/typical/video2.mp4,typical,4,No developmental concerns
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

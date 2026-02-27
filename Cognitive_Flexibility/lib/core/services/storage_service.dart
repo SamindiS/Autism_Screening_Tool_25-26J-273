@@ -24,7 +24,7 @@ class StorageService {
 
     return await openDatabase(
       path,
-      version: 4, // Added clinician_id and clinician_name columns
+      version: 5, // Added clinician_id, clinician_name, diagnosis_type columns
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -47,6 +47,7 @@ class StorageService {
         diagnosis_source TEXT NOT NULL DEFAULT 'Unknown',
         clinician_id TEXT,
         clinician_name TEXT,
+        diagnosis_type TEXT NOT NULL DEFAULT 'new',
         created_at INTEGER NOT NULL
       )
     ''');
@@ -115,6 +116,11 @@ class StorageService {
       await db.execute('ALTER TABLE children ADD COLUMN clinician_id TEXT');
       await db.execute('ALTER TABLE children ADD COLUMN clinician_name TEXT');
     }
+    if (oldVersion < 5) {
+      // Add diagnosis_type column to distinguish existing vs new diagnosis
+      await db.execute(
+          'ALTER TABLE children ADD COLUMN diagnosis_type TEXT DEFAULT \'new\'');
+    }
   }
 
   static int _calculateAgeInMonthsFromDate(DateTime dob) {
@@ -150,6 +156,7 @@ class StorageService {
     required String diagnosisSource,
     String? clinicianId,
     String? clinicianName,
+    String diagnosisType = 'new',
   }) async {
     final payload = {
       'child_code': childCode,
@@ -164,6 +171,7 @@ class StorageService {
       'diagnosis_source': diagnosisSource,
       'clinician_id': clinicianId,
       'clinician_name': clinicianName,
+      'diagnosis_type': diagnosisType,
     };
 
     try {
@@ -196,6 +204,7 @@ class StorageService {
         'diagnosis_source': child['diagnosis_source'] ?? diagnosisSource,
         'clinician_id': child['clinician_id'] ?? clinicianId,
         'clinician_name': child['clinician_name'] ?? clinicianName,
+        'diagnosis_type': child['diagnosis_type'] ?? diagnosisType,
         'created_at':
             child['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
       });
@@ -220,6 +229,7 @@ class StorageService {
         'diagnosis_source': diagnosisSource,
         'clinician_id': clinicianId,
         'clinician_name': clinicianName,
+        'diagnosis_type': diagnosisType,
         'created_at': DateTime.now().millisecondsSinceEpoch,
       };
       await _upsertChildLocal(localChild);
@@ -247,6 +257,7 @@ class StorageService {
     required String diagnosisSource,
     String? clinicianId,
     String? clinicianName,
+    String diagnosisType = 'new',
   }) async {
     final payload = {
       'child_code': childCode,
@@ -261,6 +272,7 @@ class StorageService {
       'diagnosis_source': diagnosisSource,
       'clinician_id': clinicianId,
       'clinician_name': clinicianName,
+      'diagnosis_type': diagnosisType,
     };
 
     try {
@@ -294,6 +306,8 @@ class StorageService {
         'diagnosis_source': updated['diagnosis_source'] ?? diagnosisSource,
         'clinician_id': updated['clinician_id'] ?? clinicianId,
         'clinician_name': updated['clinician_name'] ?? clinicianName,
+        'diagnosis_type':
+            updated['diagnosis_type'] ?? diagnosisType,
         'created_at':
             updated['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
       });
@@ -314,6 +328,7 @@ class StorageService {
         'diagnosis_source': diagnosisSource,
         'clinician_id': clinicianId,
         'clinician_name': clinicianName,
+        'diagnosis_type': diagnosisType,
         'created_at': DateTime.now().millisecondsSinceEpoch,
       };
       await _upsertChildLocal(localChild);
@@ -353,6 +368,7 @@ class StorageService {
                   'study_group': child['group'],
                   'asd_level': child['asd_level'],
                   'diagnosis_source': child['diagnosis_source'],
+                  'diagnosis_type': child['diagnosis_type'] ?? 'new',
                   'created_at': child['created_at'],
                 })
             .toList();
@@ -389,6 +405,7 @@ class StorageService {
         'study_group': child['group'],
         'asd_level': child['asd_level'],
         'diagnosis_source': child['diagnosis_source'],
+        'diagnosis_type': child['diagnosis_type'] ?? 'new',
         'created_at': child['created_at'],
       };
       await _upsertChildLocal(mapped);

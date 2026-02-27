@@ -248,6 +248,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
         diagnosisSource: diagnosisSource, // Auto-filled from logged clinician's hospital
         clinicianId: clinicianId, // Manual entry (Clinician Medical ID)
         clinicianName: null, // Not needed
+        diagnosisType: _diagnosisType,
       );
 
       final childId = (childData?['id'] as String?) ??
@@ -319,6 +320,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
         diagnosisSource: diagnosisSource, // Auto-filled from logged clinician's hospital
         clinicianId: clinicianId, // Manual entry (Clinician Medical ID)
         clinicianName: null, // Not needed
+        diagnosisType: _diagnosisType,
       );
 
       if (!mounted) return;

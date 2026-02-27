@@ -122,6 +122,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           group: ChildGroup.fromJson(groupStr),
           asdLevel: data['asd_level'] != null ? AsdLevel.fromJson(data['asd_level'] as String) : null,
           diagnosisSource: data['diagnosis_source'] as String? ?? 'Unknown',
+          diagnosisType: data['diagnosis_type'] as String? ?? 'new',
         );
       }).toList();
 

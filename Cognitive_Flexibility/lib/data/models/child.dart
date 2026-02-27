@@ -19,6 +19,7 @@ class Child {
   final String diagnosisSource; // Hospital/clinic name or referral context
   final String? clinicianId; // Clinician ID for ASD group (e.g., DR_001_LRH)
   final String? clinicianName; // Clinician name for ASD group
+  final String diagnosisType; // 'existing' (diagnosis before) or 'new'
 
   Child({
     required this.id,
@@ -36,6 +37,7 @@ class Child {
     required this.diagnosisSource,
     this.clinicianId,
     this.clinicianName,
+    this.diagnosisType = 'new',
   });
 
   Map<String, dynamic> toJson() {
@@ -55,6 +57,7 @@ class Child {
       'diagnosis_source': diagnosisSource,
       'clinician_id': clinicianId,
       'clinician_name': clinicianName,
+      'diagnosis_type': diagnosisType,
     };
   }
 
@@ -79,6 +82,7 @@ class Child {
       diagnosisSource: json['diagnosis_source'] as String? ?? 'Unknown',
       clinicianId: json['clinician_id'] as String?,
       clinicianName: json['clinician_name'] as String?,
+      diagnosisType: json['diagnosis_type'] as String? ?? 'new',
     );
   }
 
@@ -98,6 +102,7 @@ class Child {
     String? diagnosisSource,
     String? clinicianId,
     String? clinicianName,
+    String? diagnosisType,
   }) {
     return Child(
       id: id ?? this.id,
@@ -115,6 +120,7 @@ class Child {
       diagnosisSource: diagnosisSource ?? this.diagnosisSource,
       clinicianId: clinicianId ?? this.clinicianId,
       clinicianName: clinicianName ?? this.clinicianName,
+      diagnosisType: diagnosisType ?? this.diagnosisType,
     );
   }
 

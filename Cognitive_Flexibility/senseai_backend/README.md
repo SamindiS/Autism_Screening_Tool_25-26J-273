@@ -175,6 +175,41 @@ Future<void> registerClinician(String name, String hospital, String pin) async {
 }
 ```
 
+## Firebase / Firestore setup (required)
+
+The backend stores all data in **Google Cloud Firestore**. You must provide a valid service account key.
+
+1. Open [Firebase Console](https://console.firebase.google.com/) and select your project.
+2. Go to **Project settings** (gear) → **Service accounts**.
+3. Click **Generate new private key** and download the JSON file.
+4. Save it as **`serviceAccountKey.json`** in the `senseai_backend/` folder (same folder as `server.js`).
+5. Restart the backend (`npm run dev` or `npm start`).
+
+**Important:** Do not commit `serviceAccountKey.json` to git (it should be in `.gitignore`). Each environment (your PC, tablet server, etc.) needs its own key if you use different Firebase projects.
+
+---
+
+## Troubleshooting
+
+### `16 UNAUTHENTICATED` or "invalid authentication credentials"
+
+This means **Firestore is rejecting the server’s credentials**. Common causes:
+
+| Cause | What to do |
+|-------|------------|
+| **No key file** | Add `serviceAccountKey.json` in `senseai_backend/` (see "Firebase / Firestore setup" above). |
+| **Wrong or old key** | Generate a **new** private key in Firebase Console → Service accounts and replace `serviceAccountKey.json`. |
+| **Key revoked / disabled** | In Google Cloud Console, check that the service account exists and is enabled; if needed, create a new key. |
+| **Wrong Firebase project** | Ensure the JSON file is from the same Firebase project you use in the console. |
+
+After updating the key, restart the backend. Login (PIN) and child creation will work only when Firestore authentication succeeds.
+
+### Health check OK but login returns 500
+
+If `GET /health` returns 200 but `POST /api/clinicians/login` returns 500 with `UNAUTHENTICATED`, the server is running but **cannot read/write Firestore**. Fix the service account key as above.
+
+---
+
 ## Future: Firebase Sync
 
 The backend is designed to easily sync to Firebase Firestore when online. Add a sync service that:

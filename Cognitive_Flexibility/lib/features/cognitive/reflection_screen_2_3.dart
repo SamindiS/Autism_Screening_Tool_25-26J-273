@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../data/models/child.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
-import '../../l10n/app_localizations.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../widgets/language_selector.dart';
 import '../settings/settings_screen.dart';
 import '../assessment/result_screen.dart';
@@ -182,8 +182,12 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
       final avgBehavioralScore = behavioralScores.values.reduce((a, b) => a + b) / behavioralScores.length;
       final avgReflectionScore = (avgTaskScore + avgBehavioralScore) / 2;
 
-      // Combine questionnaire (50%) + manual tasks (30%) + behavioral observations (20%)
-      final questionnaireScore = (widget.questionnaireResults['percentage_score'] as num).toDouble() / 100.0 * 5.0;
+      // Questionnaire percentage_score: Higher percentage = HIGHER risk (more red flags)
+      // We need to invert it so that High Risk (e.g., 100%) maps to Low Performance Score (0.0)
+      // and Low Risk (e.g., 0%) maps to High Performance Score (5.0)
+      final rawQuestionnairePercent = (widget.questionnaireResults['percentage_score'] as num).toDouble();
+      final questionnaireScore = ((100.0 - rawQuestionnairePercent) / 100.0) * 5.0;
+      
       final taskScore = avgTaskScore;
       final behavioralScore = avgBehavioralScore;
       
@@ -300,7 +304,7 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.clinicianReflection23),
+        title: Text(AppLocalizations.of(context)?.clinicianReflection2_3 ?? 'Clinician Reflection'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         actions: [

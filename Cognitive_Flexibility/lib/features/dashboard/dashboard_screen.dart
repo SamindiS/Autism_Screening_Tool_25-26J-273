@@ -3,7 +3,7 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../data/models/child.dart';
-import 'package:senseai/l10n/app_localizations.dart';
+import 'package:senseai/core/localization/app_localizations.dart';
 import '../auth/login_screen.dart';
 import '../cognitive/cognitive_dashboard_screen.dart';
 import '../cognitive/add_child_screen.dart';
@@ -122,6 +122,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           group: ChildGroup.fromJson(groupStr),
           asdLevel: data['asd_level'] != null ? AsdLevel.fromJson(data['asd_level'] as String) : null,
           diagnosisSource: data['diagnosis_source'] as String? ?? 'Unknown',
+          diagnosisType: data['diagnosis_type'] as String? ?? 'new',
         );
       }).toList();
 
@@ -172,13 +173,13 @@ class _DashboardScreenState extends State<DashboardScreen>
         }
 
         if (!isRefresh) {
-          final l10n = AppLocalizations.of(context)!;
+          final l10n = AppLocalizations.of(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${l10n.error} loading dashboard: $e'),
+              content: Text('${l10n?.error ?? 'Error'} loading dashboard: $e'),
               backgroundColor: Colors.red,
               action: SnackBarAction(
-                label: l10n.retry,
+                label: l10n?.retry ?? 'Retry',
                 textColor: Colors.white,
                 onPressed: () => _loadData(),
               ),
@@ -203,21 +204,21 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Future<void> _logout() async {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(l10n.logout),
-        content: Text(l10n.logoutConfirmation),
+        title: Text(l10n?.logout ?? 'Logout'),
+        content: Text(l10n?.logoutConfirmation ?? 'Are you sure you want to logout?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel),
+            child: Text(l10n?.cancel ?? 'Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              l10n.logout,
+              l10n?.logout ?? 'Logout',
               style: const TextStyle(color: Colors.red),
             ),
           ),
@@ -256,7 +257,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
             const SizedBox(width: 12),
             Text(
-              AppLocalizations.of(context)!.senseaiDashboard,
+              AppLocalizations.of(context)?.senseaiDashboard ?? 'SenseAI Dashboard',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
@@ -337,7 +338,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
-                '${AppLocalizations.of(context)!.error}: $_errorMessage',
+                '${AppLocalizations.of(context)?.error ?? 'Error'}: $_errorMessage',
                 style: const TextStyle(color: Colors.red),
                 textAlign: TextAlign.center,
               ),
@@ -346,7 +347,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ElevatedButton.icon(
               onPressed: () => _loadData(),
               icon: const Icon(Icons.refresh),
-              label: Text(AppLocalizations.of(context)!.retry),
+              label: Text(AppLocalizations.of(context)?.retry ?? 'Retry'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0A7C7F),
                 foregroundColor: Colors.white,
@@ -367,7 +368,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       header: WaterDropHeader(
         waterDropColor: const Color(0xFF0A7C7F),
         complete: Text(
-          AppLocalizations.of(context)!.refreshed,
+          AppLocalizations.of(context)?.refreshed ?? 'Refreshed',
           style: const TextStyle(color: Colors.green),
         ),
       ),
@@ -422,14 +423,14 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildStatisticsCards(bool isDark) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         Row(
           children: [
             Expanded(
               child: StatCard(
-                label: l10n.totalChildren,
+                label: l10n?.totalChildren ?? 'Total Children',
                 value: _totalChildren,
                 icon: Icons.child_care_rounded,
                 color: const Color(0xFF3B82F6),
@@ -439,7 +440,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             const SizedBox(width: 12),
             Expanded(
               child: StatCard(
-                label: l10n.completed,
+                label: l10n?.completed ?? 'Completed',
                 value: _completedAssessments,
                 icon: Icons.check_circle_rounded,
                 color: const Color(0xFF10B981),
@@ -453,7 +454,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           children: [
             Expanded(
               child: StatCard(
-                label: l10n.pending,
+                label: l10n?.pending ?? 'Pending',
                 value: _pendingAssessments,
                 icon: Icons.pending_actions_rounded,
                 color: const Color(0xFFF59E0B),
@@ -463,7 +464,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             const SizedBox(width: 12),
             Expanded(
               child: StatCard(
-                label: l10n.today,
+                label: l10n?.today ?? 'Today',
                 value: _todayAssessments,
                 icon: Icons.today_rounded,
                 color: const Color(0xFF8B5CF6),
@@ -657,7 +658,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               Icon(Icons.science, color: isDark ? Colors.white : const Color(0xFF6366F1)),
               const SizedBox(width: 8),
               Text(
-                'Pilot Study Progress',
+                'Screening Progress',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -671,7 +672,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             children: [
               Expanded(
                 child: _buildStudyGroupCard(
-                  title: 'Existing ASD Diagnosis',
+                  title: 'Diagnosis before',
                   count: _asdGroupCount,
                   target: '30-50',
                   color: const Color(0xFF6366F1),
@@ -682,7 +683,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStudyGroupCard(
-                  title: 'Screening (No Prior Diagnosis)',
+                  title: 'New diagnosis',
                   count: _controlGroupCount,
                   target: '40-60',
                   color: const Color(0xFF10B981),

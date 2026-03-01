@@ -44,19 +44,12 @@ class _ResultScreenState extends State<ResultScreen> {
     super.dispose();
   }
 
-  /// For control group children, always show low risk / no ASD concern
-  /// This is because they've been pre-screened as typically developing
   String get _effectiveRiskLevel {
-    if (widget.child.isControlGroup) {
-      return 'control_low'; // Special level for control group
-    }
     return widget.riskLevel ?? 'not_assessed';
   }
 
   Color _getRiskColor() {
     switch (_effectiveRiskLevel) {
-      case 'control_low':
-        return const Color(0xFF10B981); // Emerald green for control
       case 'low':
         return Colors.green;
       case 'moderate':
@@ -69,10 +62,7 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   String _getRiskLabel() {
-    if (widget.child.isControlGroup) {
-      return 'No ASD Concern';
-    }
-    switch (widget.riskLevel) {
+    switch (_effectiveRiskLevel) {
       case 'low':
         return 'Low Risk';
       case 'moderate':
@@ -85,10 +75,7 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   IconData _getRiskIcon() {
-    if (widget.child.isControlGroup) {
-      return Icons.verified; // Checkmark with shield for control
-    }
-    switch (widget.riskLevel) {
+    switch (_effectiveRiskLevel) {
       case 'low':
         return Icons.check_circle;
       case 'moderate':
@@ -353,6 +340,9 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   Widget _buildStudyGroupBadge() {
+    final diagnosisTypeLabel =
+        widget.child.diagnosisType == 'existing' ? 'Diagnosis before' : 'New diagnosis';
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -372,11 +362,19 @@ class _ResultScreenState extends State<ResultScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Study Group: ${widget.child.groupDisplayName}',
+                  'Diagnosis Status: $diagnosisTypeLabel',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: _primaryColor,
+                  ),
+                ),
+                Text(
+                  widget.child.groupDisplayName,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: _primaryColor.withOpacity(0.85),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 if (widget.child.isAsdGroup && widget.child.asdLevel != null)
@@ -716,15 +714,38 @@ class _ResultScreenState extends State<ResultScreen> {
     String recommendation;
     Color recColor;
 
-    if (widget.child.isControlGroup) {
-      // Screening-specific recommendation for children without a prior ASD diagnosis
-      recommendation =
-          'Based on this screening, no significant ASD-related cognitive concerns were detected. '
-          'Continue routine developmental monitoring and repeat screening if new concerns arise.';
-      recColor = const Color(0xFF10B981);
+    final level = _effectiveRiskLevel;
+    final isControl = widget.child.isControlGroup;
+
+    if (isControl) {
+      // Screening recommendations for children without a prior ASD diagnosis
+      switch (level) {
+        case 'low':
+          recommendation =
+              'Based on this screening, no significant ASD-related cognitive concerns were detected. '
+              'Continue routine developmental monitoring and repeat screening if new concerns arise.';
+          recColor = const Color(0xFF10B981);
+          break;
+        case 'moderate':
+          recommendation =
+              'This screening suggests some areas that may warrant closer observation. '
+              'Discuss concerns with caregivers and consider a full diagnostic assessment if difficulties persist.';
+          recColor = Colors.orange;
+          break;
+        case 'high':
+          recommendation =
+              'This screening indicates notable ASD-related concerns. '
+              'A comprehensive clinical assessment by a specialist team is recommended as the next step.';
+          recColor = Colors.red;
+          break;
+        default:
+          recommendation =
+              'Screening completed. Review detailed scores and consider repeating the assessment or referring for a full evaluation if concerns remain.';
+          recColor = Colors.grey;
+      }
     } else {
       // Recommendations for children with an existing ASD diagnosis
-      switch (widget.riskLevel) {
+      switch (level) {
         case 'low':
           recommendation =
               'Child with an existing ASD diagnosis showing generally good performance in this session. '

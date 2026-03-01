@@ -83,7 +83,7 @@ class InfoCard extends StatelessWidget {
                 _buildInfoRow(
                   Icons.rocket_launch_rounded,
                   l10n?.status ?? 'Status',
-                  l10n?.pilotMode ?? 'Pilot Mode',
+                  'Clinical',
                   const Color(0xFF10B981),
                 ),
                 const Divider(height: 24),

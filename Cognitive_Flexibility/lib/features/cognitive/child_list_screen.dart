@@ -140,7 +140,7 @@ class _ChildListScreenState extends State<ChildListScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
-                  title: 'ASD',
+                  title: 'Existing ASD diagnosis',
                   count: _asdCount,
                   color: const Color(0xFF6366F1),
                   icon: Icons.medical_services,
@@ -149,7 +149,7 @@ class _ChildListScreenState extends State<ChildListScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
-                  title: 'Control',
+                  title: 'New / screening',
                   count: _tdCount,
                   color: const Color(0xFF10B981),
                   icon: Icons.school,
@@ -235,11 +235,11 @@ class _ChildListScreenState extends State<ChildListScreen> {
     String subtitle;
     
     if (_filterGroup == 'asd') {
-      message = 'No ASD Children';
-      subtitle = 'Add children from hospital clinics';
+      message = 'No children with existing ASD diagnosis';
+      subtitle = 'Add children who already have a confirmed diagnosis';
     } else if (_filterGroup == 'td') {
-      message = 'No Control Children';
-      subtitle = 'Add children from preschools';
+      message = 'No new / screening children';
+      subtitle = 'Add children you are screening for ASD';
     } else {
       message = 'No Children Added';
       subtitle = 'Add your first child to start assessments';
@@ -320,10 +320,14 @@ class _ChildListScreenState extends State<ChildListScreen> {
     final ageYears = age.floor();
     final ageMonthsRemaining = ((age - ageYears) * 12).floor();
     
-    // Get study group
+    // Get study group (prior diagnosis status)
     final groupStr = child['study_group'] as String? ?? child['group'] as String? ?? 'typically_developing';
     final group = ChildGroup.fromJson(groupStr);
     final isAsd = group == ChildGroup.asd;
+
+    final diagnosisType = (child['diagnosis_type'] as String?) ?? 'new';
+    final diagnosisTypeLabel =
+        diagnosisType == 'existing' ? 'Diagnosis before' : 'New diagnosis';
     
     // Get ASD level if applicable
     final asdLevelStr = child['asd_level'] as String?;
@@ -432,7 +436,7 @@ class _ChildListScreenState extends State<ChildListScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Group Badge
+                    // Group Badge (prior diagnosis vs new)
                     Row(
                       children: [
                         Container(
@@ -448,7 +452,7 @@ class _ChildListScreenState extends State<ChildListScreen> {
                             ),
                           ),
                           child: Text(
-                            isAsd ? 'ASD' : 'Control',
+                            diagnosisTypeLabel,
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,

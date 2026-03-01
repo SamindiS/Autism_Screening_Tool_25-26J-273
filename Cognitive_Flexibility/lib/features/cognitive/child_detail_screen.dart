@@ -363,7 +363,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
                     ),
                   ),
                   child: Text(
-                    _isAsdGroup ? 'ASD' : 'Control',
+                    _isAsdGroup ? 'Previously diagnosed' : 'Screening',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -417,6 +417,9 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
 
   Widget _buildStudyInfoCard() {
     final diagnosisSource = _child['diagnosis_source'] as String? ?? 'Unknown';
+    final diagnosisType = (_child['diagnosis_type'] as String?) ?? 'new';
+    final diagnosisTypeLabel =
+        diagnosisType == 'existing' ? 'Diagnosis before' : 'New diagnosis';
     
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -428,10 +431,10 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.science, color: _primaryColor),
+                Icon(Icons.medical_information, color: _primaryColor),
                 const SizedBox(width: 8),
                 Text(
-                  'Study Information',
+                  'Clinical Information',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -442,11 +445,11 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
             ),
             const SizedBox(height: 16),
             
-            // Group Row
+            // Diagnosis status
             _buildInfoRow(
               icon: _isAsdGroup ? Icons.medical_services : Icons.school,
-              label: 'Study Group',
-              value: _isAsdGroup ? 'ASD (Autism Spectrum Disorder)' : 'Typically Developing (Control)',
+              label: 'Diagnosis Status',
+              value: diagnosisTypeLabel,
             ),
             const SizedBox(height: 12),
             

@@ -4,7 +4,7 @@ import '../../data/models/child.dart';
 import '../../data/models/game_results.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
-import '../../l10n/app_localizations.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../widgets/language_selector.dart';
 import '../settings/settings_screen.dart';
 import '../assessment/result_screen.dart';
@@ -247,7 +247,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.clinicianReflection),
+        title: Text(AppLocalizations.of(context)?.clinicianReflection ?? 'Clinician Reflection'),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         actions: [

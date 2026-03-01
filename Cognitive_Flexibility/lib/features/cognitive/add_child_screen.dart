@@ -53,6 +53,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
   // Hospital from registered account (auto-filled)
   String? _registeredHospital;
+  String _hospitalPrefix = 'CH';
   
   // Clinician Medical ID controller for ASD group (manual input required)
   final _clinicianIdCtrl = TextEditingController();
@@ -80,12 +81,70 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
   Future<void> _loadRegisteredHospital() async {
     final clinicianInfo = await AuthService.getClinicianInfo();
-    if (mounted && clinicianInfo['hospital'] != null) {
+    final hospitalValue = clinicianInfo['hospital'];
+    final hospital = hospitalValue is String ? hospitalValue : null;
+    if (!mounted) return;
+
+    if (hospital != null && hospital.trim().isNotEmpty) {
       setState(() {
-        _registeredHospital = clinicianInfo['hospital'];
+        _registeredHospital = hospital;
+        _hospitalPrefix = _deriveHospitalPrefix(hospital);
       });
-      debugPrint('📋 Loaded hospital from account: ${clinicianInfo['hospital']}');
+      debugPrint('📋 Loaded hospital from account: $hospital');
+    } else {
+      setState(() {
+        _registeredHospital = null;
+        _hospitalPrefix = 'CH';
+      });
     }
+
+    // Autofill diagnosis source from registered hospital (if empty)
+    if (!_isEditing && _diagnosisSourceCtrl.text.trim().isEmpty) {
+      _diagnosisSourceCtrl.text = _registeredHospital ?? 'Unknown Hospital';
+    }
+
+    // Autofill next sequential child code for this hospital prefix (offline-safe)
+    if (!_isEditing && _childCodeCtrl.text.trim().isEmpty) {
+      try {
+        final nextCode = await StorageService.getNextChildCode(prefix: _hospitalPrefix);
+        if (mounted && _childCodeCtrl.text.trim().isEmpty) {
+          setState(() => _childCodeCtrl.text = nextCode);
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to auto-generate child code: $e');
+      }
+    }
+  }
+
+  String _deriveHospitalPrefix(String hospital) {
+    final trimmed = hospital.trim();
+    if (trimmed.isEmpty) return 'CH';
+
+    // Prefer acronym in parentheses: "Lady Ridgeway Hospital (LRH)" -> "LRH"
+    final paren = RegExp(r'\(([A-Za-z]{2,6})\)').firstMatch(trimmed);
+    if (paren != null) {
+      final candidate = (paren.group(1) ?? '').toUpperCase();
+      if (candidate.isNotEmpty) return candidate;
+    }
+
+    // Prefer already-acronym tokens: "LRH" / "LRH Hospital" -> "LRH"
+    final acronymToken = RegExp(r'\b[A-Z]{2,6}\b').firstMatch(trimmed.toUpperCase());
+    if (acronymToken != null) {
+      return acronymToken.group(0) ?? 'CH';
+    }
+
+    // Fallback: initials of words (max 4)
+    final words = trimmed
+        .replaceAll(RegExp(r'[^A-Za-z0-9 ]'), ' ')
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
+    if (words.isNotEmpty) {
+      final initials = words.map((w) => w[0].toUpperCase()).join();
+      return initials.length > 4 ? initials.substring(0, 4) : initials;
+    }
+
+    return 'CH';
   }
 
   // LRH auto-ID generator kept in history; not used in the current clinical flow.
@@ -123,6 +182,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
     }
 
     _diagnosisSourceCtrl.text = child['diagnosis_source'] as String? ?? '';
+    _diagnosisType = child['diagnosis_type'] as String? ?? _diagnosisType;
     
     // Prefill clinician ID for ASD children
     _clinicianIdCtrl.text = child['clinician_id'] as String? ?? '';
@@ -248,6 +308,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
         diagnosisSource: diagnosisSource, // Auto-filled from logged clinician's hospital
         clinicianId: clinicianId, // Manual entry (Clinician Medical ID)
         clinicianName: null, // Not needed
+        diagnosisType: _diagnosisType,
       );
 
       final childId = (childData?['id'] as String?) ??
@@ -319,6 +380,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
         diagnosisSource: diagnosisSource, // Auto-filled from logged clinician's hospital
         clinicianId: clinicianId, // Manual entry (Clinician Medical ID)
         clinicianName: null, // Not needed
+        diagnosisType: _diagnosisType,
       );
 
       if (!mounted) return;
@@ -385,19 +447,24 @@ class _AddChildScreenState extends State<AddChildScreen> {
                     controller: _childCodeCtrl,
                     label: 'Child Code',
                     hint: _selectedGroup == ChildGroup.asd 
-                        ? 'Auto-generated (e.g., LRH-001)' 
-                        : 'e.g., PRE-112',
+                        ? 'Auto-generated (e.g., $_hospitalPrefix-001)' 
+                        : 'Auto-generated (e.g., $_hospitalPrefix-001)',
                     icon: Icons.badge_outlined,
                     readOnly: _selectedGroup == ChildGroup.asd && !_isEditing, // Auto-generated for new ASD children
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
                         return 'Child code is required';
                       }
-                      // Validate LRH format for ASD children
-                      if (_selectedGroup == ChildGroup.asd && !_isEditing) {
-                        final lrhPattern = RegExp(r'^LRH-\d{3}$', caseSensitive: false);
-                        if (!lrhPattern.hasMatch(v.trim())) {
-                          return 'ASD child code must be in format LRH-###';
+
+                      // Validate prefix-number format for new children
+                      if (!_isEditing) {
+                        final expectedPrefix = _hospitalPrefix.trim().toUpperCase();
+                        final code = v.trim().toUpperCase();
+                        final codePattern = RegExp(
+                          '^${RegExp.escape(expectedPrefix)}-\\d{3,}\$',
+                        );
+                        if (!codePattern.hasMatch(code)) {
+                          return 'Child code must be in format $expectedPrefix-###';
                         }
                       }
                       return null;

@@ -5,12 +5,12 @@ import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
 import '../../core/services/translation_helper.dart';
 import '../../core/services/ml_service.dart';
-import '../../l10n/app_localizations.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../widgets/language_selector.dart';
 import '../settings/settings_screen.dart';
 import '../cognitive/reflection_screen_2_3.dart';
 import 'models/questionnaire_summary.dart';
-import 'result_screen.dart';
+// result_screen.dart is used via navigation from reflection_screen_2_3.dart
 
 class AIDoctorBotScreen extends StatefulWidget {
   final Child child;
@@ -39,8 +39,9 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
     return TranslationHelper.getAIBotQuestions(widget.child.name, context);
   }
   
-  // Legacy hardcoded questions - kept for reference but not used
-  final List<Map<String, dynamic>> _questionsLegacy = [
+  // Legacy hardcoded questions (no longer used; kept for documentation only).
+  // ignore: unused_field
+  final List<Map<String, dynamic>> _questionsLegacy = const [
     {
       'id': 1,
       'question': 'Does {childName} respond when you call their name?',
@@ -336,7 +337,7 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
         'id': _sessionId,
         'child_id': widget.child.id,
         'child_name': widget.child.name,
-        'child_age': widget.child.age is double ? widget.child.age : (widget.child.age as num).toDouble(),
+        'child_age': (widget.child.age as num).toDouble(),
         'child_gender': widget.child.gender,
         'session_date': DateTime.now().toIso8601String(),
         'assessment_type': 'ai_bot_questionnaire',
@@ -565,10 +566,13 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
                     const SizedBox(height: 8),
                     Builder(
                       builder: (context) {
-                        final l10n = AppLocalizations.of(context)!;
+                        final l10n = AppLocalizations.of(context);
                         final questions = _getQuestions();
+                        final label = l10n != null
+                            ? '${l10n.question} ${_currentQuestion + 1} ${l10n.ofText} ${questions.length}'
+                            : 'Question ${_currentQuestion + 1} of ${questions.length}';
                         return Text(
-                          '${l10n.question} ${_currentQuestion + 1} ${l10n.ofText} ${questions.length}',
+                          label,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,

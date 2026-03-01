@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import '../services/localization_service.dart';
 
 class AppLocalizations {
@@ -11,6 +12,19 @@ class AppLocalizations {
   }
 
   static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+
+  static const List<Locale> supportedLocales = [
+    Locale('en'),
+    Locale('si'),
+    Locale('ta'),
+  ];
+
+  static List<LocalizationsDelegate<dynamic>> get localizationsDelegates => [
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+  ];
 
   String translate(String key) {
     return LocalizationService.translate(key);

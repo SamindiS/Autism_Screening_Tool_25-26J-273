@@ -281,6 +281,7 @@ class ApiService {
     required String diagnosisSource,
     String? clinicianId,
     String? clinicianName,
+    String diagnosisType = 'new',
   }) async {
     try {
       // Convert gender to lowercase to match backend validation
@@ -301,6 +302,7 @@ class ApiService {
         'diagnosis_source': diagnosisSource,
         'clinician_id': clinicianId,
         'clinician_name': clinicianName,
+        'diagnosis_type': diagnosisType,
       };
       debugPrint('📤 Request body: ${jsonEncode(requestBody)}');
       
@@ -378,6 +380,7 @@ class ApiService {
     required String diagnosisSource,
     String? clinicianId,
     String? clinicianName,
+    String diagnosisType = 'new',
   }) async {
     try {
       // Convert gender to lowercase to match backend validation
@@ -400,6 +403,7 @@ class ApiService {
           'diagnosis_source': diagnosisSource,
           'clinician_id': clinicianId,
           'clinician_name': clinicianName,
+          'diagnosis_type': diagnosisType,
         }),
       );
 

@@ -24,7 +24,7 @@ class StorageService {
 
     return await openDatabase(
       path,
-      version: 4, // Added clinician_id and clinician_name columns
+      version: 6, // v6: session status, clinician_note, expanded local session columns
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -47,6 +47,7 @@ class StorageService {
         diagnosis_source TEXT NOT NULL DEFAULT 'Unknown',
         clinician_id TEXT,
         clinician_name TEXT,
+        diagnosis_type TEXT NOT NULL DEFAULT 'new',
         created_at INTEGER NOT NULL
       )
     ''');
@@ -57,9 +58,16 @@ class StorageService {
         child_id TEXT NOT NULL,
         session_type TEXT NOT NULL,
         age_group TEXT,
+        status TEXT NOT NULL DEFAULT 'in_progress',
+        clinician_note TEXT,
         start_time INTEGER NOT NULL,
         end_time INTEGER,
         metrics TEXT,
+        game_results TEXT,
+        questionnaire_results TEXT,
+        reflection_results TEXT,
+        risk_score REAL,
+        risk_level TEXT,
         created_at INTEGER NOT NULL
       )
     ''');
@@ -115,6 +123,29 @@ class StorageService {
       await db.execute('ALTER TABLE children ADD COLUMN clinician_id TEXT');
       await db.execute('ALTER TABLE children ADD COLUMN clinician_name TEXT');
     }
+    if (oldVersion < 5) {
+      await db.execute(
+          'ALTER TABLE children ADD COLUMN diagnosis_type TEXT DEFAULT \'new\'');
+    }
+    if (oldVersion < 6) {
+      await db.execute(
+          "ALTER TABLE sessions ADD COLUMN status TEXT NOT NULL DEFAULT 'in_progress'");
+      await db.execute(
+          'ALTER TABLE sessions ADD COLUMN clinician_note TEXT');
+      await db.execute(
+          'ALTER TABLE sessions ADD COLUMN game_results TEXT');
+      await db.execute(
+          'ALTER TABLE sessions ADD COLUMN questionnaire_results TEXT');
+      await db.execute(
+          'ALTER TABLE sessions ADD COLUMN reflection_results TEXT');
+      await db.execute(
+          'ALTER TABLE sessions ADD COLUMN risk_score REAL');
+      await db.execute(
+          'ALTER TABLE sessions ADD COLUMN risk_level TEXT');
+      // Mark existing sessions with end_time as completed
+      await db.execute(
+          "UPDATE sessions SET status = 'completed' WHERE end_time IS NOT NULL");
+    }
   }
 
   static int _calculateAgeInMonthsFromDate(DateTime dob) {
@@ -150,6 +181,7 @@ class StorageService {
     required String diagnosisSource,
     String? clinicianId,
     String? clinicianName,
+    String diagnosisType = 'new',
   }) async {
     final payload = {
       'child_code': childCode,
@@ -164,6 +196,7 @@ class StorageService {
       'diagnosis_source': diagnosisSource,
       'clinician_id': clinicianId,
       'clinician_name': clinicianName,
+      'diagnosis_type': diagnosisType,
     };
 
     try {
@@ -196,6 +229,7 @@ class StorageService {
         'diagnosis_source': child['diagnosis_source'] ?? diagnosisSource,
         'clinician_id': child['clinician_id'] ?? clinicianId,
         'clinician_name': child['clinician_name'] ?? clinicianName,
+        'diagnosis_type': child['diagnosis_type'] ?? diagnosisType,
         'created_at':
             child['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
       });
@@ -220,6 +254,7 @@ class StorageService {
         'diagnosis_source': diagnosisSource,
         'clinician_id': clinicianId,
         'clinician_name': clinicianName,
+        'diagnosis_type': diagnosisType,
         'created_at': DateTime.now().millisecondsSinceEpoch,
       };
       await _upsertChildLocal(localChild);
@@ -247,6 +282,7 @@ class StorageService {
     required String diagnosisSource,
     String? clinicianId,
     String? clinicianName,
+    String diagnosisType = 'new',
   }) async {
     final payload = {
       'child_code': childCode,
@@ -261,6 +297,7 @@ class StorageService {
       'diagnosis_source': diagnosisSource,
       'clinician_id': clinicianId,
       'clinician_name': clinicianName,
+      'diagnosis_type': diagnosisType,
     };
 
     try {
@@ -294,6 +331,8 @@ class StorageService {
         'diagnosis_source': updated['diagnosis_source'] ?? diagnosisSource,
         'clinician_id': updated['clinician_id'] ?? clinicianId,
         'clinician_name': updated['clinician_name'] ?? clinicianName,
+        'diagnosis_type':
+            updated['diagnosis_type'] ?? diagnosisType,
         'created_at':
             updated['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
       });
@@ -314,6 +353,7 @@ class StorageService {
         'diagnosis_source': diagnosisSource,
         'clinician_id': clinicianId,
         'clinician_name': clinicianName,
+        'diagnosis_type': diagnosisType,
         'created_at': DateTime.now().millisecondsSinceEpoch,
       };
       await _upsertChildLocal(localChild);
@@ -353,6 +393,7 @@ class StorageService {
                   'study_group': child['group'],
                   'asd_level': child['asd_level'],
                   'diagnosis_source': child['diagnosis_source'],
+                  'diagnosis_type': child['diagnosis_type'] ?? 'new',
                   'created_at': child['created_at'],
                 })
             .toList();
@@ -373,6 +414,46 @@ class StorageService {
     }
   }
 
+  /// Returns the next sequential child code for a given hospital prefix.
+  ///
+  /// Example: if existing codes are `LRH-001`, `LRH-002`, returns `LRH-003`.
+  /// This is local/offline-safe and does not require backend connectivity.
+  static Future<String> getNextChildCode({
+    required String prefix,
+    int digits = 3,
+  }) async {
+    final normalizedPrefix = prefix.trim().toUpperCase();
+    if (normalizedPrefix.isEmpty) {
+      return 'CH-${'1'.padLeft(digits, '0')}';
+    }
+
+    final db = await database;
+    final rows = await db.query(
+      'children',
+      columns: ['child_code'],
+      where: 'child_code LIKE ?',
+      whereArgs: ['$normalizedPrefix-%'],
+    );
+
+    final pattern = RegExp(
+      '^${RegExp.escape(normalizedPrefix)}-(\\d+)\$',
+      caseSensitive: false,
+    );
+
+    var maxN = 0;
+    for (final row in rows) {
+      final code = row['child_code']?.toString();
+      if (code == null) continue;
+      final match = pattern.firstMatch(code.trim());
+      if (match == null) continue;
+      final n = int.tryParse(match.group(1) ?? '');
+      if (n != null && n > maxN) maxN = n;
+    }
+
+    final next = (maxN + 1).toString().padLeft(digits, '0');
+    return '$normalizedPrefix-$next';
+  }
+
   static Future<Map<String, dynamic>?> getChild(String id) async {
     try {
       final child = await ApiService.getChild(id);
@@ -389,6 +470,7 @@ class StorageService {
         'study_group': child['group'],
         'asd_level': child['asd_level'],
         'diagnosis_source': child['diagnosis_source'],
+        'diagnosis_type': child['diagnosis_type'] ?? 'new',
         'created_at': child['created_at'],
       };
       await _upsertChildLocal(mapped);
@@ -472,6 +554,8 @@ class StorageService {
       'risk_level': riskLevel,
     };
 
+    final status = endTime != null ? 'completed' : 'in_progress';
+
     try {
       final session = await ApiService.createSession(
         childId: childId,
@@ -491,9 +575,15 @@ class StorageService {
         'child_id': session['child_id'],
         'session_type': session['session_type'],
         'age_group': session['age_group'],
+        'status': status,
         'start_time': session['start_time'],
         'end_time': session['end_time'],
         'metrics': jsonEncode(metrics ?? const {}),
+        'game_results': gameResults != null ? jsonEncode(gameResults) : null,
+        'questionnaire_results': questionnaireResults != null ? jsonEncode(questionnaireResults) : null,
+        'reflection_results': reflectionResults != null ? jsonEncode(reflectionResults) : null,
+        'risk_score': riskScore,
+        'risk_level': riskLevel,
         'created_at': session['created_at'],
       });
       debugPrint('✅ Session saved to backend: ${session['id']}');
@@ -507,9 +597,15 @@ class StorageService {
         'child_id': childId,
         'session_type': sessionType,
         'age_group': ageGroup,
+        'status': status,
         'start_time': startTime.millisecondsSinceEpoch,
         'end_time': endTime?.millisecondsSinceEpoch,
         'metrics': jsonEncode(metrics ?? const {}),
+        'game_results': gameResults != null ? jsonEncode(gameResults) : null,
+        'questionnaire_results': questionnaireResults != null ? jsonEncode(questionnaireResults) : null,
+        'reflection_results': reflectionResults != null ? jsonEncode(reflectionResults) : null,
+        'risk_score': riskScore,
+        'risk_level': riskLevel,
         'created_at': DateTime.now().millisecondsSinceEpoch,
       };
       await _upsertSessionLocal(localSession);
@@ -531,9 +627,15 @@ class StorageService {
                 'child_id': session['child_id'],
                 'session_type': session['session_type'],
                 'age_group': session['age_group'],
+                'status': session['end_time'] != null ? 'completed' : (session['status'] ?? 'in_progress'),
                 'start_time': session['start_time'],
                 'end_time': session['end_time'],
                 'metrics': jsonEncode(session['metrics'] ?? const {}),
+                'game_results': session['game_results'] != null ? jsonEncode(session['game_results']) : null,
+                'questionnaire_results': session['questionnaire_results'] != null ? jsonEncode(session['questionnaire_results']) : null,
+                'reflection_results': session['reflection_results'] != null ? jsonEncode(session['reflection_results']) : null,
+                'risk_score': session['risk_score'],
+                'risk_level': session['risk_level'],
                 'created_at': session['created_at'],
               })
           .toList();
@@ -565,7 +667,6 @@ class StorageService {
         final serverSessions = await ApiService.getSessionsByChild(childId)
             .timeout(const Duration(seconds: 10));
         
-        // Merge server sessions with local (server takes priority for conflicts)
         final serverMap = <String, Map<String, dynamic>>{};
         for (final session in serverSessions) {
           final formatted = {
@@ -573,9 +674,15 @@ class StorageService {
             'child_id': session['child_id'],
             'session_type': session['session_type'],
             'age_group': session['age_group'],
+            'status': session['end_time'] != null ? 'completed' : (session['status'] ?? 'in_progress'),
             'start_time': session['start_time'],
             'end_time': session['end_time'],
             'metrics': jsonEncode(session['metrics'] ?? const {}),
+            'game_results': session['game_results'] != null ? jsonEncode(session['game_results']) : null,
+            'questionnaire_results': session['questionnaire_results'] != null ? jsonEncode(session['questionnaire_results']) : null,
+            'reflection_results': session['reflection_results'] != null ? jsonEncode(session['reflection_results']) : null,
+            'risk_score': session['risk_score'],
+            'risk_level': session['risk_level'],
             'created_at': session['created_at'],
           };
           serverMap[session['id'] as String] = formatted;
@@ -620,6 +727,8 @@ class StorageService {
 
   static Future<void> updateSession({
     required String id,
+    String? status,
+    String? clinicianNote,
     DateTime? endTime,
     Map<String, dynamic>? metrics,
     Map<String, dynamic>? gameResults,
@@ -659,13 +768,27 @@ class StorageService {
         payload: payload,
       );
     } finally {
-      // Always update local DB to ensure end_time is saved
       final db = await database;
       final updateData = <String, dynamic>{};
+      // Auto-derive status: completed when endTime provided, unless explicitly set
+      if (status != null) {
+        updateData['status'] = status;
+      } else if (endTime != null) {
+        updateData['status'] = 'completed';
+      }
+      if (clinicianNote != null) updateData['clinician_note'] = clinicianNote;
       if (endTime != null) updateData['end_time'] = endTime.millisecondsSinceEpoch;
       if (metrics != null) updateData['metrics'] = jsonEncode(metrics);
-      
-      // Update local session
+      if (gameResults != null) updateData['game_results'] = jsonEncode(gameResults);
+      if (questionnaireResults != null) {
+        updateData['questionnaire_results'] = jsonEncode(questionnaireResults);
+      }
+      if (reflectionResults != null) {
+        updateData['reflection_results'] = jsonEncode(reflectionResults);
+      }
+      if (riskScore != null) updateData['risk_score'] = riskScore;
+      if (riskLevel != null) updateData['risk_level'] = riskLevel;
+
       if (updateData.isNotEmpty) {
         await db.update(
           'sessions',
@@ -673,9 +796,25 @@ class StorageService {
           where: 'id = ?',
           whereArgs: [id],
         );
-        debugPrint('✅ Updated local session $id with end_time: ${endTime != null}');
+        debugPrint('✅ Updated local session $id (status: ${updateData['status']})');
       }
     }
+  }
+
+  /// Mark a session as aborted, saving any partial metrics collected so far.
+  static Future<void> abortSession({
+    required String id,
+    Map<String, dynamic>? partialMetrics,
+    Map<String, dynamic>? partialGameResults,
+  }) async {
+    await updateSession(
+      id: id,
+      status: 'aborted',
+      endTime: DateTime.now(),
+      metrics: partialMetrics,
+      gameResults: partialGameResults,
+    );
+    debugPrint('⚠️ Session $id marked as aborted');
   }
 
   // ---------------- TRIALS ----------------
@@ -920,16 +1059,19 @@ class StorageService {
   static Future<List<Map<String, dynamic>>> _getSessionsLocal() async {
     final db = await database;
     final rows = await db.query('sessions', orderBy: 'created_at DESC');
-    return rows
-        .map((row) => {
-              ...row,
-              'game_results': null,
-              'questionnaire_results': null,
-              'reflection_results': null,
-              'risk_score': null,
-              'risk_level': null,
-            })
-        .toList();
+    return rows.map((row) {
+      final m = Map<String, dynamic>.from(row);
+      if (m['game_results'] is String) {
+        m['game_results'] = jsonDecode(m['game_results'] as String);
+      }
+      if (m['questionnaire_results'] is String) {
+        m['questionnaire_results'] = jsonDecode(m['questionnaire_results'] as String);
+      }
+      if (m['reflection_results'] is String) {
+        m['reflection_results'] = jsonDecode(m['reflection_results'] as String);
+      }
+      return m;
+    }).toList();
   }
 
   static Future<void> _upsertTrialLocal(Map<String, dynamic> trial) async {

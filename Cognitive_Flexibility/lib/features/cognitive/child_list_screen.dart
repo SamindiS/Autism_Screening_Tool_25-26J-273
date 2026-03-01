@@ -324,6 +324,10 @@ class _ChildListScreenState extends State<ChildListScreen> {
     final groupStr = child['study_group'] as String? ?? child['group'] as String? ?? 'typically_developing';
     final group = ChildGroup.fromJson(groupStr);
     final isAsd = group == ChildGroup.asd;
+
+    final diagnosisType = (child['diagnosis_type'] as String?) ?? 'new';
+    final diagnosisTypeLabel =
+        diagnosisType == 'existing' ? 'Diagnosis before' : 'New diagnosis';
     
     // Get ASD level if applicable
     final asdLevelStr = child['asd_level'] as String?;
@@ -448,7 +452,7 @@ class _ChildListScreenState extends State<ChildListScreen> {
                             ),
                           ),
                           child: Text(
-                            isAsd ? 'Diagnosis before' : 'New diagnosis',
+                            diagnosisTypeLabel,
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,

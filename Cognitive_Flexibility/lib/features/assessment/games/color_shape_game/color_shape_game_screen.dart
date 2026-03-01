@@ -339,6 +339,15 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
         ? DateTime.now().difference(_sessionStartTime!).inSeconds
         : 0;
 
+    // RT variability (std dev of correct-trial RTs)
+    final correctRts = _trials.where((t) => t.correct).map((t) => t.reactionTimeMs.toDouble()).toList();
+    double rtVariability = 0;
+    if (correctRts.length > 1) {
+      final mean = correctRts.reduce((a, b) => a + b) / correctRts.length;
+      final sumSquares = correctRts.map((rt) => (rt - mean) * (rt - mean)).reduce((a, b) => a + b);
+      rtVariability = math.sqrt(sumSquares / (correctRts.length - 1));
+    }
+
     return DccsSummary(
       totalTrials: _trials.length,
       completionTimeSec: completionTime,
@@ -355,6 +364,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
       perseverativeRatePost: perseverativeRate.isNaN ? 0 : perseverativeRate,
       maxConsecutivePerseverations: maxConsec,
       totalRuleSwitchErrors: ruleSwitchErrors,
+      rtVariability: rtVariability.isNaN ? 0 : rtVariability,
       longestStreak: _maxStreak,
     );
   }
@@ -364,10 +374,12 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
       final summary = _calculateSummary();
       final endTime = DateTime.now();
 
-      // ✅ Get ML prediction from trained model
       MLPredictionResult? mlResult;
       try {
-        if (summary.mlFeatures.isNotEmpty) {
+        final hasEnoughTrials = summary.totalTrials >= 8;
+        final featuresValid = summary.mlFeatures.isNotEmpty &&
+            !summary.mlFeatures.values.any((v) => v is double && (v.isNaN || v.isInfinite));
+        if (hasEnoughTrials && featuresValid) {
           mlResult = await MLService.predict(
             mlFeatures: {
               ...summary.mlFeatures,
@@ -383,7 +395,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
             debugPrint('⚠️  ML prediction unavailable, using rule-based');
           }
         } else {
-          debugPrint('⚠️  No ML features available for prediction');
+          debugPrint('⚠️  ML skipped: trials=${summary.totalTrials} (min 8), featuresValid=$featuresValid');
         }
       } catch (e) {
         debugPrint('⚠️  ML prediction error: $e - using rule-based');
@@ -505,6 +517,49 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
   /// Get translated text
   String _t(String key) => DccsTranslations.get(key, _selectedLanguage);
 
+  Future<void> _confirmAbort() async {
+    final shouldAbort = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('End Game Early?'),
+        content: const Text(
+          'If you leave now the session will be saved as incomplete and will not be sent for analysis.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Continue Game')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('End Game'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldAbort == true && mounted) {
+      _timer?.cancel();
+      GameAudioService.stopBackgroundMusic();
+      if (_sessionId != null) {
+        final partial = _trials.isNotEmpty ? _calculateSummary() : null;
+        await StorageService.abortSession(
+          id: _sessionId!,
+          partialGameResults: partial != null ? GameResults(
+            gameType: 'dccs-color-shape',
+            totalTrials: partial.totalTrials,
+            correctTrials: _trials.where((t) => t.correct).length,
+            accuracy: partial.accuracyOverall,
+            averageReactionTime: partial.avgReactionTimeMs.round(),
+            completionTime: partial.completionTimeSec,
+            switchCost: partial.switchCostMs.round(),
+            perseverativeErrors: partial.perseverativeErrors,
+            trials: [],
+          ).toJson() : null,
+        );
+      }
+      if (mounted) Navigator.pop(context);
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -531,34 +586,41 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
       return _buildInstructionsScreen();
     }
 
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFFE3F2FD), // Light blue clinical background
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              Expanded(
-                child: Column(
-                  children: [
-                    _buildProgressBar(),
-                    const SizedBox(height: 12),
-                    _buildRuleBanner(),
-                    const SizedBox(height: 16),
-                    _buildTargetBoxes(),
-                    const SizedBox(height: 24),
-                    _buildStimulusCard(),
-                    const SizedBox(height: 16),
-                    if (_showFeedback) _buildFeedback(),
-                    const Spacer(),
-                    _buildPhaseIndicator(),
-                    const SizedBox(height: 16),
-                  ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _confirmAbort();
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFFE3F2FD),
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(),
+                Expanded(
+                  child: Column(
+                    children: [
+                      _buildProgressBar(),
+                      const SizedBox(height: 12),
+                      _buildRuleBanner(),
+                      const SizedBox(height: 16),
+                      _buildTargetBoxes(),
+                      const SizedBox(height: 24),
+                      _buildStimulusCard(),
+                      const SizedBox(height: 16),
+                      if (_showFeedback) _buildFeedback(),
+                      const Spacer(),
+                      _buildPhaseIndicator(),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -758,7 +820,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
         children: [
           IconButton(
             icon: const Icon(Icons.close, color: Colors.black54),
-            onPressed: () => Navigator.pop(context),
+            onPressed: _confirmAbort,
           ),
           Text(
             _t('dccs_game'),

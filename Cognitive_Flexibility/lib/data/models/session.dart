@@ -1,8 +1,38 @@
+enum SessionStatus {
+  inProgress,
+  completed,
+  aborted;
+
+  String toJson() {
+    switch (this) {
+      case SessionStatus.inProgress:
+        return 'in_progress';
+      case SessionStatus.completed:
+        return 'completed';
+      case SessionStatus.aborted:
+        return 'aborted';
+    }
+  }
+
+  static SessionStatus fromJson(String? value) {
+    switch (value) {
+      case 'completed':
+        return SessionStatus.completed;
+      case 'aborted':
+        return SessionStatus.aborted;
+      default:
+        return SessionStatus.inProgress;
+    }
+  }
+}
+
 class AssessmentSession {
   final String id;
   final String childId;
   final String sessionType; // 'ai_doctor_bot', 'frog_jump', 'color_shape'
   final String? ageGroup;
+  final SessionStatus status;
+  final String? clinicianNote;
   final DateTime startTime;
   final DateTime? endTime;
   final Map<String, dynamic>? metrics;
@@ -18,6 +48,8 @@ class AssessmentSession {
     required this.childId,
     required this.sessionType,
     this.ageGroup,
+    this.status = SessionStatus.inProgress,
+    this.clinicianNote,
     required this.startTime,
     this.endTime,
     this.metrics,
@@ -29,12 +61,17 @@ class AssessmentSession {
     required this.createdAt,
   });
 
+  bool get isAborted => status == SessionStatus.aborted;
+  bool get isCompleted => status == SessionStatus.completed;
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'child_id': childId,
       'session_type': sessionType,
       'age_group': ageGroup,
+      'status': status.toJson(),
+      'clinician_note': clinicianNote,
       'start_time': startTime.millisecondsSinceEpoch,
       'end_time': endTime?.millisecondsSinceEpoch,
       'metrics': metrics,
@@ -53,6 +90,8 @@ class AssessmentSession {
       childId: json['child_id'] as String,
       sessionType: json['session_type'] as String,
       ageGroup: json['age_group'] as String?,
+      status: SessionStatus.fromJson(json['status'] as String?),
+      clinicianNote: json['clinician_note'] as String?,
       startTime: DateTime.fromMillisecondsSinceEpoch(json['start_time'] as int),
       endTime: json['end_time'] != null
           ? DateTime.fromMillisecondsSinceEpoch(json['end_time'] as int)

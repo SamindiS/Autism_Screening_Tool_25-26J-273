@@ -7,7 +7,7 @@ import '../../../../data/models/game_results.dart' show GameResults, TrialData;
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/utils/age_calculator.dart';
 import '../../../../core/services/ml_service.dart';
-import 'package:senseai/l10n/app_localizations.dart';
+import 'package:senseai/core/localization/app_localizations.dart';
 import '../../../../core/providers/language_provider.dart';
 import '../../../cognitive/reflection_screen.dart';
 import 'models/game_trial.dart';
@@ -325,10 +325,13 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
       var results = _calculateResults();
       final endTime = DateTime.now();
 
-      // ✅ Get ML prediction from trained model
       MLPredictionResult? mlResult;
       try {
-        if (results.mlFeatures != null && results.mlFeatures!.isNotEmpty) {
+        final hasEnoughTrials = results.totalTrials >= 8;
+        final featuresValid = results.mlFeatures != null &&
+            results.mlFeatures!.isNotEmpty &&
+            !results.mlFeatures!.values.any((v) => v is double && (v.isNaN || v.isInfinite));
+        if (hasEnoughTrials && featuresValid) {
           mlResult = await MLService.predict(
             mlFeatures: {
               ...results.mlFeatures!,
@@ -367,7 +370,7 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
             debugPrint('⚠️  ML prediction unavailable, using rule-based');
           }
         } else {
-          debugPrint('⚠️  No ML features available for prediction');
+          debugPrint('⚠️  ML skipped: trials=${results.totalTrials} (min 8), featuresValid=$featuresValid');
         }
       } catch (e) {
         debugPrint('⚠️  ML prediction error: $e - using rule-based');
@@ -492,6 +495,40 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
     );
   }
 
+  Future<void> _confirmAbort() async {
+    final shouldAbort = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('End Game Early?'),
+        content: const Text(
+          'If you leave now the session will be saved as incomplete and will not be sent for analysis.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Continue Game')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('End Game'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldAbort == true && mounted) {
+      _responseTimeout?.cancel();
+      _feedbackTimer?.cancel();
+      _sessionTimer?.cancel();
+      if (_sessionId != null) {
+        final partial = _trials.isNotEmpty ? _calculateResults().toJson() : null;
+        await StorageService.abortSession(
+          id: _sessionId!,
+          partialGameResults: partial,
+        );
+      }
+      if (mounted) Navigator.pop(context);
+    }
+  }
+
   @override
   void dispose() {
     _responseTimeout?.cancel();
@@ -510,49 +547,56 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
       return _buildInstructionsScreen();
     }
 
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFFFE5EC), Color(0xFFFFC2D4), Color(0xFFFFB5C5)],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _confirmAbort();
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFFE5EC), Color(0xFFFFC2D4), Color(0xFFFFB5C5)],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  _buildHeader(),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          _buildProgressBar(),
-                          const SizedBox(height: 20),
-                          _buildInstructionBox(),
-                          const SizedBox(height: 30),
-                          _buildCharacterArea(),
-                        ],
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Column(
+                  children: [
+                    _buildHeader(),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            _buildProgressBar(),
+                            const SizedBox(height: 20),
+                            _buildInstructionBox(),
+                            const SizedBox(height: 30),
+                            _buildCharacterArea(),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              if (_showFeedback)
-                Center(
-                  child: GameFeedbackWidget(
-                    isCorrect: _feedbackIsCorrect,
-                    onComplete: () {
-                      setState(() {
-                        _showFeedback = false;
-                      });
-                    },
-                  ),
+                  ],
                 ),
-            ],
+                if (_showFeedback)
+                  Center(
+                    child: GameFeedbackWidget(
+                      isCorrect: _feedbackIsCorrect,
+                      onComplete: () {
+                        setState(() {
+                          _showFeedback = false;
+                        });
+                      },
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -747,7 +791,7 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
+            onPressed: _confirmAbort,
           ),
           // Timer display (ASD-friendly: max 5 minutes)
           Container(

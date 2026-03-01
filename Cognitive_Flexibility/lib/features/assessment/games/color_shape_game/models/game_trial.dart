@@ -94,6 +94,9 @@ class DccsSummary {
   final int maxConsecutivePerseverations;
   final int totalRuleSwitchErrors;
   
+  // RT variability (standard deviation of correct-trial RTs)
+  final double rtVariability;
+
   // Additional
   final int longestStreak;
 
@@ -113,6 +116,7 @@ class DccsSummary {
     required this.perseverativeRatePost,
     required this.maxConsecutivePerseverations,
     required this.totalRuleSwitchErrors,
+    this.rtVariability = 0,
     required this.longestStreak,
   });
 
@@ -133,6 +137,7 @@ class DccsSummary {
       'perseverative_rate_post': perseverativeRatePost,
       'max_consecutive_perseverations': maxConsecutivePerseverations,
       'total_rule_switch_errors': totalRuleSwitchErrors,
+      'rt_variability': rtVariability,
       'longest_streak': longestStreak,
     };
   }
@@ -156,6 +161,7 @@ class DccsSummary {
     'mixed_block_accuracy': accuracyMixed,
     'longest_streak_correct': longestStreak,
     'avg_reaction_time_ms': avgReactionTimeMs,
+    'rt_variability_ms': rtVariability,
   };
 
   /// Calculate risk level based on ASD markers

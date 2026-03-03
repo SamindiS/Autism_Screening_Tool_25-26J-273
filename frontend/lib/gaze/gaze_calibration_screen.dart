@@ -1,4 +1,4 @@
-﻿/// Gaze Calibration Screen (Child-Friendly Version)
+/// Gaze Calibration Screen (Child-Friendly Version)
 ///
 /// This screen:
 /// 1. Shows animated characters for children to look at
@@ -17,7 +17,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'gaze_tracker.dart';
 import 'gaze_service.dart';
-import '../main.dart'; // For ButterflyScreen
+import '../screens/butterfly_screen.dart';
 
 /// Helper class to hold character data for calibration points
 class _CalibrationCharacter {

@@ -24,6 +24,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../gaze/gaze_service.dart';
 
 /// Callback for bubble events (pop, spawn, gaze tracking)
@@ -120,6 +121,8 @@ class _InteractiveBubblesState extends State<InteractiveBubbles>
   late AnimationController _wobbleController;
   Timer? _gameTimer;
   Timer? _gazeCheckTimer;
+  
+  // No need for AudioCache - we'll use AssetSource directly
 
   // Game settings - BIGGER bubbles for kids!
   static const int maxBubbles = 6; // Fewer bubbles, less overwhelming
@@ -335,11 +338,73 @@ class _InteractiveBubblesState extends State<InteractiveBubbles>
     });
   }
 
+  void _playPopSound() async {
+    if (!mounted) return;
+    
+    // Create a new AudioPlayer instance for each pop to allow overlapping sounds
+    final player = AudioPlayer();
+    
+    try {
+      // Configure player for sound effects
+      player.setPlayerMode(PlayerMode.lowLatency);
+      player.setVolume(1.0);
+      
+      // AssetSource path should be relative to assets/ folder
+      // File renamed to bubble_pop.mp3 (underscore instead of space)
+      const soundPath = 'logo/bubble/bubble_pop.mp3';
+      
+      debugPrint('🔊 Attempting to play sound: $soundPath');
+      
+      // Play the sound
+      await player.play(AssetSource(soundPath));
+      
+      debugPrint('✅ Bubble pop sound started playing');
+      
+      // Dispose the player after sound finishes (cleanup)
+      player.onPlayerComplete.listen((_) {
+        debugPrint('🔇 Sound finished, disposing player');
+        player.dispose();
+      });
+      
+      // Also set a timeout to dispose if sound doesn't complete (safety net)
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          try {
+            player.dispose();
+          } catch (_) {}
+        }
+      });
+      
+    } catch (error) {
+      debugPrint('❌ Error playing bubble pop sound: $error');
+      debugPrint('   Error type: ${error.runtimeType}');
+      
+      // Try fallback path
+      try {
+        debugPrint('🔄 Trying fallback path...');
+        player.setPlayerMode(PlayerMode.lowLatency);
+        player.setVolume(1.0);
+        await player.play(AssetSource('assets/logo/bubble/bubble_pop.mp3'));
+        debugPrint('✅ Bubble pop sound played with fallback path');
+        
+        player.onPlayerComplete.listen((_) {
+          player.dispose();
+        });
+      } catch (e) {
+        debugPrint('❌ Fallback also failed: $e');
+        player.dispose();
+      }
+    }
+  }
+
   void _popBubble(Bubble bubble) {
     if (bubble.isPopping) return;
 
     bubble.isPopping = true;
     _score += 10; // Points for popping!
+
+    // Play bubble pop sound
+    _playPopSound();
 
     // Report pop event with gaze data
     final event = {
@@ -381,6 +446,8 @@ class _InteractiveBubblesState extends State<InteractiveBubbles>
     _gameTimer?.cancel();
     _gazeCheckTimer?.cancel();
     _gazeSubscription?.cancel();
+    // AudioCache is static and doesn't need disposal
+    // Individual AudioPlayer instances are disposed after each sound completes
     super.dispose();
   }
 

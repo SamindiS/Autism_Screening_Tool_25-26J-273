@@ -15,7 +15,8 @@ import '../../gaze/gaze_point.dart';
 import '../../gaze/gaze_mapper.dart';
 import '../../gaze/gaze_service.dart';
 import '../../gaze/gaze_stream_provider.dart';
-import '../../main.dart' show API_BASE, BubblesScreen;
+import '../../screens/bubbles_screen.dart';
+import '../../theme.dart';
 import 'butterfly_chase_game.dart';
 
 class ButterflyChaseScreen extends StatefulWidget {

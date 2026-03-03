@@ -65,15 +65,15 @@ class ImprovedGazeModel {
   bool _isCalibrated = false;
 
   // Model parameters (learned from calibration)
-  // DEFAULT VALUES before calibration - just show center
-  // These will be replaced by learned values after calibration
-  double _xIrisCoef = 0.0; // Don't use iris until calibrated
-  double _xHeadCoef = 0.0; // Don't use head until calibrated
-  double _xBias = 0.5; // Show center
+  // DEFAULT VALUES before calibration - use basic iris-based prediction
+  // These provide real-time tracking even without calibration
+  double _xIrisCoef = 2.5; // Basic iris coefficient for real-time tracking
+  double _xHeadCoef = 0.2; // Small head contribution
+  double _xBias = -1.0; // Offset to center the mapping
 
-  double _yIrisCoef = 0.0; // Don't use iris until calibrated
-  double _yHeadCoef = 0.0; // Don't use head until calibrated
-  double _yBias = 0.5; // Show center
+  double _yIrisCoef = 2.0; // Basic iris coefficient for real-time tracking
+  double _yHeadCoef = -0.2; // Small head contribution
+  double _yBias = -0.8; // Offset to center the mapping
 
   // COMBINED MODE: Use BOTH eye gaze AND head movement for BOTH axes
   // Eye gaze is primary, head movement supplements
@@ -115,7 +115,14 @@ class ImprovedGazeModel {
     _history.clear();
     _lastPrediction = null;
     _velocity = 0;
-    print('ImprovedGazeModel: Reset');
+    // Reset to default coefficients that allow real-time tracking
+    _xIrisCoef = 2.5;
+    _xHeadCoef = 0.2;
+    _xBias = -1.0;
+    _yIrisCoef = 2.0;
+    _yHeadCoef = -0.2;
+    _yBias = -0.8;
+    print('ImprovedGazeModel: Reset - using default coefficients for real-time tracking');
   }
 
   /// Add calibration sample

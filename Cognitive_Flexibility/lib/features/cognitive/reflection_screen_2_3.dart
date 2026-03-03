@@ -182,33 +182,48 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
       final avgBehavioralScore = behavioralScores.values.reduce((a, b) => a + b) / behavioralScores.length;
       final avgReflectionScore = (avgTaskScore + avgBehavioralScore) / 2;
 
-      // Questionnaire percentage_score: Higher percentage = HIGHER risk (more red flags)
-      // We need to invert it so that High Risk (e.g., 100%) maps to Low Performance Score (0.0)
-      // and Low Risk (e.g., 0%) maps to High Performance Score (5.0)
-      final rawQuestionnairePercent = (widget.questionnaireResults['percentage_score'] as num).toDouble();
-      final questionnaireScore = ((100.0 - rawQuestionnairePercent) / 100.0) * 5.0;
-      
-      final taskScore = avgTaskScore;
-      final behavioralScore = avgBehavioralScore;
-      
-      final enhancedRiskScore = (questionnaireScore * 0.5) + (taskScore * 0.3) + (behavioralScore * 0.2);
-      
-      // Determine risk level
-      // IMPORTANT: Control group children always get 'low' risk since they're 
-      // pre-screened as typically developing (pilot study requirement)
-      String riskLevel;
-      if (widget.child.isControlGroup) {
-        // Control group (typically developing) - always low risk
-        riskLevel = 'low';
+      // --- 1) Clinical reflection risk (1.00–5.00 scale) ---
+      // Higher reflection score = better performance (lower ASD risk).
+      // Map the average reflection score to a clinical risk band:
+      // 1.00–2.50  → HIGH risk
+      // 2.51–3.90  → MODERATE risk
+      // 4.00–5.00  → LOW risk
+      String reflectionRiskLevel;
+      if (avgReflectionScore <= 2.50) {
+        reflectionRiskLevel = 'high';
+      } else if (avgReflectionScore <= 3.90) {
+        reflectionRiskLevel = 'moderate';
       } else {
-        // ASD group - calculate actual risk based on performance
-        if (enhancedRiskScore <= 2.0) {
-          riskLevel = 'high';
-        } else if (enhancedRiskScore <= 3.5) {
-          riskLevel = 'moderate';
-        } else {
-          riskLevel = 'low';
-        }
+        reflectionRiskLevel = 'low';
+      }
+
+      // Convert reflection performance to a 0–5 "risk points" score
+      // where higher = higher cognitive risk (for combining with assessment).
+      double reflectionRiskPoints = 6.0 - avgReflectionScore; // 1 → 5 (high), 5 → 1 (low)
+      if (reflectionRiskPoints < 0) reflectionRiskPoints = 0;
+      if (reflectionRiskPoints > 5) reflectionRiskPoints = 5;
+
+      // --- 2) Parent questionnaire risk (assessment) on 0–5 scale ---
+      // percentage_score: higher percentage = LOWER risk.
+      // Convert to 0–5 risk points where higher = higher cognitive risk.
+      final rawQuestionnairePercent =
+          (widget.questionnaireResults['percentage_score'] as num).toDouble().clamp(0.0, 100.0);
+      final assessmentRiskPoints = ((100.0 - rawQuestionnairePercent) / 100.0) * 5.0;
+
+      // --- 3) Overall cognitive risk score on 0–10 scale ---
+      // Overall score = assessment risk (0–5) + clinician reflection risk (0–5)
+      // 0.00–4.00  → LOW cognitive risk
+      // 4.10–6.99  → MODERATE cognitive risk
+      // 7.00–10.00 → HIGH cognitive risk
+      final overallCognitiveRiskScore = (assessmentRiskPoints + reflectionRiskPoints).clamp(0.0, 10.0);
+
+      String riskLevel;
+      if (overallCognitiveRiskScore < 4.10) {
+        riskLevel = 'low';
+      } else if (overallCognitiveRiskScore < 7.00) {
+        riskLevel = 'moderate';
+      } else {
+        riskLevel = 'high';
       }
 
       // Save reflection data
@@ -220,8 +235,10 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
         'average_task_score': avgTaskScore,
         'average_behavioral_score': avgBehavioralScore,
         'average_reflection_score': avgReflectionScore,
-        'questionnaire_score': questionnaireScore,
-        'enhanced_risk_score': enhancedRiskScore,
+        'reflection_risk_level': reflectionRiskLevel,
+        'assessment_risk_points': assessmentRiskPoints,
+        'reflection_risk_points': reflectionRiskPoints,
+        'overall_cognitive_risk_score': overallCognitiveRiskScore,
         'risk_level': riskLevel,
         'timestamp': DateTime.now().toIso8601String(),
       };
@@ -231,7 +248,7 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
         await StorageService.updateSession(
           id: widget.sessionId,
           reflectionResults: reflectionData,
-          riskScore: enhancedRiskScore,
+          riskScore: overallCognitiveRiskScore,
           riskLevel: riskLevel.toLowerCase(),
         );
       } catch (e) {
@@ -246,7 +263,7 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
             endTime: DateTime.now(),
             questionnaireResults: widget.questionnaireResults,
             reflectionResults: reflectionData,
-            riskScore: enhancedRiskScore,
+            riskScore: overallCognitiveRiskScore,
             riskLevel: riskLevel.toLowerCase(),
           );
           
@@ -268,7 +285,7 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
         'session_id': widget.sessionId,
         'questionnaire_results': widget.questionnaireResults,
         'reflection_data': reflectionData,
-        'enhanced_risk_score': enhancedRiskScore,
+        'enhanced_risk_score': overallCognitiveRiskScore,
         'risk_level': riskLevel,
       });
 
@@ -281,7 +298,7 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
               sessionId: widget.sessionId,
               questionnaireResults: widget.questionnaireResults,
               reflectionData: reflectionData,
-              riskScore: enhancedRiskScore,
+              riskScore: overallCognitiveRiskScore,
               riskLevel: riskLevel,
             ),
           ),

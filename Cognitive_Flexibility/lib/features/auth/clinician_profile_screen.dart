@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/api_service.dart';
-import '../../l10n/app_localizations.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../widgets/language_selector.dart';
 import 'login_screen.dart';
 
@@ -196,7 +196,10 @@ class _ClinicianProfileScreenState extends State<ClinicianProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.clinicianProfile),
+        title: Text(
+          AppLocalizations.of(context)?.clinicianProfile ??
+              'Clinician Profile',
+        ),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
         actions: [

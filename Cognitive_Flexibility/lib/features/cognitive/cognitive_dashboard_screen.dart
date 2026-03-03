@@ -85,8 +85,12 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
         );
       }).toList();
 
-      // Load sessions
-      _sessions = await StorageService.getAllSessions();
+      // Load sessions and keep only those for this clinician's children
+      final allSessions = await StorageService.getAllSessions();
+      final childIds = _children.map((c) => c.id).toSet();
+      _sessions = allSessions
+          .where((s) => childIds.contains(s['child_id'] as String?))
+          .toList();
 
       // Calculate statistics
       final today = DateTime.now();

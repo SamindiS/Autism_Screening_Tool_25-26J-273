@@ -54,10 +54,31 @@ class _ClinicianProfileScreenState extends State<ClinicianProfileScreen> {
       });
     } catch (e) {
       debugPrint('❌ Error loading clinician data: $e');
-      setState(() {
-        _errorMessage = 'Failed to load clinician data. Please check your connection and try again.\n\nError: ${e.toString()}';
-        _loading = false;
-      });
+      // Show cached profile from login if available, so screen is still usable offline
+      final cached = await AuthService.getStoredClinicianData();
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          if (cached != null && cached.isNotEmpty) {
+            _clinicianData = cached;
+            _nameController.text = cached['name']?.toString() ?? '';
+            _hospitalController.text = cached['hospital']?.toString() ?? '';
+            _errorMessage = null;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text(
+                  'Showing cached profile. Could not reach server. Check connection and retry to refresh.',
+                ),
+                backgroundColor: Colors.orange,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          } else {
+            _errorMessage =
+                'Failed to load clinician data. Please check your connection and try again.\n\nError: ${e.toString()}';
+          }
+        });
+      }
     }
   }
 

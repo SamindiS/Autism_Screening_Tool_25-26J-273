@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../data/models/child.dart';
@@ -200,6 +201,8 @@ class StorageService {
     };
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final createdByClinicianId = prefs.getString('clinician_id');
       final child = await ApiService.createChild(
         childCode: childCode,
         name: name,
@@ -213,6 +216,8 @@ class StorageService {
         diagnosisSource: diagnosisSource,
         clinicianId: clinicianId,
         clinicianName: clinicianName,
+        diagnosisType: diagnosisType,
+        createdByClinicianId: createdByClinicianId,
       );
       await _upsertChildLocal({
         'id': child['id'],
@@ -377,8 +382,14 @@ class StorageService {
           .timeout(const Duration(seconds: 3), onTimeout: () => false);
       
       if (isOnline) {
-        final children = await ApiService.getAllChildren()
-            .timeout(const Duration(seconds: 10));
+        // Use clinician-scoped API when logged in so counts are per clinician
+        final prefs = await SharedPreferences.getInstance();
+        final clinicianId = prefs.getString('clinician_id');
+        final children = clinicianId != null && clinicianId.isNotEmpty
+            ? await ApiService.getChildrenByClinician(clinicianId)
+                .timeout(const Duration(seconds: 10))
+            : await ApiService.getAllChildren()
+                .timeout(const Duration(seconds: 10));
         final formatted = children
             .map((child) => {
                   'id': child['id'],

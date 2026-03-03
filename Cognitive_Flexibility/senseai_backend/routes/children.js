@@ -25,6 +25,8 @@ const childSchema = Joi.object({
   // Clinician info for ASD group (one-tap selection, no password)
   clinician_id: Joi.string().max(50).allow(null, '').optional(),
   clinician_name: Joi.string().max(200).allow(null, '').optional(),
+  // Who created this child (for dashboard filtering per clinician)
+  created_by_clinician_id: Joi.string().max(50).allow(null, '').optional(),
 });
 
 const calculateAge = (dobMs) => {
@@ -111,6 +113,7 @@ router.post('/', async (req, res) => {
       // Clinician info for ASD group
       clinician_id: value.clinician_id || null,
       clinician_name: value.clinician_name || null,
+      created_by_clinician_id: value.created_by_clinician_id || null,
       created_at: now,
       updated_at: now,
     };
@@ -127,11 +130,27 @@ router.post('/', async (req, res) => {
 
 router.get('/clinician/:clinicianId', async (req, res) => {
   try {
-    const snap = await childrenCollection
-      .where('clinician_id', '==', req.params.clinicianId)
-      .orderBy('created_at', 'desc')
-      .get();
-    const children = snap.docs.map(toChild);
+    const clinicianId = req.params.clinicianId;
+    // Return children where clinician_id OR created_by_clinician_id matches (so dashboard shows only this clinician's children)
+    const [byClinicianId, byCreatedBy] = await Promise.all([
+      childrenCollection.where('clinician_id', '==', clinicianId).get(),
+      childrenCollection.where('created_by_clinician_id', '==', clinicianId).get(),
+    ]);
+    const seen = new Set();
+    const children = [];
+    for (const doc of byClinicianId.docs) {
+      if (!seen.has(doc.id)) {
+        seen.add(doc.id);
+        children.push(toChild(doc));
+      }
+    }
+    for (const doc of byCreatedBy.docs) {
+      if (!seen.has(doc.id)) {
+        seen.add(doc.id);
+        children.push(toChild(doc));
+      }
+    }
+    children.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
     res.json({ count: children.length, children });
   } catch (err) {
     res.status(500).json({ error: err.message });

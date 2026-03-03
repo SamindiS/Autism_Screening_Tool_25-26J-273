@@ -190,12 +190,14 @@ class ApiService {
       final url = await baseUrl;
       
       if (storedClinicianId != null && storedClinicianId.isNotEmpty) {
-        // Use stored ID to get specific clinician
+        // Use stored ID to get specific clinician (longer timeout for slow networks)
         debugPrint('📋 Getting clinician info by ID: $storedClinicianId');
-        final response = await http.get(
-          Uri.parse('$url/api/clinicians/$storedClinicianId'),
-          headers: headers,
-        );
+        final response = await http
+            .get(
+              Uri.parse('$url/api/clinicians/$storedClinicianId'),
+              headers: headers,
+            )
+            .timeout(const Duration(seconds: 20));
 
         _handleError(response);
 
@@ -204,10 +206,12 @@ class ApiService {
       } else {
         // Fallback to /me endpoint (for backward compatibility)
         debugPrint('⚠️ No stored clinician ID, using /me endpoint');
-        final response = await http.get(
-          Uri.parse('$url/api/clinicians/me'),
-          headers: headers,
-        );
+        final response = await http
+            .get(
+              Uri.parse('$url/api/clinicians/me'),
+              headers: headers,
+            )
+            .timeout(const Duration(seconds: 20));
 
         _handleError(response);
 
@@ -282,6 +286,7 @@ class ApiService {
     String? clinicianId,
     String? clinicianName,
     String diagnosisType = 'new',
+    String? createdByClinicianId,
   }) async {
     try {
       // Convert gender to lowercase to match backend validation
@@ -303,6 +308,8 @@ class ApiService {
         'clinician_id': clinicianId,
         'clinician_name': clinicianName,
         'diagnosis_type': diagnosisType,
+        if (createdByClinicianId != null && createdByClinicianId.isNotEmpty)
+          'created_by_clinician_id': createdByClinicianId,
       };
       debugPrint('📤 Request body: ${jsonEncode(requestBody)}');
       
@@ -327,7 +334,7 @@ class ApiService {
     }
   }
 
-  /// Get all children
+  /// Get all children (backend returns all; prefer getChildrenByClinician when logged in)
   static Future<List<Map<String, dynamic>>> getAllChildren() async {
     try {
       final url = await baseUrl;
@@ -342,6 +349,27 @@ class ApiService {
       return List<Map<String, dynamic>>.from(data['children'] ?? []);
     } catch (e) {
       debugPrint('Error getting children: $e');
+      rethrow;
+    }
+  }
+
+  /// Get children for the logged-in clinician only (fixes dashboard counting other clinicians' children)
+  static Future<List<Map<String, dynamic>>> getChildrenByClinician(String clinicianId) async {
+    try {
+      final url = await baseUrl;
+      final response = await http.get(
+        Uri.parse('$url/api/children/clinician/$clinicianId'),
+        headers: headers,
+      );
+
+      _handleError(response);
+
+      final data = jsonDecode(response.body);
+      final list = List<Map<String, dynamic>>.from(data['children'] ?? []);
+      debugPrint('📋 Loaded ${list.length} children for clinician $clinicianId');
+      return list;
+    } catch (e) {
+      debugPrint('Error getting children by clinician: $e');
       rethrow;
     }
   }

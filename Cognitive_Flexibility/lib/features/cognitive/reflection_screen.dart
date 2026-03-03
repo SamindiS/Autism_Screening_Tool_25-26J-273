@@ -107,7 +107,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
       };
 
       final avgReflectionScore = reflectionScores.values.reduce((a, b) => a + b) / reflectionScores.length;
-      
+
       // ✅ Prioritize ML prediction if available (from trained models)
       double finalRiskScore;
       String riskLevel;
@@ -122,25 +122,19 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
       } else {
         // Fallback to rule-based calculation
         // Combine game metrics (60%) with behavioral observations (40%)
+        // Lower combined score ⇒ higher ASD risk
         final gameScore = widget.gameResults.accuracy / 100.0 * 5.0; // Convert to 1-5 scale
         finalRiskScore = (gameScore * 0.6) + (avgReflectionScore * 0.4);
-        
-        // Determine risk level
-        // IMPORTANT: Control group children always get 'low' risk since they're 
-        // pre-screened as typically developing (pilot study requirement)
-        if (widget.child.isControlGroup) {
-          // Control group (typically developing) - always low risk
-          riskLevel = 'low';
+
+        // Determine risk level purely from performance (all children, all groups)
+        if (finalRiskScore <= 2.0) {
+          riskLevel = 'high';
+        } else if (finalRiskScore <= 3.5) {
+          riskLevel = 'moderate';
         } else {
-          // ASD group - calculate actual risk based on performance
-          if (finalRiskScore <= 2.0) {
-            riskLevel = 'high';
-          } else if (finalRiskScore <= 3.5) {
-            riskLevel = 'moderate';
-          } else {
-            riskLevel = 'low';
-          }
+          riskLevel = 'low';
         }
+
         debugPrint('⚠️  Using rule-based calculation: $riskLevel (${finalRiskScore.toStringAsFixed(1)})');
       }
 

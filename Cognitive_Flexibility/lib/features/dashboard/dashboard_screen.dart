@@ -34,7 +34,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   int _totalChildren = 0;
   int _completedAssessments = 0;
   int _pendingAssessments = 0;
-  int _todayAssessments = 0;
+  int _todayAddedChildren = 0;
   
   // Pilot Study Statistics
   int _asdGroupCount = 0;
@@ -90,22 +90,11 @@ class _DashboardScreenState extends State<DashboardScreen>
     try {
       final info = await AuthService.getClinicianInfo();
 
-      // Load statistics
+      // Load statistics (getAllChildren is now clinician-scoped when logged in)
       final childrenData = await StorageService.getAllChildren();
-      final sessions = await StorageService.getAllSessions();
+      final allSessions = await StorageService.getAllSessions();
 
-      final today = DateTime.now();
-      final todayStart = DateTime(today.year, today.month, today.day);
-
-      final completed = sessions.where((s) => s['end_time'] != null).length;
-      final pending = sessions.where((s) => s['end_time'] == null).length;
-      final todayCount = sessions.where((s) {
-        final sessionDate =
-            DateTime.fromMillisecondsSinceEpoch(s['created_at'] as int);
-        return sessionDate.isAfter(todayStart);
-      }).length;
-
-      // Convert to Child models and calculate study group stats
+      // Convert to Child models first so we have child IDs
       final children = childrenData.map((data) {
         final dob = DateTime.fromMillisecondsSinceEpoch(data['date_of_birth'] as int);
         final groupStr = data['study_group'] as String? ?? data['group'] as String? ?? 'typically_developing';
@@ -126,6 +115,21 @@ class _DashboardScreenState extends State<DashboardScreen>
         );
       }).toList();
 
+      // Only count sessions for this clinician's children (stops one session appearing as many)
+      final childIds = children.map((c) => c.id).toSet();
+      final sessions = allSessions
+          .where((s) => childIds.contains(s['child_id'] as String?))
+          .toList();
+
+      final today = DateTime.now();
+      final todayStart = DateTime(today.year, today.month, today.day);
+
+      final completed = sessions.where((s) => s['end_time'] != null).length;
+      final pending = sessions.where((s) => s['end_time'] == null).length;
+      final todayAddedCount = children.where((c) {
+        return c.createdAt.isAfter(todayStart);
+      }).length;
+
       // Calculate study group counts
       final asdCount = children.where((c) => c.isAsdGroup).length;
       final controlCount = children.where((c) => c.isControlGroup).length;
@@ -140,7 +144,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           _totalChildren = children.length;
           _completedAssessments = completed;
           _pendingAssessments = pending;
-          _todayAssessments = todayCount;
+          _todayAddedChildren = todayAddedCount;
           _asdGroupCount = asdCount;
           _controlGroupCount = controlCount;
           _recentChildren = recentChildren;
@@ -464,8 +468,8 @@ class _DashboardScreenState extends State<DashboardScreen>
             const SizedBox(width: 12),
             Expanded(
               child: StatCard(
-                label: l10n?.today ?? 'Today',
-                value: _todayAssessments,
+                label: 'Children added today',
+                value: _todayAddedChildren,
                 icon: Icons.today_rounded,
                 color: const Color(0xFF8B5CF6),
                 bgColor: isDark ? Colors.purple[900]! : const Color(0xFFEDE9FE),

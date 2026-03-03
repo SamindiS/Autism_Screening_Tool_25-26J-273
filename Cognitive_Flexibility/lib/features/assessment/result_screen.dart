@@ -453,7 +453,7 @@ class _ResultScreenState extends State<ResultScreen> {
             )
           else if (widget.riskScore != null)
             Text(
-              'Risk Score: ${widget.riskScore!.toStringAsFixed(2)} / 5.0',
+              _buildRiskScoreLabel(),
               style: TextStyle(
                 fontSize: 18,
                 color: Colors.grey.shade700,
@@ -810,6 +810,20 @@ class _ResultScreenState extends State<ResultScreen> {
         ],
       ),
     );
+  }
+
+  /// Builds a context-aware risk score label.
+  /// For ages 2–3.5 (questionnaire + clinician reflection, no game results),
+  /// we use a 0–10 overall cognitive risk scale.
+  /// For game-based assessments, we keep the existing 0–5 scale.
+  String _buildRiskScoreLabel() {
+    if (widget.riskScore == null) return '';
+
+    final bool isYoungQuestionnaireOnly =
+        widget.gameResults == null && widget.questionnaireResults != null;
+
+    final double maxScore = isYoungQuestionnaireOnly ? 10.0 : 5.0;
+    return 'Risk Score: ${widget.riskScore!.toStringAsFixed(2)} / ${maxScore.toStringAsFixed(1)}';
   }
 
   Widget _buildActionButtons() {

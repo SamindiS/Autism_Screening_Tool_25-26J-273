@@ -12,6 +12,11 @@ import 'offline_sync_service.dart';
 
 class StorageService {
   static Database? _database;
+  
+  // Sync tracking to prevent blocking every screen load
+  static DateTime? _lastChildrenSync;
+  static DateTime? _lastSessionsSync;
+  static final Map<String, DateTime> _lastChildSessionsSync = {};
 
   static Future<Database> get database async {
     if (_database != null) return _database!;
@@ -371,9 +376,18 @@ class StorageService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getAllChildren() async {
+  static Future<List<Map<String, dynamic>>> getAllChildren({bool forceRefresh = false}) async {
     // First, get local data immediately (for offline support)
     final localChildren = await _getChildrenLocal();
+    
+    // Check if we need to sync
+    final bool shouldSync = forceRefresh || 
+        _lastChildrenSync == null || 
+        DateTime.now().difference(_lastChildrenSync!).inMinutes > 5;
+        
+    if (!shouldSync && localChildren.isNotEmpty) {
+      return localChildren;
+    }
     
     // Try to sync with backend if online
     try {
@@ -410,6 +424,7 @@ class StorageService {
             .toList();
         // Merge with local data (local data takes priority for offline entries)
         await _mergeChildrenLocal(formatted, localChildren);
+        _lastChildrenSync = DateTime.now();
         // Return merged data
         return await _getChildrenLocal();
       } else {
@@ -568,6 +583,9 @@ class StorageService {
     final status = endTime != null ? 'completed' : 'in_progress';
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final createdByClinicianId = prefs.getString('clinician_id');
+
       final session = await ApiService.createSession(
         childId: childId,
         sessionType: normalizedSessionType,
@@ -580,6 +598,7 @@ class StorageService {
         reflectionResults: reflectionResults,
         riskScore: riskScore,
         riskLevel: riskLevel,
+        createdByClinicianId: createdByClinicianId,
       );
       await _upsertSessionLocal({
         'id': session['id'],
@@ -623,15 +642,35 @@ class StorageService {
       await OfflineSyncService.enqueueRequest(
         endpoint: '/api/sessions',
         method: 'POST',
-        payload: payload,
+        payload: {
+          ...payload,
+          // include created_by_clinician_id for proper backend scoping
+          'created_by_clinician_id':
+              (await SharedPreferences.getInstance()).getString('clinician_id'),
+        },
       );
       return localSession;
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getAllSessions() async {
+  static Future<List<Map<String, dynamic>>> getAllSessions({bool forceRefresh = false}) async {
     try {
-      final sessions = await ApiService.getAllSessions();
+      final localSessions = await _getSessionsLocal();
+      
+      final bool shouldSync = forceRefresh || 
+          _lastSessionsSync == null || 
+          DateTime.now().difference(_lastSessionsSync!).inMinutes > 5;
+          
+      if (!shouldSync && localSessions.isNotEmpty) {
+        return localSessions;
+      }
+      
+      // If logged in, fetch only this clinician's sessions (much faster)
+      final prefs = await SharedPreferences.getInstance();
+      final clinicianId = prefs.getString('clinician_id');
+      final sessions = (clinicianId != null && clinicianId.isNotEmpty)
+          ? await ApiService.getSessionsByClinician(clinicianId)
+          : await ApiService.getAllSessions();
       final formatted = sessions
           .map((session) => {
                 'id': session['id'],
@@ -642,7 +681,7 @@ class StorageService {
                 'start_time': session['start_time'],
                 'end_time': session['end_time'],
                 'metrics': jsonEncode(session['metrics'] ?? const {}),
-                'game_results': session['game_results'] != null ? jsonEncode(session['game_results']) : null,
+        'game_results': session['game_results'] != null ? jsonEncode(session['game_results']) : null,
                 'questionnaire_results': session['questionnaire_results'] != null ? jsonEncode(session['questionnaire_results']) : null,
                 'reflection_results': session['reflection_results'] != null ? jsonEncode(session['reflection_results']) : null,
                 'risk_score': session['risk_score'],
@@ -651,6 +690,7 @@ class StorageService {
               })
           .toList();
       await _replaceSessionsLocal(formatted);
+      _lastSessionsSync = DateTime.now();
       return formatted;
     } catch (_) {
       return await _getSessionsLocal();
@@ -658,7 +698,7 @@ class StorageService {
   }
 
   static Future<List<Map<String, dynamic>>> getSessionsByChild(
-      String childId) async {
+      String childId, {bool forceRefresh = false}) async {
     // First, get local sessions (preserves offline data)
     final db = await database;
     final localRows = await db.query(
@@ -668,6 +708,15 @@ class StorageService {
       orderBy: 'created_at DESC',
     );
     final localSessions = localRows.map((row) => row as Map<String, dynamic>).toList();
+    
+    final lastSync = _lastChildSessionsSync[childId];
+    final bool shouldSync = forceRefresh || 
+        lastSync == null || 
+        DateTime.now().difference(lastSync).inMinutes > 5;
+        
+    if (!shouldSync && localSessions.isNotEmpty) {
+      return localSessions;
+    }
     
     // Try to sync with backend if online
     try {
@@ -722,6 +771,7 @@ class StorageService {
           return bTime.compareTo(aTime);
         });
         
+        _lastChildSessionsSync[childId] = DateTime.now();
         return result;
       } else {
         // Offline - return local data

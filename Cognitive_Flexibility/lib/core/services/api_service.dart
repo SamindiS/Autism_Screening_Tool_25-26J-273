@@ -476,6 +476,7 @@ class ApiService {
     Map<String, dynamic>? reflectionResults,
     double? riskScore,
     String? riskLevel,
+    String? createdByClinicianId,
   }) async {
     try {
       final url = await baseUrl;
@@ -492,6 +493,8 @@ class ApiService {
         'reflection_results': reflectionResults,
         'risk_score': riskScore,
         'risk_level': riskLevel,
+        if (createdByClinicianId != null && createdByClinicianId.isNotEmpty)
+          'created_by_clinician_id': createdByClinicianId,
       };
       debugPrint('📤 Request body: ${jsonEncode(requestBody)}');
       
@@ -520,10 +523,12 @@ class ApiService {
   static Future<List<Map<String, dynamic>>> getAllSessions() async {
     try {
       final url = await baseUrl;
-      final response = await http.get(
-        Uri.parse('$url/api/sessions'),
-        headers: headers,
-      );
+      final response = await http
+          .get(
+            Uri.parse('$url/api/sessions'),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 15));
 
       _handleError(response);
 
@@ -531,6 +536,28 @@ class ApiService {
       return List<Map<String, dynamic>>.from(data['sessions'] ?? []);
     } catch (e) {
       debugPrint('Error getting sessions: $e');
+      rethrow;
+    }
+  }
+
+  /// Get sessions created by a clinician (fast for dashboards)
+  static Future<List<Map<String, dynamic>>> getSessionsByClinician(
+      String clinicianId) async {
+    try {
+      final url = await baseUrl;
+      final response = await http
+          .get(
+            Uri.parse('$url/api/sessions/clinician/$clinicianId'),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 15));
+
+      _handleError(response);
+
+      final data = jsonDecode(response.body);
+      return List<Map<String, dynamic>>.from(data['sessions'] ?? []);
+    } catch (e) {
+      debugPrint('Error getting sessions by clinician: $e');
       rethrow;
     }
   }

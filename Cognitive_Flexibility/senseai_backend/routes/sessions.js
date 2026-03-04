@@ -23,6 +23,8 @@ const sessionSchema = Joi.object({
   reflection_results: Joi.object().allow(null).optional(),
   risk_score: Joi.number().min(0).max(100).allow(null).optional(),
   risk_level: Joi.string().valid('low', 'moderate', 'high').allow(null).optional(),
+  // who created this session (used for clinician-scoped dashboards)
+  created_by_clinician_id: Joi.string().max(50).allow(null, '').optional(),
 });
 
 const updateSchema = Joi.object({
@@ -33,6 +35,8 @@ const updateSchema = Joi.object({
   reflection_results: Joi.object().allow(null).optional(),
   risk_score: Joi.number().min(0).max(100).allow(null).optional(),
   risk_level: Joi.string().valid('low', 'moderate', 'high').allow(null).optional(),
+  // allow backfilling created_by_clinician_id if needed
+  created_by_clinician_id: Joi.string().max(50).allow(null, '').optional(),
 }).min(1);
 
 const toSession = (doc) => ({
@@ -156,6 +160,19 @@ router.get('/child/:childId', async (req, res) => {
   try {
     const snap = await sessionsCollection
       .where('child_id', '==', req.params.childId)
+      .orderBy('created_at', 'desc')
+      .get();
+    const sessions = snap.docs.map(toSession);
+    res.json({ count: sessions.length, sessions });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/clinician/:clinicianId', async (req, res) => {
+  try {
+    const snap = await sessionsCollection
+      .where('created_by_clinician_id', '==', req.params.clinicianId)
       .orderBy('created_at', 'desc')
       .get();
     const sessions = snap.docs.map(toSession);

@@ -6,30 +6,55 @@ import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
-/// Service for generating PDF reports for children
+/// Service for generating advanced, professional PDF reports for children
 class PdfReportService {
+  static const primaryColor = PdfColor.fromInt(0xff6366f1); // Indigo
+  static const secondaryColor = PdfColor.fromInt(0xff10b981); // Emerald
+  static const darkText = PdfColor.fromInt(0xff1f2937); // Gray-800
+  static const lightText = PdfColor.fromInt(0xff6b7280); // Gray-500
+
   /// Generate and save a PDF report for a child
   static Future<String?> generateChildReport({
     required Map<String, dynamic> child,
     required List<Map<String, dynamic>> sessions,
   }) async {
     try {
-      // Create PDF document
       final pdf = pw.Document();
 
-      // Add pages
-      pdf.addPage(_buildCoverPage(child));
-      pdf.addPage(_buildChildInfoPage(child));
-      
-      // Add session pages
-      for (var session in sessions) {
-        pdf.addPage(_buildSessionPage(child, session));
-      }
-      
-      // Add summary page
-      pdf.addPage(_buildSummaryPage(child, sessions));
+      // Ensure sessions are sorted by time (newest first)
+      final sortedSessions = List<Map<String, dynamic>>.from(sessions);
+      sortedSessions.sort((a, b) {
+        final timeA = a['start_time'] as num? ?? 0;
+        final timeB = b['start_time'] as num? ?? 0;
+        return timeB.compareTo(timeA);
+      });
 
-      // Save PDF
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(36),
+          header: (context) => _buildHeader(child),
+          footer: (context) => _buildFooter(context),
+          build: (context) {
+            return [
+              _buildPatientInfo(child),
+              pw.SizedBox(height: 20),
+              if (sortedSessions.isNotEmpty) ...[
+                _buildSessionAnalysis(sortedSessions.first),
+                if (sortedSessions.length > 1) ...[
+                   pw.SizedBox(height: 30),
+                  _buildHistorySummary(sortedSessions),
+                ]
+              ] else ...[
+                pw.Center(
+                  child: pw.Text("No assessment sessions recorded.", style: const pw.TextStyle(color: lightText))
+                ),
+              ],
+            ];
+          },
+        ),
+      );
+
       final output = await getApplicationDocumentsDirectory();
       final fileName = '${child['child_code'] ?? child['name'] ?? 'Child'}_Report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
       final file = File('${output.path}/$fileName');
@@ -58,7 +83,7 @@ class PdfReportService {
         if (await file.exists()) {
           await Share.shareXFiles(
             [XFile(filePath)],
-            text: 'Child Assessment Report: ${child['name'] ?? 'Unknown'}',
+            text: 'Clinical Assessment Report: ${child['name'] ?? 'Unknown'}',
             subject: 'SenseAI Assessment Report',
           );
         }
@@ -77,14 +102,20 @@ class PdfReportService {
     try {
       final pdf = pw.Document();
 
-      pdf.addPage(_buildCoverPage(child));
-      pdf.addPage(_buildChildInfoPage(child));
-      
-      for (var session in sessions) {
-        pdf.addPage(_buildSessionPage(child, session));
-      }
-      
-      pdf.addPage(_buildSummaryPage(child, sessions));
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(36),
+          header: (context) => _buildHeader(child),
+          footer: (context) => _buildFooter(context),
+          build: (context) => [
+            _buildPatientInfo(child),
+            pw.SizedBox(height: 20),
+            if (sessions.isNotEmpty) _buildSessionAnalysis(sessions.first),
+            if (sessions.length > 1) _buildHistorySummary(sessions),
+          ],
+        )
+      );
 
       await Printing.layoutPdf(
         onLayout: (PdfPageFormat format) async => pdf.save(),
@@ -95,492 +126,437 @@ class PdfReportService {
     }
   }
 
-  /// Build cover page
-  static pw.Page _buildCoverPage(Map<String, dynamic> child) {
-    final childName = child['name'] as String? ?? 'Unknown';
-    final childCode = child['child_code'] as String? ?? '';
-    final date = DateFormat('MMMM dd, yyyy').format(DateTime.now());
-
-    return pw.Page(
-      pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(40),
-      build: (pw.Context context) {
-        return pw.Center(
-          child: pw.Column(
-            mainAxisAlignment: pw.MainAxisAlignment.center,
-            crossAxisAlignment: pw.CrossAxisAlignment.center,
-            children: [
-              pw.Text(
-                'SenseAI',
-                style: pw.TextStyle(
-                  fontSize: 48,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.blue700,
-                ),
+  static pw.Widget _buildHeader(Map<String, dynamic> child) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('SenseAI', style: pw.TextStyle(color: primaryColor, fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                pw.Text('Autism Spectrum Disorder Clinical Screening', style: const pw.TextStyle(color: lightText, fontSize: 10)),
+              ],
+            ),
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey100,
+                borderRadius: pw.BorderRadius.circular(8),
+                border: pw.Border.all(color: PdfColors.grey300),
               ),
-              pw.SizedBox(height: 20),
-              pw.Text(
-                'Autism Spectrum Disorder Screening',
-                style: pw.TextStyle(
-                  fontSize: 20,
-                  color: PdfColors.grey700,
-                ),
-              ),
-              pw.SizedBox(height: 60),
-              pw.Container(
-                padding: const pw.EdgeInsets.all(30),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.blue700, width: 2),
-                  borderRadius: pw.BorderRadius.circular(10),
-                ),
-                child: pw.Column(
-                  children: [
-                    pw.Text(
-                      'Child Assessment Report',
-                      style: pw.TextStyle(
-                        fontSize: 28,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                    pw.SizedBox(height: 20),
-                    pw.Text(
-                      'Child Name: $childName',
-                      style: const pw.TextStyle(fontSize: 18),
-                    ),
-                    if (childCode.isNotEmpty) ...[
-                      pw.SizedBox(height: 10),
-                      pw.Text(
-                        'Child Code: $childCode',
-                        style: const pw.TextStyle(fontSize: 18),
-                      ),
-                    ],
-                    pw.SizedBox(height: 20),
-                    pw.Text(
-                      'Generated: $date',
-                      style: pw.TextStyle(
-                        fontSize: 14,
-                        color: PdfColors.grey700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Text('CONFIDENTIAL REPORT', style: pw.TextStyle(color: PdfColors.red700, fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Date: ${DateFormat('MMMM dd, yyyy').format(DateTime.now())}', style: const pw.TextStyle(color: darkText, fontSize: 10)),
+                ]
+              )
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 16),
+        pw.Divider(color: primaryColor, thickness: 2),
+        pw.SizedBox(height: 16),
+      ]
     );
   }
 
-  /// Build child information page
-  static pw.Page _buildChildInfoPage(Map<String, dynamic> child) {
+  static pw.Widget _buildFooter(pw.Context context) {
+    return pw.Container(
+      margin: const pw.EdgeInsets.only(top: 20),
+      child: pw.Column(
+        children: [
+          pw.Divider(color: PdfColors.grey300),
+          pw.SizedBox(height: 5),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('Generated by SenseAI System - Intended for clinical support only.', style: const pw.TextStyle(color: lightText, fontSize: 8)),
+              pw.Text('Page ${context.pageNumber} of ${context.pagesCount}', style: const pw.TextStyle(color: lightText, fontSize: 8)),
+            ]
+          )
+        ]
+      )
+    );
+  }
+
+  static pw.Widget _buildPatientInfo(Map<String, dynamic> child) {
     final dob = child['date_of_birth'] != null
         ? DateTime.fromMillisecondsSinceEpoch((child['date_of_birth'] as num).toInt())
         : null;
     final ageInMonths = child['age_in_months'] as int?;
-    final gender = child['gender'] as String? ?? 'Not specified';
-    final studyGroup = child['study_group'] as String? ?? child['group'] as String? ?? 'Not specified';
-    final asdLevel = child['asd_level'] as String?;
-    final language = child['language_preference'] as String? ?? 'Not specified';
-
-    return pw.Page(
-      pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(40),
-      build: (pw.Context context) {
-        return pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Header(
-              level: 1,
-              child: pw.Text(
-                'Child Information',
-                style: pw.TextStyle(
-                  fontSize: 24,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-            ),
-            pw.SizedBox(height: 30),
-            _buildInfoRow('Name', child['name'] as String? ?? 'Unknown'),
-            _buildInfoRow('Child Code', child['child_code'] as String? ?? 'N/A'),
-            if (dob != null)
-              _buildInfoRow('Date of Birth', DateFormat('MMMM dd, yyyy').format(dob)),
-            if (ageInMonths != null)
-              _buildInfoRow('Age', '${ageInMonths} months (${(ageInMonths / 12).toStringAsFixed(1)} years)'),
-            _buildInfoRow('Gender', gender),
-            _buildInfoRow('Study Group', studyGroup.replaceAll('_', ' ').toUpperCase()),
-            if (asdLevel != null)
-              _buildInfoRow('ASD Level', asdLevel.replaceAll('_', ' ').toUpperCase()),
-            _buildInfoRow('Language Preference', language),
-            pw.SizedBox(height: 20),
-            pw.Divider(),
-            pw.SizedBox(height: 20),
-            pw.Text(
-              'This report contains assessment results and screening data collected through the SenseAI system.',
-              style: pw.TextStyle(
-                fontSize: 12,
-                color: PdfColors.grey700,
-                fontStyle: pw.FontStyle.italic,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Build session page
-  static pw.Page _buildSessionPage(Map<String, dynamic> child, Map<String, dynamic> session) {
-    final sessionType = session['session_type'] as String? ?? 'Unknown';
-    final startTime = session['start_time'] != null
-        ? DateTime.fromMillisecondsSinceEpoch((session['start_time'] as num).toInt())
-        : null;
-    final endTime = session['end_time'] != null
-        ? DateTime.fromMillisecondsSinceEpoch((session['end_time'] as num).toInt())
-        : null;
-    final riskScore = session['risk_score'] as num?;
-    final riskLevel = session['risk_level'] as String?;
-    final metrics = session['metrics'] as Map<String, dynamic>?;
-    final gameResults = session['game_results'] as Map<String, dynamic>?;
-    final questionnaireResults = session['questionnaire_results'] as Map<String, dynamic>?;
-
-    return pw.Page(
-      pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(40),
-      build: (pw.Context context) {
-        return pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Header(
-              level: 1,
-              child: pw.Text(
-                'Session: ${_formatSessionType(sessionType)}',
-                style: pw.TextStyle(
-                  fontSize: 20,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-            ),
-            pw.SizedBox(height: 20),
-            _buildInfoRow('Session Type', _formatSessionType(sessionType)),
-            if (startTime != null)
-              _buildInfoRow('Start Time', DateFormat('MMMM dd, yyyy - HH:mm').format(startTime)),
-            if (endTime != null)
-              _buildInfoRow('End Time', DateFormat('MMMM dd, yyyy - HH:mm').format(endTime)),
-            if (startTime != null && endTime != null)
-              _buildInfoRow(
-                'Duration',
-                '${endTime.difference(startTime).inMinutes} minutes ${endTime.difference(startTime).inSeconds % 60} seconds',
-              ),
-            pw.SizedBox(height: 20),
-            pw.Divider(),
-            pw.SizedBox(height: 20),
-            
-            // Risk Assessment
-            if (riskScore != null || riskLevel != null) ...[
-              pw.Text(
-                'Risk Assessment',
-                style: pw.TextStyle(
-                  fontSize: 16,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-              pw.SizedBox(height: 10),
-              if (riskScore != null)
-                _buildInfoRow('Risk Score', '${riskScore.toStringAsFixed(1)}%'),
-              if (riskLevel != null)
-                _buildInfoRow(
-                  'Risk Level',
-                  riskLevel.toUpperCase(),
-                  valueStyle: pw.TextStyle(
-                    color: _getRiskColor(riskLevel),
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              pw.SizedBox(height: 20),
-            ],
-
-            // Game Results
-            if (gameResults != null && gameResults.isNotEmpty) ...[
-              pw.Text(
-                'Game Results',
-                style: pw.TextStyle(
-                  fontSize: 16,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-              pw.SizedBox(height: 10),
-              ...gameResults.entries.map((e) => _buildInfoRow(
-                _formatKey(e.key),
-                _formatValue(e.value),
-              )),
-              pw.SizedBox(height: 20),
-            ],
-
-            // Questionnaire Results
-            if (questionnaireResults != null && questionnaireResults.isNotEmpty) ...[
-              pw.Text(
-                'Questionnaire Results',
-                style: pw.TextStyle(
-                  fontSize: 16,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-              pw.SizedBox(height: 10),
-              ...questionnaireResults.entries.map((e) => _buildInfoRow(
-                _formatKey(e.key),
-                _formatValue(e.value),
-              )),
-              pw.SizedBox(height: 20),
-            ],
-
-            // Metrics
-            if (metrics != null && metrics.isNotEmpty) ...[
-              pw.Text(
-                'Additional Metrics',
-                style: pw.TextStyle(
-                  fontSize: 16,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-              pw.SizedBox(height: 10),
-              ...metrics.entries.take(10).map((e) => _buildInfoRow(
-                _formatKey(e.key),
-                _formatValue(e.value),
-              )),
-            ],
-          ],
-        );
-      },
-    );
-  }
-
-  /// Build summary page
-  static pw.Page _buildSummaryPage(Map<String, dynamic> child, List<Map<String, dynamic>> sessions) {
-    final completedSessions = sessions.where((s) => s['end_time'] != null).toList();
-    final totalSessions = sessions.length;
-    final avgRiskScore = _calculateAverageRiskScore(sessions);
-    final highRiskSessions = sessions.where((s) => s['risk_level'] == 'high').length;
-    final moderateRiskSessions = sessions.where((s) => s['risk_level'] == 'moderate').length;
-    final lowRiskSessions = sessions.where((s) => s['risk_level'] == 'low').length;
-
-    return pw.Page(
-      pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(40),
-      build: (pw.Context context) {
-        return pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Header(
-              level: 1,
-              child: pw.Text(
-                'Summary',
-                style: pw.TextStyle(
-                  fontSize: 24,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-            ),
-            pw.SizedBox(height: 30),
-            
-            // Statistics
-            pw.Text(
-              'Assessment Statistics',
-              style: pw.TextStyle(
-                fontSize: 18,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            pw.SizedBox(height: 15),
-            _buildInfoRow('Total Sessions', totalSessions.toString()),
-            _buildInfoRow('Completed Sessions', completedSessions.length.toString()),
-            if (avgRiskScore != null)
-              _buildInfoRow('Average Risk Score', '${avgRiskScore.toStringAsFixed(1)}%'),
-            pw.SizedBox(height: 20),
-            
-            // Risk Level Distribution
-            pw.Text(
-              'Risk Level Distribution',
-              style: pw.TextStyle(
-                fontSize: 18,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            pw.SizedBox(height: 15),
-            _buildInfoRow(
-              'High Risk Sessions',
-              highRiskSessions.toString(),
-              valueStyle: pw.TextStyle(
-                color: PdfColors.red700,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            _buildInfoRow(
-              'Moderate Risk Sessions',
-              moderateRiskSessions.toString(),
-              valueStyle: pw.TextStyle(
-                color: PdfColors.orange700,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            _buildInfoRow(
-              'Low Risk Sessions',
-              lowRiskSessions.toString(),
-              valueStyle: pw.TextStyle(
-                color: PdfColors.green700,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            pw.SizedBox(height: 30),
-            
-            // Session List
-            pw.Text(
-              'Session History',
-              style: pw.TextStyle(
-                fontSize: 18,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            pw.SizedBox(height: 15),
-            ...sessions.asMap().entries.map((entry) {
-              final index = entry.key + 1;
-              final session = entry.value;
-              final sessionType = session['session_type'] as String? ?? 'Unknown';
-              final date = session['start_time'] != null
-                  ? DateTime.fromMillisecondsSinceEpoch((session['start_time'] as num).toInt())
-                  : null;
-              final riskLevel = session['risk_level'] as String?;
-              
-              return pw.Padding(
-                padding: const pw.EdgeInsets.only(bottom: 8),
-                child: pw.Row(
-                  children: [
-                    pw.Text(
-                      '$index. ',
-                      style: const pw.TextStyle(fontSize: 12),
-                    ),
-                    pw.Expanded(
-                      child: pw.Text(
-                        '${_formatSessionType(sessionType)} - ${date != null ? DateFormat('MMM dd, yyyy').format(date) : 'N/A'}',
-                        style: const pw.TextStyle(fontSize: 12),
-                      ),
-                    ),
-                    if (riskLevel != null)
-                      pw.Text(
-                        riskLevel.toUpperCase(),
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          color: _getRiskColor(riskLevel),
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            }),
-            
-            pw.Spacer(),
-            pw.Divider(),
-            pw.SizedBox(height: 20),
-            pw.Text(
-              'Report generated by SenseAI System\n${DateFormat('MMMM dd, yyyy - HH:mm').format(DateTime.now())}',
-              style: pw.TextStyle(
-                fontSize: 10,
-                color: PdfColors.grey700,
-                fontStyle: pw.FontStyle.italic,
-              ),
-              textAlign: pw.TextAlign.center,
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Helper: Build info row
-  static pw.Widget _buildInfoRow(String label, String value, {pw.TextStyle? valueStyle}) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 8),
+    final studyGroup = child['study_group'] as String? ?? child['group'] as String? ?? 'N/A';
+    
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.grey50,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: PdfColors.grey200)
+      ),
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.SizedBox(
-            width: 150,
-            child: pw.Text(
-              '$label:',
-              style: pw.TextStyle(
-                fontSize: 12,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                _buildInfoLine('Patient Name:', child['name'] as String? ?? 'Unknown'),
+                _buildInfoLine('Patient ID:', child['child_code'] as String? ?? 'N/A'),
+                _buildInfoLine('Gender:', child['gender'] as String? ?? 'N/A'),
+              ]
+            )
           ),
           pw.Expanded(
-            child: pw.Text(
-              value,
-              style: valueStyle ?? const pw.TextStyle(fontSize: 12),
-            ),
-          ),
-        ],
-      ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                _buildInfoLine('Date of Birth:', dob != null ? DateFormat('MMM dd, yyyy').format(dob) : 'N/A'),
+                _buildInfoLine('Age:', ageInMonths != null ? '$ageInMonths months' : 'N/A'),
+                _buildInfoLine('Diagnostic Status:', studyGroup == 'asd' ? 'Prior ASD Diagnosis' : 'Screening (No Prior Diagnosis)'),
+              ]
+            )
+          )
+        ]
+      )
     );
   }
 
-  /// Helper: Format session type
-  static String _formatSessionType(String type) {
-    return type
-        .replaceAll('_', ' ')
-        .split(' ')
-        .map((word) => word[0].toUpperCase() + word.substring(1))
-        .join(' ');
+  static pw.Widget _buildInfoLine(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 6),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(width: 100, child: pw.Text(label, style: pw.TextStyle(color: lightText, fontSize: 10, fontWeight: pw.FontWeight.bold))),
+          pw.Expanded(child: pw.Text(value, style: const pw.TextStyle(color: darkText, fontSize: 10))),
+        ]
+      )
+    );
   }
 
-  /// Helper: Format key
-  static String _formatKey(String key) {
-    return key
-        .replaceAll('_', ' ')
-        .split(' ')
-        .map((word) => word[0].toUpperCase() + word.substring(1))
-        .join(' ');
-  }
-
-  /// Helper: Format value
-  static String _formatValue(dynamic value) {
-    if (value == null) return 'N/A';
-    if (value is num) {
-      if (value % 1 == 0) {
-        return value.toInt().toString();
-      } else {
-        return value.toStringAsFixed(2);
-      }
-    }
-    return value.toString();
-  }
-
-  /// Helper: Get risk color
-  static PdfColor _getRiskColor(String? riskLevel) {
-    switch (riskLevel?.toLowerCase()) {
-      case 'high':
-        return PdfColors.red700;
-      case 'moderate':
-        return PdfColors.orange700;
-      case 'low':
-        return PdfColors.green700;
-      default:
-        return PdfColors.grey700;
-    }
-  }
-
-  /// Helper: Calculate average risk score
-  static double? _calculateAverageRiskScore(List<Map<String, dynamic>> sessions) {
-    final scores = sessions
-        .where((s) => s['risk_score'] != null)
-        .map((s) => (s['risk_score'] as num).toDouble())
-        .toList();
+  static pw.Widget _buildSessionAnalysis(Map<String, dynamic> session) {
+    final riskScore = session['risk_score'] as num?;
+    final riskLevel = session['risk_level'] as String?;
+    final mlPrediction = session['ml_prediction'] as Map<String, dynamic>? ?? 
+                         session['questionnaire_results']?['ml_prediction'] as Map<String, dynamic>? ??
+                         session['game_results']?['ml_prediction'] as Map<String, dynamic>?;
     
-    if (scores.isEmpty) return null;
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text('CLINICAL ASSESSMENT RESULTS', style: pw.TextStyle(color: primaryColor, fontSize: 12, fontWeight: pw.FontWeight.bold)),
+        pw.SizedBox(height: 10),
+        
+        // Visual Risk Gauge
+        if (riskScore != null)
+          _buildRiskGauge(riskScore.toDouble(), riskLevel),
+          
+        pw.SizedBox(height: 16),
+        
+        // Explainable AI Insights (If provided)
+        if (mlPrediction != null && mlPrediction['explanations'] != null) ...[
+          _buildXAICharts(List<Map<String, dynamic>>.from(mlPrediction['explanations'])),
+          pw.SizedBox(height: 16),
+        ],
+
+        // Metrics Split Data
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            if (session['game_results'] != null)
+              pw.Expanded(child: _buildMetricsBox('Cognitive DCCS Game Metrics', session['game_results'] as Map<String, dynamic>)),
+            if (session['game_results'] != null && (session['metrics'] != null || session['questionnaire_results'] != null))
+              pw.SizedBox(width: 16),
+            if (session['metrics'] != null)
+              pw.Expanded(child: _buildMetricsBox('Behavioral Observations', session['metrics'] as Map<String, dynamic>)),
+            if (session['questionnaire_results'] != null && session['metrics'] == null)
+              pw.Expanded(child: _buildMetricsBox('Questionnaire Scoring', session['questionnaire_results'] as Map<String, dynamic>)),
+          ]
+        )
+      ]
+    );
+  }
+
+  static pw.Widget _buildRiskGauge(double score, String? level) {
+    // Determine bounds. Standard risk scores are 0-100 or 0-5. Let's assume 0-5 if score is very small, else 0-100.
+    final bool isSmallScale = score <= 10.0;
+    final double maxScore = isSmallScale ? (score > 5.0 ? 10.0 : 5.0) : 100.0; 
+    final double normalizedPercent = (score / maxScore).clamp(0.0, 1.0);
     
-    final sum = scores.reduce((a, b) => a + b);
-    return sum / scores.length;
+    PdfColor color;
+    PdfColor bgColor;
+    PdfColor borderColor;
+    
+    if (level == 'low') {
+      color = PdfColors.green500;
+      bgColor = PdfColor.fromInt(0xfff0fdf4);
+      borderColor = PdfColor.fromInt(0xffbbf7d0);
+    } else if (level == 'moderate') {
+      color = PdfColors.orange500;
+      bgColor = PdfColor.fromInt(0xfffff7ed);
+      borderColor = PdfColor.fromInt(0xfffed7aa);
+    } else {
+      color = PdfColors.red500;
+      bgColor = PdfColor.fromInt(0xfffef2f2);
+      borderColor = PdfColor.fromInt(0xfffecaca);
+    }
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        color: bgColor,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: borderColor)
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('Overall Risk Component Assessment', style: pw.TextStyle(color: darkText, fontSize: 11, fontWeight: pw.FontWeight.bold)),
+              pw.Text('${(normalizedPercent * 100).toStringAsFixed(1)}% / ${level?.toUpperCase() ?? 'N/A'}', style: pw.TextStyle(color: color, fontSize: 12, fontWeight: pw.FontWeight.bold)),
+            ]
+          ),
+          pw.SizedBox(height: 12),
+          // Progress Bar background
+          pw.Container(
+            height: 12,
+            width: double.infinity,
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey300,
+              borderRadius: pw.BorderRadius.circular(6),
+            ),
+            child: pw.Stack(
+              children: [
+                pw.Container(
+                  height: 12,
+                  // We can't use FractionallySizedBox, so we map normalizedPercent physically to a static width or use Expanded in a Row.
+                  // Since the parent container is technically unbound width in standard layout unless specified, let's use a 400 fixed width proxy for the parent container logic, OR just use pw.Expanded with flex.
+                  // Easiest is to use Row with Expanded flex values:
+                  child: pw.Row(
+                    children: [
+                      pw.Expanded(
+                        flex: (normalizedPercent * 100).toInt(),
+                        child: pw.Container(
+                          decoration: pw.BoxDecoration(
+                            color: color,
+                            borderRadius: pw.BorderRadius.circular(6),
+                          )
+                        )
+                      ),
+                      pw.Expanded(
+                        flex: ((1.0 - normalizedPercent) * 100).toInt(),
+                         child: pw.SizedBox(),
+                      )
+                    ]
+                  )
+                )
+              ]
+            )
+          ),
+          pw.SizedBox(height: 6),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('Low Risk', style: const pw.TextStyle(color: lightText, fontSize: 8)),
+              pw.Text('Moderate Risk', style: const pw.TextStyle(color: lightText, fontSize: 8)),
+              pw.Text('High Risk', style: const pw.TextStyle(color: lightText, fontSize: 8)),
+            ]
+          )
+        ]
+      )
+    );
+  }
+
+  static pw.Widget _buildXAICharts(List<Map<String, dynamic>> explanations) {
+    if (explanations.isEmpty) return pw.SizedBox();
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: PdfColors.grey200)
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Row(
+            children: [
+              pw.Text('Explainable AI (XAI) Feature Contributions', style: pw.TextStyle(color: darkText, fontSize: 11, fontWeight: pw.FontWeight.bold)),
+              pw.SizedBox(width: 8),
+              pw.Text('How the model arrived at this score', style: const pw.TextStyle(color: lightText, fontSize: 9, fontStyle: pw.FontStyle.italic)),
+            ]
+          ),
+          pw.SizedBox(height: 12),
+          pw.Column(
+            children: explanations.take(6).map((e) {
+              final feature = (e['feature'] as String?)?.replaceAll('_', ' ').toUpperCase() ?? 'UNKNOWN';
+              final direction = (e['direction'] as String?) ?? 'increases_risk';
+              final contribution = (e['contribution'] as num?)?.toDouble() ?? 0.0;
+              final isIncrease = direction == 'increases_risk';
+              final barColor = isIncrease ? PdfColors.red400 : PdfColors.green400;
+              
+              // Normalize bar width (max contribution width visually)
+              final double widthFactor = (contribution.abs() / 0.5).clamp(0.01, 1.0); 
+
+              return pw.Padding(
+                padding: const pw.EdgeInsets.symmetric(vertical: 4),
+                child: pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  children: [
+                    pw.SizedBox(
+                      width: 160,
+                      child: pw.Text(feature, style: const pw.TextStyle(color: darkText, fontSize: 8)),
+                    ),
+                    pw.Expanded(
+                      child: pw.Row(
+                        children: [
+                          if (!isIncrease) pw.Spacer(),
+                          pw.Container(
+                            height: 10,
+                            width: 130 * widthFactor,
+                            decoration: pw.BoxDecoration(
+                              color: barColor,
+                              borderRadius: pw.BorderRadius.circular(2),
+                            ),
+                          ),
+                          if (isIncrease) pw.Spacer(),
+                        ]
+                      )
+                    ),
+                    pw.SizedBox(
+                      width: 40,
+                      child: pw.Text('${isIncrease ? '+' : '-'}${contribution.abs().toStringAsFixed(3)}', textAlign: pw.TextAlign.right, style: const pw.TextStyle(color: lightText, fontSize: 8)),
+                    ),
+                  ]
+                )
+              );
+            }).toList()
+          )
+        ]
+      )
+    );
+  }
+
+  static pw.Widget _buildMetricsBox(String title, Map<String, dynamic> data) {
+    if (data.isEmpty) {
+      return pw.SizedBox(); 
+    }
+
+    final ignoredKeys = ['trials', 'ml_prediction', 'additional_metrics', 'ml_features'];
+    final validEntries = data.entries.where((e) => !ignoredKeys.contains(e.key) && e.value != null && !(e.value is Map || e.value is List)).toList();
+
+    if (validEntries.isEmpty) return pw.SizedBox();
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(12),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey200),
+        borderRadius: pw.BorderRadius.circular(8)
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(title, style: pw.TextStyle(color: darkText, fontSize: 10, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 8),
+          pw.Divider(color: PdfColors.grey200, height: 1),
+          pw.SizedBox(height: 8),
+          pw.Column(
+            children: validEntries.map((e) {
+              String valStr = e.value.toString();
+              if (e.value is num && e.value is! int) {
+                valStr = (e.value as num).toStringAsFixed(2);
+              }
+              return pw.Padding(
+                padding: const pw.EdgeInsets.symmetric(vertical: 3),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Expanded(child: pw.Text(e.key.replaceAll('_', ' ').toUpperCase(), style: const pw.TextStyle(color: lightText, fontSize: 8))),
+                    pw.Text(valStr, style: pw.TextStyle(color: darkText, fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                  ]
+                )
+              );
+            }).toList()
+          )
+        ]
+      )
+    );
+  }
+
+  static pw.Widget _buildHistorySummary(List<Map<String, dynamic>> sessions) {
+    final completedSessions = sessions.where((s) => s['end_time'] != null).toList();
+    
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text('HISTORICAL TREND SUMMARY', style: pw.TextStyle(color: primaryColor, fontSize: 12, fontWeight: pw.FontWeight.bold)),
+        pw.SizedBox(height: 10),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(16),
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(color: PdfColors.grey200),
+            borderRadius: pw.BorderRadius.circular(8)
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Total Assessments: ${sessions.length}', style: pw.TextStyle(color: darkText, fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Completed: ${completedSessions.length}', style: pw.TextStyle(color: darkText, fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                ]
+              ),
+              pw.SizedBox(height: 10),
+              pw.Divider(color: PdfColors.grey200, height: 1),
+              pw.SizedBox(height: 10),
+              // Mini Table
+              pw.Row(
+                children: [
+                  pw.Expanded(flex: 3, child: pw.Text('DATE', style: pw.TextStyle(color: lightText, fontSize: 8, fontWeight: pw.FontWeight.bold))),
+                  pw.Expanded(flex: 3, child: pw.Text('TYPE', style: pw.TextStyle(color: lightText, fontSize: 8, fontWeight: pw.FontWeight.bold))),
+                  pw.Expanded(flex: 2, child: pw.Text('RISK', style: pw.TextStyle(color: lightText, fontSize: 8, fontWeight: pw.FontWeight.bold))),
+                  pw.Expanded(flex: 2, child: pw.Text('SCORE', style: pw.TextStyle(color: lightText, fontSize: 8, fontWeight: pw.FontWeight.bold))),
+                ]
+              ),
+              pw.SizedBox(height: 4),
+              pw.Column(
+                children: sessions.take(10).map((session) {
+                  final date = session['start_time'] != null ? DateFormat('MMM dd, yyyy').format(DateTime.fromMillisecondsSinceEpoch(session['start_time'] as int)) : 'N/A';
+                  final type = (session['session_type'] as String?)?.replaceAll('_', ' ').toUpperCase() ?? 'UNKNOWN';
+                  final level = (session['risk_level'] as String?)?.toUpperCase() ?? '-';
+                  final score = session['risk_score'] != null ? (session['risk_score'] as num).toStringAsFixed(1) : '-';
+                  
+                  PdfColor levelColor = lightText;
+                  if (level == 'HIGH') levelColor = PdfColors.red600;
+                  if (level == 'MODERATE') levelColor = PdfColors.orange600;
+                  if (level == 'LOW') levelColor = PdfColors.green600;
+
+                  return pw.Padding(
+                    padding: const pw.EdgeInsets.symmetric(vertical: 4),
+                    child: pw.Row(
+                      children: [
+                        pw.Expanded(flex: 3, child: pw.Text(date, style: const pw.TextStyle(color: darkText, fontSize: 9))),
+                        pw.Expanded(flex: 3, child: pw.Text(type, style: const pw.TextStyle(color: darkText, fontSize: 9))),
+                        pw.Expanded(flex: 2, child: pw.Text(level, style: pw.TextStyle(color: levelColor, fontSize: 9, fontWeight: pw.FontWeight.bold))),
+                        pw.Expanded(flex: 2, child: pw.Text(score, style: const pw.TextStyle(color: darkText, fontSize: 9))),
+                      ]
+                    )
+                  );
+                }).toList()
+              )
+            ]
+          )
+        )
+      ]
+    );
   }
 }
-

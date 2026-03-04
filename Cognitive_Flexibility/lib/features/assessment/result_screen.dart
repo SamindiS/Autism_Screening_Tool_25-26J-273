@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import '../../data/models/child.dart';
 import '../../data/models/game_results.dart';
+import '../../core/services/pdf_report_service.dart';
 
 class ResultScreen extends StatefulWidget {
   final Child child;
@@ -833,11 +834,35 @@ class _ResultScreenState extends State<ResultScreen> {
           width: double.infinity,
           height: 56,
           child: ElevatedButton.icon(
-            onPressed: () {
-              // TODO: Export PDF
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('PDF Export - Coming Soon')),
-              );
+            onPressed: () async {
+              try {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Generating PDF Report...')),
+                );
+
+                final sessionData = {
+                  'id': widget.sessionId,
+                  'session_type': widget.gameResults != null ? 'dccs_game' : 'questionnaire_assessment',
+                  'start_time': DateTime.now().millisecondsSinceEpoch,
+                  'end_time': DateTime.now().millisecondsSinceEpoch,
+                  if (widget.gameResults != null) 'game_results': widget.gameResults!.toJson(),
+                  if (widget.questionnaireResults != null) 'questionnaire_results': widget.questionnaireResults,
+                  if (widget.reflectionData != null) 'metrics': widget.reflectionData,
+                  if (widget.riskScore != null) 'risk_score': widget.riskScore,
+                  if (widget.riskLevel != null) 'risk_level': widget.riskLevel,
+                };
+
+                await PdfReportService.generateAndShareReport(
+                  child: widget.child.toJson(),
+                  sessions: [sessionData],
+                );
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error generating report: $e')),
+                  );
+                }
+              }
             },
             icon: const Icon(Icons.picture_as_pdf),
             label: const Text('Export PDF Report'),

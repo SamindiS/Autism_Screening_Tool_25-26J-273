@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../gaze/gaze_calibration_screen.dart';
 import '../models/parent_info.dart';
-import '../main.dart';
+import '../theme.dart';
 
 /// Parent Information Screen
 /// 

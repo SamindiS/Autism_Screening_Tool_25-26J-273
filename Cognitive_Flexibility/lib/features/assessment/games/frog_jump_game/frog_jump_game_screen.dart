@@ -322,85 +322,8 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
 
   Future<void> _saveResults() async {
     try {
-      var results = _calculateResults();
+      final results = _calculateResults();
       final endTime = DateTime.now();
-
-      MLPredictionResult? mlResult;
-      try {
-        final hasEnoughTrials = results.totalTrials >= 8;
-        final featuresValid = results.mlFeatures != null &&
-            results.mlFeatures!.isNotEmpty &&
-            !results.mlFeatures!.values.any((v) => v is double && (v.isNaN || v.isInfinite));
-        if (hasEnoughTrials && featuresValid) {
-          mlResult = await MLService.predict(
-            mlFeatures: {
-              ...results.mlFeatures!,
-              'age_months': (widget.child.age * 12).round(),
-            },
-            ageGroup: AgeCalculator.getAgeGroup(widget.child.age),
-            sessionType: 'frog_jump',
-          );
-          
-          if (mlResult != null && mlResult.method == 'ml') {
-            debugPrint('✅ ML Prediction: ${mlResult.riskLevel} (${mlResult.riskScore.toStringAsFixed(1)}%)');
-            // Update results with ML prediction
-            results = results.copyWith(
-              riskScore: mlResult.riskScore,
-              riskLevel: mlResult.riskLevel,
-              mlPrediction: {
-                'isASD': mlResult.isASD,
-                'asdProbability': mlResult.asdProbability,
-                'controlProbability': mlResult.controlProbability,
-                'confidence': mlResult.confidence,
-                'riskLevel': mlResult.riskLevel,
-                'riskScore': mlResult.riskScore,
-                'method': mlResult.method,
-                'modelAgeGroup': mlResult.modelAgeGroup,
-                'explanations': mlResult.explanations
-                    .map((e) => {
-                          'feature': e.feature,
-                          'value': e.value,
-                          'contribution': e.contribution,
-                          'direction': e.direction,
-                        })
-                    .toList(),
-              },
-            );
-          } else {
-            debugPrint('⚠️  ML prediction unavailable, using rule-based');
-          }
-        } else {
-          debugPrint('⚠️  ML skipped: trials=${results.totalTrials} (min 8), featuresValid=$featuresValid');
-        }
-      } catch (e) {
-        debugPrint('⚠️  ML prediction error: $e - using rule-based');
-        // Continue with rule-based (graceful fallback)
-      }
-
-      if (_sessionId != null) {
-        await StorageService.updateSession(
-          id: _sessionId!,
-          endTime: endTime,
-          gameResults: results.toJson(),
-        );
-
-        for (final trial in _trials) {
-          try {
-            await StorageService.saveTrial(
-              id: '${_sessionId}_trial_${trial.trialNumber}',
-              sessionId: _sessionId!,
-              trialNumber: trial.trialNumber,
-              stimulus: trial.stimulus,
-              response: trial.response,
-              reactionTime: trial.reactionTime,
-              correct: trial.correct,
-              timestamp: trial.timestamp,
-            );
-          } catch (e) {
-            debugPrint('Error saving trial ${trial.trialNumber}: $e');
-          }
-        }
-      }
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -408,14 +331,93 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
           MaterialPageRoute(
             builder: (_) => ClinicianReflectionScreen(
               child: widget.child,
-              sessionId: _sessionId!,
+              sessionId: _sessionId ?? '',
               gameResults: results,
             ),
           ),
         );
       }
+
+      // Process ML and save to backend/database in the background
+      Future.microtask(() async {
+        GameResults finalResults = results;
+        
+        try {
+          final hasEnoughTrials = results.totalTrials >= 8;
+          final featuresValid = results.mlFeatures != null &&
+              results.mlFeatures!.isNotEmpty &&
+              !results.mlFeatures!.values.any((v) => v is double && (v.isNaN || v.isInfinite));
+          
+          if (hasEnoughTrials && featuresValid) {
+            final mlResult = await MLService.predict(
+              mlFeatures: {
+                ...results.mlFeatures!,
+                'age_months': (widget.child.age * 12).round(),
+              },
+              ageGroup: AgeCalculator.getAgeGroup(widget.child.age),
+              sessionType: 'frog_jump',
+            );
+            
+            if (mlResult != null && mlResult.method == 'ml') {
+              debugPrint('✅ ML Prediction: ${mlResult.riskLevel} (${mlResult.riskScore.toStringAsFixed(1)}%)');
+              finalResults = results.copyWith(
+                riskScore: mlResult.riskScore,
+                riskLevel: mlResult.riskLevel,
+                mlPrediction: {
+                  'isASD': mlResult.isASD,
+                  'asdProbability': mlResult.asdProbability,
+                  'controlProbability': mlResult.controlProbability,
+                  'confidence': mlResult.confidence,
+                  'riskLevel': mlResult.riskLevel,
+                  'riskScore': mlResult.riskScore,
+                  'method': mlResult.method,
+                  'modelAgeGroup': mlResult.modelAgeGroup,
+                  'explanations': mlResult.explanations
+                      .map((e) => {
+                            'feature': e.feature,
+                            'value': e.value,
+                            'contribution': e.contribution,
+                            'direction': e.direction,
+                          })
+                      .toList(),
+                },
+              );
+            } else {
+              debugPrint('⚠️  ML prediction unavailable, using rule-based');
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️  ML prediction error: $e - using rule-based');
+        }
+
+        if (_sessionId != null) {
+          try {
+            await StorageService.updateSession(
+              id: _sessionId!,
+              endTime: endTime,
+              gameResults: finalResults.toJson(),
+            );
+
+            for (final trial in _trials) {
+              await StorageService.saveTrial(
+                id: '${_sessionId}_trial_${trial.trialNumber}',
+                sessionId: _sessionId!,
+                trialNumber: trial.trialNumber,
+                stimulus: trial.stimulus,
+                response: trial.response,
+                reactionTime: trial.reactionTime,
+                correct: trial.correct,
+                timestamp: trial.timestamp,
+              );
+            }
+          } catch (e) {
+            debugPrint('Error saving session/trials in background: $e');
+          }
+        }
+      });
+      
     } catch (e) {
-      debugPrint('Error saving results: $e');
+      debugPrint('Error initiating save process: $e');
       if (mounted) {
         Navigator.pushReplacement(
           context,

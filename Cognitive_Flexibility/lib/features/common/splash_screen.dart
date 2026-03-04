@@ -31,7 +31,8 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    _controller = AnimationController(vsync: this, duration: 4.seconds);
+    // Shorter splash to reduce perceived startup time.
+    _controller = AnimationController(vsync: this, duration: 2.seconds);
     
     // Exit animation controller
     _exitController = AnimationController(

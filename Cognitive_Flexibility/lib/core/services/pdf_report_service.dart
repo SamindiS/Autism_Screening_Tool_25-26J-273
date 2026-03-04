@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -13,52 +14,62 @@ class PdfReportService {
   static const darkText = PdfColor.fromInt(0xff1f2937); // Gray-800
   static const lightText = PdfColor.fromInt(0xff6b7280); // Gray-500
 
-  /// Generate and save a PDF report for a child
+  /// Generate a PDF report and return it as raw bytes for previewing
+  static Future<Uint8List> generatePdfBytes({
+    required Map<String, dynamic> child,
+    required List<Map<String, dynamic>> sessions,
+  }) async {
+    final pdf = pw.Document();
+
+    // Ensure sessions are sorted by time (newest first)
+    final sortedSessions = List<Map<String, dynamic>>.from(sessions);
+    sortedSessions.sort((a, b) {
+      final timeA = a['start_time'] as num? ?? 0;
+      final timeB = b['start_time'] as num? ?? 0;
+      return timeB.compareTo(timeA);
+    });
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(36),
+        header: (context) => _buildHeader(child),
+        footer: (context) => _buildFooter(context),
+        build: (context) {
+          return [
+            _buildPatientInfo(child),
+            pw.SizedBox(height: 20),
+            if (sortedSessions.isNotEmpty) ...[
+              _buildSessionAnalysis(sortedSessions.first),
+              if (sortedSessions.length > 1) ...[
+                 pw.SizedBox(height: 30),
+                _buildHistorySummary(sortedSessions),
+              ]
+            ] else ...[
+              pw.Center(
+                child: pw.Text("No assessment sessions recorded.", style: const pw.TextStyle(color: lightText))
+              ),
+            ],
+          ];
+        },
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  /// Generate and save a PDF report for a child (returning the file path)
   static Future<String?> generateChildReport({
     required Map<String, dynamic> child,
     required List<Map<String, dynamic>> sessions,
   }) async {
     try {
-      final pdf = pw.Document();
-
-      // Ensure sessions are sorted by time (newest first)
-      final sortedSessions = List<Map<String, dynamic>>.from(sessions);
-      sortedSessions.sort((a, b) {
-        final timeA = a['start_time'] as num? ?? 0;
-        final timeB = b['start_time'] as num? ?? 0;
-        return timeB.compareTo(timeA);
-      });
-
-      pdf.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(36),
-          header: (context) => _buildHeader(child),
-          footer: (context) => _buildFooter(context),
-          build: (context) {
-            return [
-              _buildPatientInfo(child),
-              pw.SizedBox(height: 20),
-              if (sortedSessions.isNotEmpty) ...[
-                _buildSessionAnalysis(sortedSessions.first),
-                if (sortedSessions.length > 1) ...[
-                   pw.SizedBox(height: 30),
-                  _buildHistorySummary(sortedSessions),
-                ]
-              ] else ...[
-                pw.Center(
-                  child: pw.Text("No assessment sessions recorded.", style: const pw.TextStyle(color: lightText))
-                ),
-              ],
-            ];
-          },
-        ),
-      );
+      final bytes = await generatePdfBytes(child: child, sessions: sessions);
 
       final output = await getApplicationDocumentsDirectory();
       final fileName = '${child['child_code'] ?? child['name'] ?? 'Child'}_Report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
       final file = File('${output.path}/$fileName');
-      await file.writeAsBytes(await pdf.save());
+      await file.writeAsBytes(bytes);
 
       return file.path;
     } catch (e) {

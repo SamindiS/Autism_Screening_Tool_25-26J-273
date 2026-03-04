@@ -381,7 +381,7 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$url/api/children/$id'),
         headers: headers,
-      );
+      ).timeout(const Duration(seconds: 5));
 
       _handleError(response);
 
@@ -502,7 +502,7 @@ class ApiService {
         Uri.parse('$url/api/sessions'),
         headers: headers,
         body: jsonEncode(requestBody),
-      );
+      ).timeout(const Duration(seconds: 5));
 
       debugPrint('📥 Response status: ${response.statusCode}');
       debugPrint('📥 Response body: ${response.body}');

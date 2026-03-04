@@ -501,7 +501,8 @@ class StorageService {
       };
       await _upsertChildLocal(mapped);
       return mapped;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('⚠️ Error fetching child from API, falling back to local: $e');
       final db = await database;
       final rows = await db.query(
         'children',

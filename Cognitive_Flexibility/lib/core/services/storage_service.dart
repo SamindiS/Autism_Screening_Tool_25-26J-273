@@ -524,7 +524,15 @@ class StorageService {
         payload: const {},
       );
     } finally {
-      final db = await database;
+      final db = await database; // ⚠️ Local backend deletion
+      // Delete associated trials for the sessions belonging to this child
+      final sessionRows = await db.query('sessions', columns: ['id'], where: 'child_id = ?', whereArgs: [id]);
+      for (final s in sessionRows) {
+        await db.delete('trials', where: 'session_id = ?', whereArgs: [s['id']]);
+      }
+      // Delete associated sessions
+      await db.delete('sessions', where: 'child_id = ?', whereArgs: [id]);
+      // Finally, delete the child
       await db.delete('children', where: 'id = ?', whereArgs: [id]);
     }
   }

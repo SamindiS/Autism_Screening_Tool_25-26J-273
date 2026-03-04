@@ -1074,11 +1074,19 @@ class StorageService {
     final db = await database;
     final batch = db.batch();
     
+    // Create a set of child_codes that exist in the remote data
+    final remoteChildCodes = remoteChildren
+        .map((c) => c['child_code'] as String?)
+        .where((code) => code != null)
+        .toSet();
+
     // Identify offline entries (IDs starting with 'child_')
     final offlineChildren = localChildren.where((child) {
       final id = child['id'] as String;
       return id.startsWith('child_');
     }).toList();
+    
+    int deduplicatedCount = 0;
     
     // First, update/insert all remote children
     for (final remoteChild in remoteChildren) {
@@ -1086,14 +1094,25 @@ class StorageService {
           conflictAlgorithm: ConflictAlgorithm.replace);
     }
     
-    // Then, preserve offline entries (they won't conflict with remote IDs)
+    // Then, preserve offline entries ONLY if they haven't been synced to remote
+    // We determine this by checking if the child_code already exists in remote
     for (final offlineChild in offlineChildren) {
-      batch.insert('children', offlineChild,
-          conflictAlgorithm: ConflictAlgorithm.replace);
+      final childCode = offlineChild['child_code'] as String?;
+      
+      if (childCode != null && remoteChildCodes.contains(childCode)) {
+        // This offline child has been synced to backend and now has a UUID
+        // Delete the temporary local version with the 'child_' prefix
+        batch.delete('children', where: 'id = ?', whereArgs: [offlineChild['id']]);
+        deduplicatedCount++;
+      } else {
+        // This offline child has NOT been synced yet, preserve it
+        batch.insert('children', offlineChild,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
     }
     
     await batch.commit(noResult: true);
-    debugPrint('✅ Merged ${remoteChildren.length} remote + ${offlineChildren.length} offline children');
+    debugPrint('✅ Merged ${remoteChildren.length} remote + ${offlineChildren.length - deduplicatedCount} offline children ($deduplicatedCount duplicates removed)');
   }
 
   static Future<void> _upsertSessionLocal(Map<String, dynamic> session) async {

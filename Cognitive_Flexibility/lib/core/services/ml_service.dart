@@ -28,7 +28,7 @@ class MLService {
           'ageGroup': ageGroup,
           'sessionType': sessionType,
         }),
-      );
+      ).timeout(const Duration(seconds: 5));
 
       debugPrint('📥 ML Response status: ${response.statusCode}');
 

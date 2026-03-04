@@ -32,7 +32,7 @@ class OfflineSyncService {
   // Enqueue when offline
   static Future<void> enqueueRequest({
     required String endpoint,
-    required String method, // POST or PUT only
+    required String method, // POST, PUT, or DELETE
     required Map<String, dynamic> payload,
   }) async {
     if (_db == null) await init();
@@ -79,6 +79,8 @@ class OfflineSyncService {
         } else if (method == 'PUT') {
           response = await http.put(uri,
               headers: ApiService.headers, body: jsonEncode(payload));
+        } else if (method == 'DELETE') {
+          response = await http.delete(uri, headers: ApiService.headers);
         }
 
         if (response != null &&

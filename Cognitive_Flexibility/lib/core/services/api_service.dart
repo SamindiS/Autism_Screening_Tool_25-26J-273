@@ -452,7 +452,7 @@ class ApiService {
       final response = await http.delete(
         Uri.parse('$url/api/children/$id'),
         headers: headers,
-      );
+      ).timeout(const Duration(seconds: 10));
 
       _handleError(response);
     } catch (e) {

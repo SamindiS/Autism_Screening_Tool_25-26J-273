@@ -43,6 +43,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
   // ChildGroup is kept for backward compatibility and analytics,
   // but the form itself does not branch by group.
   ChildGroup _selectedGroup = ChildGroup.typicallyDeveloping;
+  
+  bool _isSaving = false;
 
   final List<String> _genders = ['Male', 'Female', 'Other'];
   final Map<String, String> _languages = {
@@ -241,6 +243,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
   }
 
   Future<void> _saveChild() async {
+    if (_isSaving) return;
+    
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -267,12 +271,18 @@ class _AddChildScreenState extends State<AddChildScreen> {
       return;
     }
 
-    // No longer need to validate clinician ID input since we use logged clinician automatically
-
-    if (_isEditing) {
-      await _updateChild();
-    } else {
-      await _createChild();
+    setState(() => _isSaving = true);
+    
+    try {
+      if (_isEditing) {
+        await _updateChild();
+      } else {
+        await _createChild();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -962,10 +972,21 @@ class _AddChildScreenState extends State<AddChildScreen> {
       width: double.infinity,
       height: 56,
       child: ElevatedButton.icon(
-        onPressed: _saveChild,
-        icon: const Icon(Icons.save),
+        onPressed: _isSaving ? null : _saveChild,
+        icon: _isSaving
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : const Icon(Icons.save),
         label: Text(
-          _isEditing ? 'Update & Continue' : 'Save & Start Assessment',
+          _isSaving 
+              ? 'Saving...' 
+              : (_isEditing ? 'Update & Continue' : 'Save & Start Assessment'),
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         style: ElevatedButton.styleFrom(

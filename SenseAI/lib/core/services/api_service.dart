@@ -14,7 +14,7 @@ class ApiService {
   static const String _defaultSimulatorUrl =
       'http://localhost:3000'; // iOS simulator
   static const String _defaultRealDeviceUrl =
-      'http://192.168.1.100:3000'; // Real device (needs to be configured)
+      'http://192.168.48.180:3000'; // Real device (updated to user IP)
 
   // SharedPreferences key for storing backend URL
   static const String _backendUrlKey = 'backend_url';
@@ -30,8 +30,8 @@ class ApiService {
     }
 
     // Return default based on platform
-    // For now, default to emulator URL (most common during development)
-    return _defaultEmulatorUrl;
+    // Default to real device URL for easier physical device testing
+    return _defaultRealDeviceUrl;
   }
 
   /// Set the backend URL (for real device configuration)
@@ -855,7 +855,7 @@ class ApiService {
         Uri.parse('$url/health'),
         headers: headers,
       ).timeout(
-        const Duration(seconds: 5),
+        const Duration(seconds: 10),
         onTimeout: () {
           debugPrint('⏱️ Health check timeout after 5 seconds');
           throw TimeoutException('Health check timed out');

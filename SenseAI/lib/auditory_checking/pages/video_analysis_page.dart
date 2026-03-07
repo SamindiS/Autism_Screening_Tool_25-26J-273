@@ -11,6 +11,10 @@ import '../config/backend_config.dart';
 import 'parent_guidance_page.dart';
 import 'tap_the_sound_page.dart';
 import 'video_recording_page.dart';
+import 'mchat_page.dart'; // New import
+import 'milestone_tracker_page.dart'; // New import
+import 'prq_page.dart'; // New import
+import '../../features/assessment/pdf_preview_screen.dart'; // Fixed import path
 
 class VideoAnalysisPage extends StatefulWidget {
   final String? childName;
@@ -41,11 +45,15 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
   Map<String, dynamic>? _expandedBehavioralMarkers;
   Map<String, dynamic>? _audioAnalysisExpanded; // verbal response, babbling, echolalia
   
+  // Full analysis result from backend
+  Map<String, dynamic>? _analysisResult; // New state variable
+  
   // Video player
   VideoPlayerController? _videoController;
   String? _videoPath;
   bool _isVideoLoaded = false;
   bool _isUploading = false;
+  bool _isInitialized = false;
   
   // Pre-upload quality validation
   Map<String, dynamic>? _validationResult;
@@ -175,13 +183,25 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
                 ),
               ),
             
+            // Analysis Summary Dashboard (shown after analysis)
+            _buildAnalysisSummary(),
+            const SizedBox(height: 20),
+
+            // ML Prediction Results (if available)
+            _buildMLPrediction(),
+            const SizedBox(height: 20),
+            
             // Real-Time Analysis Panel
             _buildAnalysisPanel(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             
             // Behavior Classification
             _buildBehaviorClassification(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+
+            // Benchmark Assessments Section
+            _buildBenchmarkAssessmentsSection(),
+            const SizedBox(height: 30),
             
             // Detected Actions
             _buildDetectedActions(),
@@ -192,18 +212,6 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
               _buildExpandedBehavioralMarkers(),
               const SizedBox(height: 24),
             ],
-            
-            // ML Prediction Results (if available)
-            if (_mlPrediction != null)
-              _buildMLPrediction(),
-            if (_mlPrediction != null)
-              const SizedBox(height: 24),
-            
-            // Analysis Summary Dashboard (shown after analysis)
-            if (_rtnStatus != 'Waiting...' && _reactionTime > 0)
-              _buildAnalysisSummary(),
-            if (_rtnStatus != 'Waiting...' && _reactionTime > 0)
-              const SizedBox(height: 24),
             
             // Parent Guidance Button (shown after analysis or if age is 1-2)
             if (widget.childAge != null && widget.childAge! >= 1 && widget.childAge! <= 2)
@@ -240,7 +248,7 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
             Center(
               child: AspectRatio(
                 aspectRatio: _videoController!.value.aspectRatio,
-                child: VideoPlayer(_videoController!),
+                child: VideoPlayer(_videoController!, key: ValueKey(_videoController.hashCode)),
               ),
             )
           else
@@ -543,6 +551,13 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
   }
 
   Widget _buildAnalysisPanel() {
+    if (_analysisResult == null && !_isAnalyzing) {
+      return _buildPlaceholderCard('Real-Time Analysis', 'Waiting for video upload or analysis to start.');
+    }
+    if (_isAnalyzing && _analysisResult == null) {
+      return _buildPlaceholderCard('Real-Time Analysis', 'Processing video frames and extracting features...');
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -683,6 +698,13 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
   }
 
   Widget _buildBehaviorClassification() {
+    if (_analysisResult == null && !_isAnalyzing) {
+      return _buildPlaceholderCard('Behavior Classification', 'Waiting for analysis to provide behavior insights.');
+    }
+    if (_isAnalyzing && _analysisResult == null) {
+      return _buildPlaceholderCard('Behavior Classification', 'Classifying child\'s response behavior...');
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -767,6 +789,13 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
   }
 
   Widget _buildDetectedActions() {
+    if (_analysisResult == null && !_isAnalyzing) {
+      return _buildPlaceholderCard('Detected Actions', 'Waiting for analysis to identify actions.');
+    }
+    if (_isAnalyzing && _analysisResult == null) {
+      return _buildPlaceholderCard('Detected Actions', 'Detecting specific behaviors and actions...');
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -863,6 +892,12 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
   Widget _buildExpandedBehavioralMarkers() {
     final expanded = _expandedBehavioralMarkers;
     final audio = _audioAnalysisExpanded;
+    if (expanded == null && audio == null && !_isAnalyzing) {
+      return _buildPlaceholderCard('Expanded Behavioral Markers', 'Detailed markers will appear after analysis.');
+    }
+    if (_isAnalyzing && expanded == null && audio == null) {
+      return _buildPlaceholderCard('Expanded Behavioral Markers', 'Extracting detailed behavioral markers...');
+    }
     if (expanded == null && audio == null) return const SizedBox.shrink();
     
     return Container(
@@ -988,6 +1023,15 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
   }
 
   Widget _buildMLPrediction() {
+    if (_mlPrediction == null && !_isAnalyzing) {
+      return _buildPlaceholderCard('ML Model Prediction', 'AI model prediction will appear after analysis.');
+    }
+    if (_isAnalyzing && _mlPrediction == null) {
+      return _buildPlaceholderCard('ML Model Prediction', 'AI model is calculating probabilities...');
+    }
+
+    final isAutism = _mlPrediction?.toLowerCase() == 'autism';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1035,7 +1079,7 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
           _buildStatusCard(
             'Prediction',
             _mlPrediction?.toUpperCase() ?? 'Unknown',
-            _mlPrediction == 'autism' ? Colors.orange : Colors.blue,
+            isAutism ? Colors.orange : Colors.blue,
           ),
           const SizedBox(height: 16),
           
@@ -1132,12 +1176,42 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
               '${(_mlConfidence! * 100).toStringAsFixed(1)}%',
               _getConfidenceColor((_mlConfidence! * 100).toInt()),
             ),
+          
+          if (_analysisResult != null) ...[
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: _exportToPdf,
+                icon: const Icon(Icons.picture_as_pdf),
+                label: const Text(
+                  'Export PDF Report',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFC47BE4),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildAnalysisSummary() {
+    if (_analysisResult == null && !_isAnalyzing) {
+      return _buildPlaceholderCard('Analysis Summary', 'Summary will be generated after video analysis.');
+    }
+    if (_isAnalyzing && _analysisResult == null) {
+      return _buildPlaceholderCard('Analysis Summary', 'Compiling analysis results...');
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -2422,10 +2496,12 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
       case 'Not Responded':
         return Colors.red;
       case 'Partial':
+      case 'Partial Response':
         return Colors.orange;
       // Behavior Classification
       case 'No Response':
         return Colors.red;
+      case 'Immediate Response':
       case 'Full Response':
         return Colors.green;
       case 'Engaged':
@@ -2440,6 +2516,7 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
     if (level >= 60) return Colors.orange;
     return Colors.red;
   }
+
 
   /// Upload video from device
   Future<void> _uploadVideo() async {
@@ -2511,6 +2588,18 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
           _videoPath = filePath;
           _isUploading = false;
           _validationResult = null;
+          _analysisResult = null; // Clear previous analysis results
+          _mlPrediction = null;
+          _autismProbability = null;
+          _typicalProbability = null;
+          _mlConfidence = null;
+          _expandedBehavioralMarkers = null;
+          _audioAnalysisExpanded = null;
+          _rtnStatus = 'Waiting...';
+          _reactionTime = 0.0;
+          _detectedActions = [];
+          _confidenceLevel = 0;
+          _behaviorClassification = 'No Response';
         });
 
         // Initialize video player
@@ -2560,6 +2649,18 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
     setState(() {
       _videoPath = path;
       _validationResult = null;
+      _analysisResult = null; // Clear previous analysis results
+      _mlPrediction = null;
+      _autismProbability = null;
+      _typicalProbability = null;
+      _mlConfidence = null;
+      _expandedBehavioralMarkers = null;
+      _audioAnalysisExpanded = null;
+      _rtnStatus = 'Waiting...';
+      _reactionTime = 0.0;
+      _detectedActions = [];
+      _confidenceLevel = 0;
+      _behaviorClassification = 'No Response';
     });
     await _initializeVideoPlayer(path);
     if (mounted) {
@@ -2588,7 +2689,7 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
       }
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse(BackendConfig.validateVideoEndpoint),
+        Uri.parse(await BackendConfig.validateVideoEndpoint),
       );
       request.files.add(await http.MultipartFile.fromPath('video', filePath));
       final streamedResponse = await request.send().timeout(const Duration(seconds: 60));
@@ -2641,20 +2742,61 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
   /// Initialize video player with selected video
   Future<void> _initializeVideoPlayer(String filePath) async {
     try {
-      _videoController?.dispose();
+      print('Initializing video player with path: $filePath');
+      
+      // Clean up old controller if it exists
+      if (_videoController != null) {
+        print('Disposing existing video controller...');
+        try {
+          await _videoController!.pause();
+          await _videoController!.dispose();
+        } catch (e) {
+          print('Error during controller disposal: $e');
+        }
+      }
 
-      _videoController = VideoPlayerController.file(File(filePath));
+      // CRITICAL: Reset state and force UI update before the mandatory delay.
+      // This helps ensure the hardware surface/decoder is fully released.
+      setState(() {
+        _videoController = null;
+        _isInitialized = false;
+        _isVideoLoaded = false;
+      });
+      
+      // MANDATORY DELAY (1200ms): Give the Android system (especially MTK chipsets) 
+      // ample time to release hardware decoders from previous pages (Camera) 
+      // or previous VideoPlayer instances.
+      await Future.delayed(const Duration(milliseconds: 1200)); 
+
+      final file = File(filePath);
+      if (!await file.exists()) {
+        print('ERROR: Video file does not exist at path: $filePath');
+        throw Exception('Video file not found');
+      }
+
+      _videoController = VideoPlayerController.file(
+        file,
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      );
       await _videoController!.initialize();
 
       setState(() {
         _isVideoLoaded = true;
+        _isInitialized = true;
       });
+      print('Video player initialized successfully');
     } catch (e) {
+      print('ERROR initializing video player: $e');
+      setState(() {
+        _isVideoLoaded = false;
+        _isInitialized = false;
+      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error loading video: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -2687,8 +2829,8 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
       }
 
       final response = await http.get(
-        Uri.parse(BackendConfig.healthEndpoint),
-      ).timeout(const Duration(seconds: 5));
+        Uri.parse(await BackendConfig.healthEndpoint),
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -2696,7 +2838,7 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('✓ Backend is connected!\n'
-                  'Server: ${BackendConfig.baseUrl}\n'
+                  'Server: ${await BackendConfig.baseUrl}\n'
                   'Status: ${data['status'] ?? 'OK'}'),
               backgroundColor: Colors.green,
               duration: const Duration(seconds: 4),
@@ -2711,7 +2853,7 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('✗ Cannot connect to backend server!\n\n'
-                'Server URL: ${BackendConfig.baseUrl}\n'
+                'Server URL: ${await BackendConfig.baseUrl}\n'
                 'Error: ${e.toString()}\n\n'
                 'Please make sure:\n'
                 '1. Backend server is running\n'
@@ -2766,15 +2908,21 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
       _detectedActions = [];
       _reactionTime = 0.0;
       _confidenceLevel = 0;
+      _behaviorClassification = 'No Response';
+      _mlPrediction = null;
+      _autismProbability = null;
+      _typicalProbability = null;
+      _mlConfidence = null;
       _expandedBehavioralMarkers = null;
       _audioAnalysisExpanded = null;
+      _analysisResult = null; // Clear previous full result
     });
     
     try {
       // First, check if backend is reachable
       try {
         final healthCheck = await http.get(
-          Uri.parse(BackendConfig.healthEndpoint),
+          Uri.parse(await BackendConfig.healthEndpoint),
         ).timeout(const Duration(seconds: 5));
         
         if (healthCheck.statusCode != 200) {
@@ -2792,7 +2940,7 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
               content: Text('Cannot connect to backend server.\n\n'
                   'Please make sure:\n'
                   '1. Backend server is running (run: python backend/app.py)\n'
-                  '2. Server URL is correct: ${BackendConfig.baseUrl}\n'
+                  '2. Server URL is correct: ${await BackendConfig.baseUrl}\n'
                   '3. Your device/emulator can reach the server\n\n'
                   'Error: ${e.toString()}'),
               backgroundColor: Colors.red,
@@ -2806,7 +2954,7 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
       // Create multipart request
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse(BackendConfig.analyzeVideoEndpoint),
+        Uri.parse(await BackendConfig.analyzeVideoEndpoint),
       );
       
       // Add video file
@@ -2843,22 +2991,23 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
         // Update UI with results
         setState(() {
           _isAnalyzing = false;
-          _rtnStatus = _formatRTNStatus(result['RTN_Status'] ?? 'noResponse');
+          _analysisResult = result; // Store the full result
+          _rtnStatus = _formatRTNStatus(_analysisResult?['RTN_Status'] ?? 'noResponse');
           // Reaction Time with fallback:
           // 1) Reaction_Time (preferred, name-call to response)
           // 2) Response_Time_From_Name_Call
           // 3) Response_At_Seconds (timestamp in video if audio name call not detected)
-          double rt = (result['Reaction_Time'] ?? 0.0).toDouble();
+          double rt = (_analysisResult?['Reaction_Time'] ?? 0.0).toDouble();
           if (rt <= 0) {
-            final fbRaw = result['Response_Time_From_Name_Call'] ?? result['Response_At_Seconds'];
+            final fbRaw = _analysisResult?['Response_Time_From_Name_Call'] ?? _analysisResult?['Response_At_Seconds'];
             rt = (fbRaw ?? 0.0).toDouble();
           }
           _reactionTime = (rt > 0 && rt <= 60) ? rt : 0.0;
-          _confidenceLevel = result['Confidence_Score'] ?? 0;
-          _behaviorClassification = _formatBehaviorClassification(result['RTN_Status'] ?? 'noResponse');
+          _confidenceLevel = _analysisResult?['Confidence_Score'] ?? 0;
+          _behaviorClassification = _formatBehaviorClassification(_analysisResult?['RTN_Status'] ?? 'noResponse');
           
           // Format detected behaviors
-          final behaviors = result['Detected_Behaviors'] as List?;
+          final behaviors = _analysisResult?['Detected_Behaviors'] as List?;
           if (behaviors != null && behaviors.isNotEmpty) {
             _detectedActions = behaviors
                 .map((b) {
@@ -2942,7 +3091,7 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
                 'Please check:\n'
                 '1. Backend server is running\n'
                 '2. Network connection is active\n'
-                '3. Server URL: ${BackendConfig.baseUrl}'),
+                '3. Server URL: ${await BackendConfig.baseUrl}'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 8),
           ),
@@ -2981,7 +3130,7 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
                 'Please check:\n'
                 '1. Backend server is running\n'
                 '2. Video file is valid\n'
-                '3. Server URL: ${BackendConfig.baseUrl}'),
+                '3. Server URL: ${await BackendConfig.baseUrl}'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 8),
           ),
@@ -3342,6 +3491,268 @@ class _VideoAnalysisPageState extends State<VideoAnalysisPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Placeholder card for sections with no data yet
+  Widget _buildPlaceholderCard(String title, String message) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFC47BE4).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.info_outline,
+                  color: const Color(0xFFC47BE4),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2C3E50),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              if (_isAnalyzing)
+                const Padding(
+                  padding: EdgeInsets.only(right: 12.0),
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFC47BE4)),
+                  ),
+                ),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Benchmark Assessments Section
+  Widget _buildBenchmarkAssessmentsSection() {
+    final childName = widget.childName;
+    final childAge = widget.childAge;
+
+    if (childName == null || childAge == null) {
+      return _buildPlaceholderCard('Benchmark Assessments', 'Please provide child\'s name and age to access assessments.');
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFC47BE4).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.assignment,
+                  color: Color(0xFFC47BE4),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Benchmark Assessments',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2C3E50),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          if (childAge >= 16 && childAge <= 30)
+            _buildAssessmentButton(
+              'M-CHAT-R/F (16-30 months)',
+              'Modified Checklist for Autism in Toddlers',
+              Icons.assignment_turned_in,
+              _navigateToMchatPage,
+            ),
+          if (childAge >= 18 && childAge <= 72)
+            _buildAssessmentButton(
+              'PRQ (18-72 months)',
+              'Parent Report Questionnaire',
+              Icons.assignment_ind,
+              _navigateToPrqPage,
+            ),
+          if (childAge >= 0 && childAge <= 60)
+            _buildAssessmentButton(
+              'Milestone Tracker (0-5 years)',
+              'Track developmental milestones',
+              Icons.timeline,
+              _navigateToMilestoneTrackerPage,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssessmentButton(String title, String subtitle, IconData icon, VoidCallback onPressed) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFC47BE4),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 28),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateToMchatPage() {
+    final childName = widget.childName;
+    final childAge = widget.childAge;
+    final childId = childName != null && childAge != null ? '${childName}_$childAge' : null;
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) => MchatPage(
+      childName: childName,
+      childAge: childAge,
+      childId: childId,
+    )));
+  }
+
+  void _navigateToPrqPage() {
+    final childName = widget.childName;
+    final childAge = widget.childAge;
+    final childId = childName != null && childAge != null ? '${childName}_$childAge' : null;
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) => PrqPage(
+      childName: childName,
+      childAge: childAge,
+      childId: childId,
+    )));
+  }
+
+  void _navigateToMilestoneTrackerPage() {
+    final childName = widget.childName;
+    final childAge = widget.childAge;
+    final childId = childName != null && childAge != null ? '${childName}_$childAge' : null;
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) => MilestoneTrackerPage(
+      childName: childName,
+      childAge: childAge,
+      childId: childId,
+    )));
+  }
+
+  void _exportToPdf() {
+    if (_analysisResult == null) return;
+
+    final childData = {
+      'id': widget.childName ?? 'unknown',
+      'child_code': widget.childName ?? 'CHILD_001',
+      'name': widget.childName ?? 'Child',
+      'date_of_birth': DateTime.now().subtract(Duration(days: (widget.childAge ?? 3) * 365)).millisecondsSinceEpoch,
+      'age_in_months': (widget.childAge ?? 3) * 12,
+      'gender': 'N/A',
+      'language': 'en',
+      'age': (widget.childAge ?? 3).toDouble(),
+      'created_at': DateTime.now().millisecondsSinceEpoch,
+      'group': 'typically_developing', 
+      'diagnosis_source': 'Auditory Screening',
+      'diagnosis_type': 'new',
+    };
+
+    final sessionData = {
+      'id': 'session_${DateTime.now().millisecondsSinceEpoch}',
+      'session_type': 'auditory_video_analysis',
+      'start_time': DateTime.now().millisecondsSinceEpoch,
+      'end_time': DateTime.now().millisecondsSinceEpoch,
+      'risk_score': _autismProbability != null ? _autismProbability! * 100 : 0.0,
+      'risk_level': (_autismProbability ?? 0) > 0.7 ? 'high' : ((_autismProbability ?? 0) > 0.3 ? 'moderate' : 'low'),
+      'ml_prediction': _analysisResult!['ML_Prediction'],
+      'metrics': {
+        'reaction_time': '${_reactionTime.toStringAsFixed(2)}s',
+        'confidence': '$_confidenceLevel%',
+        'behavior': _behaviorClassification,
+        'detected_actions': _detectedActions.join(', '),
+        if (_expandedBehavioralMarkers != null) ..._expandedBehavioralMarkers!,
+        if (_audioAnalysisExpanded != null) ..._audioAnalysisExpanded!,
+      },
+    };
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PdfPreviewScreen(
+          childData: childData,
+          sessions: [sessionData],
+        ),
       ),
     );
   }

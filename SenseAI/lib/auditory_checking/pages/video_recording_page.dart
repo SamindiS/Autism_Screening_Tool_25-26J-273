@@ -71,7 +71,7 @@ class _VideoRecordingPageState extends State<VideoRecordingPage> {
       ) : _cameras.first;
       _controller = CameraController(
         camera,
-        ResolutionPreset.high,
+        ResolutionPreset.medium,
         enableAudio: true,
         imageFormatGroup: ImageFormatGroup.jpeg,
       );

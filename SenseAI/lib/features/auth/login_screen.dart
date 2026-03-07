@@ -320,6 +320,15 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         actions: [
           TextButton(
+            onPressed: () async {
+              await ApiService.resetBackendUrl();
+              final defaultUrl = await ApiService.getBackendUrl();
+              urlController.text = defaultUrl;
+              _showSuccess('♻️ Reset to default URL: $defaultUrl');
+            },
+            child: const Text('Reset to Default', style: TextStyle(color: Colors.orange)),
+          ),
+          TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
           ),

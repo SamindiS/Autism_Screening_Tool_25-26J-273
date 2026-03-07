@@ -120,7 +120,7 @@ class RealtimeAudioDetectionService {
       // For now, it's a placeholder that shows the structure
       
       final response = await http.post(
-        Uri.parse('${BackendConfig.baseUrl}/api/analyze-audio-realtime'),
+        Uri.parse('${await BackendConfig.baseUrl}/api/analyze-audio-realtime'),
         headers: {'Content-Type': 'application/json'},
         body: {
           'child_name': _childName ?? '',

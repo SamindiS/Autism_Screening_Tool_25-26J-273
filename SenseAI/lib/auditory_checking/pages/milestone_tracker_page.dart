@@ -46,7 +46,7 @@ class _MilestoneTrackerPageState extends State<MilestoneTrackerPage> {
     });
     try {
       final res = await http
-          .get(Uri.parse(BackendConfig.milestonesEndpoint(_ageMonths)))
+          .get(Uri.parse(await BackendConfig.milestonesEndpoint(_ageMonths)))
           .timeout(BackendConfig.connectionTimeout);
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -83,7 +83,7 @@ class _MilestoneTrackerPageState extends State<MilestoneTrackerPage> {
       };
       final res = await http
           .post(
-            Uri.parse(BackendConfig.milestonesSubmitEndpoint),
+            Uri.parse(await BackendConfig.milestonesSubmitEndpoint),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(body),
           )

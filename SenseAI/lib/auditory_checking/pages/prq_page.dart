@@ -43,7 +43,7 @@ class _PrqPageState extends State<PrqPage> {
     });
     try {
       final res = await http
-          .get(Uri.parse(BackendConfig.prqSchemaEndpoint))
+          .get(Uri.parse(await BackendConfig.prqSchemaEndpoint))
           .timeout(BackendConfig.connectionTimeout);
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -93,7 +93,7 @@ class _PrqPageState extends State<PrqPage> {
       };
       final res = await http
           .post(
-            Uri.parse(BackendConfig.prqSubmitEndpoint),
+            Uri.parse(await BackendConfig.prqSubmitEndpoint),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(body),
           )

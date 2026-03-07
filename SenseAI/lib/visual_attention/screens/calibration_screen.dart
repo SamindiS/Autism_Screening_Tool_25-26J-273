@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../games/butterfly_chase/butterfly_chase_screen.dart';
 import '../tflite/gaze_model.dart';
 import '../tflite/tflite_scaffold.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../widgets/language_selector.dart';
+
 
 class CalibrationScreen extends StatefulWidget {
   final String testId;
@@ -59,13 +62,25 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Calibration')),
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context)?.calibrationTitle ?? 'Calibration'),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const LanguageSelector(),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
-              'Look at the dot: ${step + 1}/3',
+              '${AppLocalizations.of(context)?.lookAtTheDot ?? "Look at the dot"} ${step + 1}/3',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
@@ -111,7 +126,7 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
               ),
-              child: Text(step < 2 ? 'Next' : 'Start Games'),
+              child: Text(step < 2 ? (AppLocalizations.of(context)?.nextButton ?? 'Next') : (AppLocalizations.of(context)?.startGames ?? 'Start Games')),
             ),
           ),
         ],

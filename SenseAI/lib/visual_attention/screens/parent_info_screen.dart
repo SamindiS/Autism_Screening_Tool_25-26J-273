@@ -6,6 +6,9 @@ import 'package:http/http.dart' as http;
 import '../gaze/gaze_calibration_screen.dart';
 import '../models/parent_info.dart';
 import '../theme.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../widgets/language_selector.dart';
+
 
 /// Parent Information Screen
 /// 
@@ -184,7 +187,17 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
     return Scaffold(
       backgroundColor: SenseAIColors.bgLight,
       appBar: AppBar(
-        title: const Text('Parent Information'),
+        title: Text(AppLocalizations.of(context)?.parentGuardianInfo ?? 'Parent Information'),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const LanguageSelector(),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -243,9 +256,9 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
               Center(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: const Text(
-                    'Parent/Guardian Information',
-                    style: TextStyle(
+                  child: Text(
+                    AppLocalizations.of(context)?.parentGuardianInfo ?? 'Parent/Guardian Information',
+                    style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
                       color: SenseAIColors.primaryBlue,
@@ -257,7 +270,7 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
               const SizedBox(height: 12),
               Center(
                 child: Text(
-                  'Tell us about the parent or guardian',
+                  AppLocalizations.of(context)?.tellUsAboutParent ?? 'Tell us about the parent or guardian',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -289,7 +302,7 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                       TextFormField(
                         controller: _nameController,
                         decoration: InputDecoration(
-                          labelText: 'Parent/Guardian Name',
+                          labelText: AppLocalizations.of(context)?.parentGuardianName ?? 'Parent/Guardian Name',
                           labelStyle: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -316,7 +329,7 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                       TextFormField(
                         controller: _emailController,
                         decoration: InputDecoration(
-                          labelText: 'Email Address',
+                          labelText: AppLocalizations.of(context)?.emailAddress ?? 'Email Address',
                           labelStyle: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -344,7 +357,7 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                       TextFormField(
                         controller: _phoneController,
                         decoration: InputDecoration(
-                          labelText: 'Phone Number',
+                          labelText: AppLocalizations.of(context)?.phoneNumber ?? 'Phone Number',
                           labelStyle: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -362,7 +375,7 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                           ),
                           filled: true,
                           fillColor: SenseAIColors.softBlue.withOpacity(0.2),
-                          helperText: 'Include country code (e.g., +1)',
+                          helperText: AppLocalizations.of(context)?.includeCountryCode ?? 'Include country code (e.g., +1)',
                           helperMaxLines: 2,
                         ),
                         keyboardType: TextInputType.phone,
@@ -374,7 +387,7 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                       DropdownButtonFormField<String>(
                         value: _relationship,
                         decoration: InputDecoration(
-                          labelText: 'Relationship',
+                          labelText: AppLocalizations.of(context)?.relationship ?? 'Relationship',
                           labelStyle: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -443,9 +456,9 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                                     width: 2,
                                   ),
                                 ),
-                                child: const Text(
-                                  'Back',
-                                  style: TextStyle(
+                                child: Text(
+                                  AppLocalizations.of(context)?.backText ?? 'Back',
+                                  style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w600,
                                     color: SenseAIColors.primaryBlue,
@@ -495,9 +508,9 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                                                     Colors.white),
                                           ),
                                         )
-                                      : const Text(
-                                          'Continue',
-                                          style: TextStyle(
+                                      : Text(
+                                          AppLocalizations.of(context)?.continueText ?? 'Continue',
+                                          style: const TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
                                             letterSpacing: 1.0,
@@ -536,16 +549,16 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Safe & Secure',
-                      style: TextStyle(
+                      AppLocalizations.of(context)?.safeAndSecure ?? 'Safe & Secure',
+                      style: const TextStyle(
                         color: SenseAIColors.primaryBlue,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
-                      'This information helps us create your report',
+                      AppLocalizations.of(context)?.infoHelpsReport ?? 'This information helps us create your report',
                       style: TextStyle(
                         color: SenseAIColors.primaryBlue.withOpacity(0.8),
                         fontSize: 14,

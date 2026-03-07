@@ -10,6 +10,9 @@ import 'package:share_plus/share_plus.dart';
 import '../gaze/gaze_service.dart';
 import '../theme.dart';
 import 'entry_form_screen.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../widgets/language_selector.dart';
+
 
 class ResultsScreen extends StatelessWidget {
   final String testId;
@@ -342,13 +345,23 @@ class ResultsScreen extends StatelessWidget {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('🎊', style: TextStyle(fontSize: 24)),
+            const Text('🎊', style: TextStyle(fontSize: 24)),
             const SizedBox(width: 8),
-            const Text('All Done!'),
+            Text(AppLocalizations.of(context)?.allDone ?? 'All Done!'),
             const SizedBox(width: 8),
-            Text('🎊', style: TextStyle(fontSize: 24)),
+            const Text('🎊', style: TextStyle(fontSize: 24)),
           ],
         ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const LanguageSelector(),
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -368,8 +381,8 @@ class ResultsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                'You Did Great!',
-                style: TextStyle(
+                AppLocalizations.of(context)?.youDidGreat ?? 'You Did Great!',
+                style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: SenseAIColors.primaryBlue,
@@ -377,7 +390,7 @@ class ResultsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '$celebrationEmoji Amazing job completing the games! $celebrationEmoji',
+                '$celebrationEmoji ${AppLocalizations.of(context)?.amazingJob ?? "Amazing job completing the games!"} $celebrationEmoji',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
@@ -408,8 +421,8 @@ class ResultsScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      'Your Score',
-                      style: TextStyle(
+                      AppLocalizations.of(context)?.yourScore ?? 'Your Score',
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: SenseAIColors.primaryBlue,
@@ -480,11 +493,11 @@ class ResultsScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    Text('📄', style: TextStyle(fontSize: 40)),
+                    const Text('📄', style: TextStyle(fontSize: 40)),
                     const SizedBox(height: 12),
                     Text(
-                      'Your Special Report',
-                      style: TextStyle(
+                      AppLocalizations.of(context)?.specialReport ?? 'Your Special Report',
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: SenseAIColors.primaryBlue,
@@ -492,12 +505,7 @@ class ResultsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'We\'re creating your amazing report with:\n'
-                      '✨ How well you paid attention\n'
-                      '🦋 Your eye tracking skills\n'
-                      '🎯 Your focus patterns\n'
-                      '💡 Special recommendations\n\n'
-                      'It will be ready soon!',
+                      AppLocalizations.of(context)?.generatingReportReason ?? 'We\'re creating your amazing report with:\n✨ How well you paid attention\n🦋 Your eye tracking skills\n🎯 Your focus patterns\n💡 Special recommendations\n\nIt will be ready soon!',
                       style: TextStyle(
                         fontSize: 15,
                         height: 1.6,
@@ -526,10 +534,10 @@ class ResultsScreen extends StatelessWidget {
                   height: 64,
                   child: ElevatedButton.icon(
                     onPressed: () => _showReportOptions(context),
-                    icon: Text('📄', style: TextStyle(fontSize: 28)),
-                    label: const Text(
-                      'Get Your Report',
-                      style: TextStyle(
+                    icon: const Text('📄', style: TextStyle(fontSize: 28)),
+                    label: Text(
+                      AppLocalizations.of(context)?.getYourReport ?? 'Get Your Report',
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
@@ -561,10 +569,10 @@ class ResultsScreen extends StatelessWidget {
                       (route) => false,
                     );
                   },
-                  icon: Text('🔄', style: TextStyle(fontSize: 22)),
-                  label: const Text(
-                    'Play Again!',
-                    style: TextStyle(
+                  icon: const Text('🔄', style: TextStyle(fontSize: 22)),
+                  label: Text(
+                    AppLocalizations.of(context)?.playAgain ?? 'Play Again!',
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),

@@ -144,8 +144,64 @@ class AppLocalizations {
   String get tapMe => translate('tapMe');
   String get dontTap => translate('dontTap');
   String get getReady => translate('getReady');
-  String get tapHappyFrog => translate('tapMe'); // fallback: same meaning
+  String get tapHappyFrog => translate('tapHappyFrog');
   String get dontTapSleepyTurtle => translate('dontTapSleepyTurtle');
+  String get gameComplete => translate('gameComplete');
+
+  // Visual Attention & Preferences Getters
+  String get visualCheckingTitle => translate('visualCheckingTitle');
+  String get enhanceFocus => translate('enhanceFocus');
+  String get childInfoTitle => translate('childInfoTitle');
+  String get letsStartAdventure => translate('letsStartAdventure');
+  String get whatsYourName => translate('whatsYourName');
+  String get howOldAreYou => translate('howOldAreYou');
+  String get letsGo => translate('letsGo');
+  String get funGamesAhead => translate('funGamesAhead');
+  String get playExcitingGames => translate('playExcitingGames');
+  String get parentGuardianInfo => translate('parentGuardianInfo');
+  String get tellUsAboutParent => translate('tellUsAboutParent');
+  String get parentGuardianName => translate('parentGuardianName');
+  String get emailAddress => translate('emailAddress');
+  String get phoneNumber => translate('phoneNumber');
+  String get includeCountryCode => translate('includeCountryCode');
+  String get relationship => translate('relationship');
+  String get backText => translate('backText');
+  String get continueText => translate('continueText');
+  String get safeAndSecure => translate('safeAndSecure');
+  String get infoHelpsReport => translate('infoHelpsReport');
+  String get calibrationTitle => translate('calibrationTitle');
+  String get lookAtTheDot => translate('lookAtTheDot');
+  String get nextButton => translate('nextButton');
+  String get startGames => translate('startGames');
+  String get bubblePopGame => translate('bubblePopGame');
+  String get howToPlayGame => translate('howToPlayGame');
+  String get seeTheBubbles => translate('seeTheBubbles');
+  String get bubblesFloat => translate('bubblesFloat');
+  String get tapToPop => translate('tapToPop');
+  String get touchBubblesPop => translate('touchBubblesPop');
+  String get haveFun => translate('haveFun');
+  String get popAsMany => translate('popAsMany');
+  String get thirtySeconds => translate('thirtySeconds');
+  String get gameLasts30 => translate('gameLasts30');
+  String get startGameBtn => translate('startGameBtn');
+  String get butterflyGame => translate('butterflyGame');
+  String get watchButterfly => translate('watchButterfly');
+  String get butterflyFlyAround => translate('butterflyFlyAround');
+  String get followEyes => translate('followEyes');
+  String get tryLookWhere => translate('tryLookWhere');
+  String get visitFlowers => translate('visitFlowers');
+  String get butterflyLovesFlowers => translate('butterflyLovesFlowers');
+  String get fifteenSeconds => translate('fifteenSeconds');
+  String get gameLasts15 => translate('gameLasts15');
+  String get allDone => translate('allDone');
+  String get youDidGreat => translate('youDidGreat');
+  String get amazingJob => translate('amazingJob');
+  String get yourScore => translate('yourScore');
+  String get specialReport => translate('specialReport');
+  String get generatingReportReason => translate('generatingReportReason');
+  String get getYourReport => translate('getYourReport');
+  String get playAgain => translate('playAgain');
+
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

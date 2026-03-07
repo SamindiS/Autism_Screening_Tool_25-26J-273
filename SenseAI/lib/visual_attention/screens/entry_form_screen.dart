@@ -4,6 +4,8 @@ import '../gaze/data_collection_screen.dart';
 import '../gaze/gaze_service.dart';
 import '../theme.dart';
 import 'parent_info_screen.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../widgets/language_selector.dart';
 
 class EntryFormScreen extends StatefulWidget {
   const EntryFormScreen({super.key});
@@ -83,23 +85,31 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: Image.asset(
-                'assets/logo/Logo2_without_text.jpg',
-                height: 32,
-                width: 32,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.psychology, size: 28),
-              ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Image.asset(
+              'assets/logo/Logo2_without_text.jpg',
+              height: 32,
+              width: 32,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.psychology, size: 28),
             ),
-            const SizedBox(width: 10),
-            const Text('SenseAI'),
-          ],
+          ),
+          const SizedBox(width: 10),
+          Text(AppLocalizations.of(context)?.appName ?? 'SenseAI'),
+        ],
+      ),
+      actions: [
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const LanguageSelector(),
         ),
-        actions: [
-          PopupMenuButton<String>(
+        PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {
               if (value == 'collect_data') {
@@ -179,31 +189,31 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Center(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: const Text(
-                    'Child Information',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: SenseAIColors.primaryBlue,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Center(
+            Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
                 child: Text(
-                  'Let\'s start your adventure',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: SenseAIColors.primaryBlue.withOpacity(0.8),
+                  AppLocalizations.of(context)?.childInfoTitle ?? 'Child Information',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: SenseAIColors.primaryBlue,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ),
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: Text(
+                AppLocalizations.of(context)?.letsStartAdventure ?? 'Let\'s start your adventure',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: SenseAIColors.primaryBlue.withOpacity(0.8),
+                ),
+              ),
+            ),
               const SizedBox(height: 32),
               Container(
                 padding: const EdgeInsets.all(24),
@@ -223,7 +233,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
                     TextField(
                       controller: _nameController,
                       decoration: InputDecoration(
-                        labelText: 'What\'s your name?',
+                        labelText: AppLocalizations.of(context)?.whatsYourName ?? 'What\'s your name?',
                         labelStyle: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -248,7 +258,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
                     TextField(
                       controller: _ageController,
                       decoration: InputDecoration(
-                        labelText: 'How old are you?',
+                        labelText: AppLocalizations.of(context)?.howOldAreYou ?? 'How old are you?',
                         labelStyle: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -296,12 +306,12 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
                               borderRadius: BorderRadius.circular(18),
                             ),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                'Let\'s Go!',
-                                style: TextStyle(
+                                AppLocalizations.of(context)?.letsGo ?? 'Let\'s Go!',
+                                style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1.2,
@@ -335,8 +345,8 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Fun Games Ahead!',
-                      style: TextStyle(
+                      AppLocalizations.of(context)?.funGamesAhead ?? 'Fun Games Ahead!',
+                      style: const TextStyle(
                         color: SenseAIColors.primaryBlue,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -344,7 +354,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'We\'ll play some exciting visual games together',
+                      AppLocalizations.of(context)?.playExcitingGames ?? 'We\'ll play some exciting visual games together',
                       style: TextStyle(
                         color: SenseAIColors.primaryBlue.withOpacity(0.8),
                         fontSize: 14,

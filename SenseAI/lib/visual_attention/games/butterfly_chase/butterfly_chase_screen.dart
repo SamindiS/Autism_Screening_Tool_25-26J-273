@@ -15,9 +15,11 @@ import '../../gaze/gaze_point.dart';
 import '../../gaze/gaze_mapper.dart';
 import '../../gaze/gaze_service.dart';
 import '../../gaze/gaze_stream_provider.dart';
-import '../../screens/bubbles_screen.dart';
-import '../../theme.dart';
+import '../../../theme.dart';
 import 'butterfly_chase_game.dart';
+import '../../../core/localization/app_localizations.dart';
+import '../../../widgets/language_selector.dart';
+
 
 class ButterflyChaseScreen extends StatefulWidget {
   final String testId;
@@ -247,6 +249,18 @@ class _ButterflyChaseScreenState extends State<ButterflyChaseScreen> {
           if (!_showInstructions)
             _buildHUDOverlay(theme),
 
+          // Language Selector
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            left: 10,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const LanguageSelector(),
+            ),
+          ),
           // Debug toggle button
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
@@ -281,7 +295,7 @@ class _ButterflyChaseScreenState extends State<ButterflyChaseScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Butterfly Chase',
+                AppLocalizations.of(context)?.butterflyGame ?? 'Butterfly Chase',
                 style: theme.textTheme.headlineMedium?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -289,9 +303,9 @@ class _ButterflyChaseScreenState extends State<ButterflyChaseScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Follow the butterfly with your eyes!\n'
-                'Keep your gaze on the butterfly as it moves.\n'
-                'The game will last 15 seconds.',
+                '${AppLocalizations.of(context)?.watchButterfly ?? "Watch the butterfly"}!\n'
+                '${AppLocalizations.of(context)?.followEyes ?? "Follow with your eyes"}.\n'
+                '${AppLocalizations.of(context)?.gameLasts15 ?? "The game lasts 15 seconds"}.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: Colors.white70,
@@ -308,7 +322,7 @@ class _ButterflyChaseScreenState extends State<ButterflyChaseScreen> {
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.black,
                 ),
-                child: const Text('Start Game'),
+                child: Text(AppLocalizations.of(context)?.startGameBtn ?? 'Start Game'),
               ),
             ],
           ),

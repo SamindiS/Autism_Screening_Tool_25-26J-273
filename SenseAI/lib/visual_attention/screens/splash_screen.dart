@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 import 'entry_form_screen.dart';
+import '../../core/localization/app_localizations.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -67,9 +68,9 @@ class _SplashScreenState extends State<SplashScreen>
                   children: [
                     _buildLogo(),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Visual Checking',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)?.visualCheckingTitle ?? 'Visual Checking',
+                      style: const TextStyle(
                         fontSize: 42,
                         fontWeight: FontWeight.bold,
                         color: SenseAIColors.primaryBlue,
@@ -78,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Enhance your focus and cognitive speed',
+                      AppLocalizations.of(context)?.enhanceFocus ?? 'Enhance your focus and cognitive speed',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,

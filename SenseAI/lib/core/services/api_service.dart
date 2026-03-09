@@ -14,10 +14,14 @@ class ApiService {
   static const String _defaultSimulatorUrl =
       'http://localhost:3000'; // iOS simulator
   static const String _defaultRealDeviceUrl =
-      'http://192.168.48.180:3000'; // Real device (updated to user IP)
+      'https://autism-screening-tool-25-26-j-273.vercel.app';
+  //'http://192.168.48.180:3000'; // Real device (updated to user IP)
 
   // SharedPreferences key for storing backend URL
   static const String _backendUrlKey = 'backend_url';
+
+  /// Set when health check fails with 401 and Vercel auth page (Deployment Protection).
+  static String? lastHealthCheckFailureHint;
 
   /// Get the base URL for API calls
   /// Checks SharedPreferences first, then falls back to defaults
@@ -46,6 +50,53 @@ class ApiService {
   /// Get the current backend URL
   static Future<String> getBackendUrl() async {
     return await baseUrl;
+  }
+
+  /// Returns a user-facing connection error message appropriate for the current backend URL.
+  static Future<String> connectionErrorMessage() async {
+    final url = await baseUrl;
+    final isVercel = url.contains('vercel.app');
+    final isVercelProtection = lastHealthCheckFailureHint == 'vercel_protection';
+
+    if (isVercelProtection && isVercel) {
+      return 'Vercel Deployment Protection is blocking the app.\n\n'
+          'In Vercel Dashboard:\n'
+          '1. Open your project → Settings → Deployment Protection\n'
+          '2. Set protection to "None" (or "Standard" so production is public)\n'
+          '3. Redeploy if needed\n\n'
+          'URL: $url';
+    }
+
+    final isCloud = url.startsWith('https://') && (url.contains('vercel.app') || url.contains('railway') || url.contains('heroku') || url.contains('render.com'));
+    if (isCloud) {
+      return 'Cannot reach backend. Please check:\n'
+          '1. Your device has internet access\n'
+          '2. Backend URL is correct\n'
+          '3. Try again in a moment (server may be starting)\n'
+          '4. URL: $url';
+    }
+    return 'Connection failed. Please check:\n'
+        '1. Backend server is running on port 3000\n'
+        '2. Your computer and tablet are on the same Wi-Fi\n'
+        '3. Windows Firewall allows port 3000\n'
+        '4. URL is correct: $url';
+  }
+
+  /// Returns a short "backend not available" message (for login/register).
+  static Future<String> backendUnavailableMessage() async {
+    final url = await baseUrl;
+    final isVercel = url.contains('vercel.app');
+    final isVercelProtection = lastHealthCheckFailureHint == 'vercel_protection';
+
+    if (isVercelProtection && isVercel) {
+      return 'Vercel Deployment Protection is on. In Vercel: Project → Settings → Deployment Protection → set to "None". URL: $url';
+    }
+
+    final isCloud = url.startsWith('https://') && (url.contains('vercel.app') || url.contains('railway') || url.contains('heroku') || url.contains('render.com'));
+    if (isCloud) {
+      return 'Backend is not reachable. Check internet connection and that the URL is correct: $url';
+    }
+    return 'Backend server is not available. Ensure the server is running on port 3000 and the URL is correct: $url';
   }
 
   /// Reset to default URL
@@ -118,16 +169,20 @@ class ApiService {
       final normalizedPin = pin.trim();
       debugPrint('🔐 Attempting login to: $url/api/clinicians/login');
       debugPrint('📌 PIN length: ${normalizedPin.length}');
-      debugPrint('📌 PIN value (first 2): ${normalizedPin.isNotEmpty ? '${normalizedPin.substring(0, normalizedPin.length > 2 ? 2 : normalizedPin.length)}***' : 'empty'}');
-      
+      debugPrint(
+          '📌 PIN value (first 2): ${normalizedPin.isNotEmpty ? '${normalizedPin.substring(0, normalizedPin.length > 2 ? 2 : normalizedPin.length)}***' : 'empty'}');
+
       final requestBody = jsonEncode({'pin': normalizedPin});
-      debugPrint('📤 Request body: ${requestBody.replaceAll(normalizedPin, '***')}');
-      
-      final response = await http.post(
+      debugPrint(
+          '📤 Request body: ${requestBody.replaceAll(normalizedPin, '***')}');
+
+      final response = await http
+          .post(
         Uri.parse('$url/api/clinicians/login'),
         headers: headers,
         body: jsonEncode({'pin': normalizedPin}), // Use normalized PIN
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 10),
         onTimeout: () {
           debugPrint('⏱️ Login request timeout after 10 seconds');
@@ -141,7 +196,7 @@ class ApiService {
       _handleError(response);
 
       final data = jsonDecode(response.body);
-      
+
       // Check for success flag first
       if (data.containsKey('success') && data['success'] == true) {
         // Backend returns 'user' for both admin and clinician, but also includes 'clinician' for compatibility
@@ -154,7 +209,8 @@ class ApiService {
           return data['user'] as Map<String, dynamic>;
         } else {
           debugPrint('❌ Login response missing clinician/user data');
-          throw Exception('Invalid login response: missing clinician/user data');
+          throw Exception(
+              'Invalid login response: missing clinician/user data');
         }
       } else {
         // Login failed
@@ -186,9 +242,9 @@ class ApiService {
       // First try to get stored clinician ID from login
       final prefs = await SharedPreferences.getInstance();
       final storedClinicianId = prefs.getString('clinician_id');
-      
+
       final url = await baseUrl;
-      
+
       if (storedClinicianId != null && storedClinicianId.isNotEmpty) {
         // Use stored ID to get specific clinician (longer timeout for slow networks)
         debugPrint('📋 Getting clinician info by ID: $storedClinicianId');
@@ -312,7 +368,7 @@ class ApiService {
           'created_by_clinician_id': createdByClinicianId,
       };
       debugPrint('📤 Request body: ${jsonEncode(requestBody)}');
-      
+
       final response = await http.post(
         Uri.parse('$url/api/children'),
         headers: headers,
@@ -354,7 +410,8 @@ class ApiService {
   }
 
   /// Get children for the logged-in clinician only (fixes dashboard counting other clinicians' children)
-  static Future<List<Map<String, dynamic>>> getChildrenByClinician(String clinicianId) async {
+  static Future<List<Map<String, dynamic>>> getChildrenByClinician(
+      String clinicianId) async {
     try {
       final url = await baseUrl;
       final response = await http.get(
@@ -366,7 +423,8 @@ class ApiService {
 
       final data = jsonDecode(response.body);
       final list = List<Map<String, dynamic>>.from(data['children'] ?? []);
-      debugPrint('📋 Loaded ${list.length} children for clinician $clinicianId');
+      debugPrint(
+          '📋 Loaded ${list.length} children for clinician $clinicianId');
       return list;
     } catch (e) {
       debugPrint('Error getting children by clinician: $e');
@@ -378,10 +436,12 @@ class ApiService {
   static Future<Map<String, dynamic>> getChild(String id) async {
     try {
       final url = await baseUrl;
-      final response = await http.get(
-        Uri.parse('$url/api/children/$id'),
-        headers: headers,
-      ).timeout(const Duration(seconds: 5));
+      final response = await http
+          .get(
+            Uri.parse('$url/api/children/$id'),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 5));
 
       _handleError(response);
 
@@ -449,10 +509,12 @@ class ApiService {
   static Future<void> deleteChild(String id) async {
     try {
       final url = await baseUrl;
-      final response = await http.delete(
-        Uri.parse('$url/api/children/$id'),
-        headers: headers,
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .delete(
+            Uri.parse('$url/api/children/$id'),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 10));
 
       _handleError(response);
     } catch (e) {
@@ -497,12 +559,14 @@ class ApiService {
           'created_by_clinician_id': createdByClinicianId,
       };
       debugPrint('📤 Request body: ${jsonEncode(requestBody)}');
-      
-      final response = await http.post(
-        Uri.parse('$url/api/sessions'),
-        headers: headers,
-        body: jsonEncode(requestBody),
-      ).timeout(const Duration(seconds: 5));
+
+      final response = await http
+          .post(
+            Uri.parse('$url/api/sessions'),
+            headers: headers,
+            body: jsonEncode(requestBody),
+          )
+          .timeout(const Duration(seconds: 5));
 
       debugPrint('📥 Response status: ${response.statusCode}');
       debugPrint('📥 Response body: ${response.body}');
@@ -795,7 +859,7 @@ class ApiService {
   // ==================== CSV EXPORT ====================
 
   /// Export data to CSV format
-  /// 
+  ///
   /// Parameters:
   /// - format: 'ml' (for ML training) or 'raw' (raw data)
   /// - group: Optional filter by group ('asd' or 'typically_developing')
@@ -812,28 +876,30 @@ class ApiService {
       final queryParams = <String, String>{
         'format': format,
       };
-      
+
       if (group != null) {
         queryParams['group'] = group;
       }
-      
+
       if (sessionType != null) {
         queryParams['sessionType'] = sessionType;
       }
-      
+
       if (ageGroup != null) {
         queryParams['ageGroup'] = ageGroup;
       }
-      
-      final uri = Uri.parse('$url/api/export/csv').replace(queryParameters: queryParams);
+
+      final uri = Uri.parse('$url/api/export/csv')
+          .replace(queryParameters: queryParams);
       debugPrint('📥 Exporting CSV: $uri');
-      
+
       final response = await http.get(uri, headers: headers);
-      
+
       _handleError(response);
-      
+
       if (response.statusCode == 200) {
-        debugPrint('✅ CSV exported successfully (${response.body.length} bytes)');
+        debugPrint(
+            '✅ CSV exported successfully (${response.body.length} bytes)');
         return response.body;
       } else {
         throw Exception('Failed to export CSV: ${response.statusCode}');
@@ -846,40 +912,57 @@ class ApiService {
 
   // ==================== HEALTH CHECK ====================
 
-  /// Check if backend is available
+  /// Check if backend is available.
+  /// For Vercel (and similar) deployments, tries /api/health then /health.
   static Future<bool> healthCheck() async {
-    try {
-      final url = await baseUrl;
-      debugPrint('🔍 Health check: Testing connection to $url/health');
-      final response = await http.get(
-        Uri.parse('$url/health'),
-        headers: headers,
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          debugPrint('⏱️ Health check timeout after 5 seconds');
-          throw TimeoutException('Health check timed out');
-        },
-      );
-      
-      final isHealthy = response.statusCode == 200;
-      debugPrint('${isHealthy ? "✅" : "❌"} Health check response: ${response.statusCode} - ${response.body}');
-      return isHealthy;
-    } on TimeoutException {
-      debugPrint('❌ Health check timeout - check network/firewall');
-      debugPrint('   URL attempted: ${await baseUrl}/health');
-      return false;
-    } catch (e) {
-      debugPrint('❌ Health check failed: $e');
-      debugPrint('   URL attempted: ${await baseUrl}/health');
-      if (e.toString().contains('Failed host lookup')) {
-        debugPrint('   → Cannot resolve host - check IP address');
-      } else if (e.toString().contains('Connection refused')) {
-        debugPrint('   → Connection refused - check if backend is running');
-      } else if (e.toString().contains('Network is unreachable')) {
-        debugPrint('   → Network unreachable - check Wi-Fi connection');
+    final url = await baseUrl;
+    final isVercel = url.contains('vercel.app');
+    final paths = isVercel ? ['/api/health', '/health'] : ['/health'];
+    lastHealthCheckFailureHint = null;
+
+    for (final path in paths) {
+      try {
+        final fullUrl = '$url$path';
+        debugPrint('🔍 Health check: Testing connection to $fullUrl');
+        final response = await http
+            .get(
+          Uri.parse(fullUrl),
+          headers: headers,
+        )
+            .timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            debugPrint('⏱️ Health check timeout after 10 seconds');
+            throw TimeoutException('Health check timed out');
+          },
+        );
+
+        final isHealthy = response.statusCode == 200;
+        if (response.statusCode == 401 &&
+            (response.body.contains('Authentication Required') ||
+                response.body.contains('Vercel Authentication') ||
+                response.body.contains('vercel.com/sso-api'))) {
+          lastHealthCheckFailureHint = 'vercel_protection';
+          debugPrint('   → Vercel Deployment Protection is enabled (401). Disable it in Vercel project Settings.');
+        }
+        debugPrint(
+            '${isHealthy ? "✅" : "❌"} Health check response: ${response.statusCode} - ${response.body.length > 200 ? response.body.substring(0, 200) + "..." : response.body}');
+        if (isHealthy) return true;
+      } on TimeoutException {
+        debugPrint('❌ Health check timeout for $url$path');
+      } catch (e) {
+        debugPrint('❌ Health check failed for $url$path: $e');
+        if (e.toString().contains('Failed host lookup')) {
+          debugPrint('   → Cannot resolve host - check URL and internet');
+        } else if (e.toString().contains('Connection refused')) {
+          debugPrint('   → Connection refused - check if backend is running');
+        } else if (e.toString().contains('Network is unreachable')) {
+          debugPrint('   → Network unreachable - check Wi-Fi/internet');
+        }
       }
-      return false;
     }
+
+    debugPrint('   URL attempted: $url (tried: ${paths.join(", ")})');
+    return false;
   }
 }

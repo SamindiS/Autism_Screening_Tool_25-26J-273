@@ -121,9 +121,10 @@ class AuthService {
       // First check if backend is available
       final isBackendAvailable = await ApiService.healthCheck();
       if (!isBackendAvailable) {
+        final msg = await ApiService.backendUnavailableMessage();
         return {
           'success': false,
-          'error': 'Backend server is not available. Please ensure the backend server is running on port 3000.',
+          'error': msg,
           'errorType': 'backend_unavailable',
         };
       }
@@ -166,11 +167,7 @@ class AuthService {
       if (e.toString().contains('SocketException') || 
           e.toString().contains('Failed host lookup') ||
           e.toString().contains('Connection refused')) {
-        errorMessage = 'Cannot connect to server. Please check:\n'
-            '1. Backend server is running on port 3000\n'
-            '2. You are connected to the correct network\n'
-            '3. For emulator: Use http://10.0.2.2:3000\n'
-            '4. For real device: Use your computer IP (e.g., http://192.168.1.100:3000)';
+        errorMessage = await ApiService.connectionErrorMessage();
         errorType = 'connection_error';
       } else if (e.toString().contains('400') || e.toString().contains('Bad Request')) {
         errorMessage = 'Invalid registration data. Please check your information and try again.';
@@ -200,9 +197,10 @@ class AuthService {
       // First check if backend is available
       final isBackendAvailable = await ApiService.healthCheck();
       if (!isBackendAvailable) {
+        final msg = await ApiService.backendUnavailableMessage();
         return {
           'success': false,
-          'error': 'Backend server is not available. Please ensure the backend server is running on port 3000.',
+          'error': msg,
           'errorType': 'backend_unavailable',
         };
       }
@@ -241,11 +239,7 @@ class AuthService {
       if (e.toString().contains('SocketException') || 
           e.toString().contains('Failed host lookup') ||
           e.toString().contains('Connection refused')) {
-        errorMessage = 'Cannot connect to server. Please check:\n'
-            '1. Backend server is running on port 3000\n'
-            '2. You are connected to the correct network\n'
-            '3. For emulator: Use http://10.0.2.2:3000\n'
-            '4. For real device: Use your computer IP (e.g., http://192.168.1.100:3000)';
+        errorMessage = await ApiService.connectionErrorMessage();
         errorType = 'connection_error';
       } else if (e.toString().contains('401') || e.toString().contains('Unauthorized')) {
         errorMessage = 'Invalid PIN. Please check and try again.';

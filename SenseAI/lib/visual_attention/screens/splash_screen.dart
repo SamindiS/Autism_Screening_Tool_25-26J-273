@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import '../../core/localization/app_localizations.dart';
+import '../../widgets/language_selector.dart';
 import '../theme.dart';
 import 'entry_form_screen.dart';
 
@@ -52,8 +53,23 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: SenseAIColors.bgLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+            decoration: BoxDecoration(
+              color: SenseAIColors.primaryBlue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const LanguageSelector(),
+          ),
+        ],
+      ),
       body: Center(
         child: AnimatedBuilder(
           animation: _controller,
@@ -67,9 +83,9 @@ class _SplashScreenState extends State<SplashScreen>
                   children: [
                     _buildLogo(),
                     const SizedBox(height: 24),
-                    const Text(
-                      'SenseAI',
-                      style: TextStyle(
+                    Text(
+                      l10n.translate('senseai'), // Fallback if senseai is not in getters
+                      style: const TextStyle(
                         fontSize: 42,
                         fontWeight: FontWeight.bold,
                         color: SenseAIColors.primaryBlue,
@@ -78,7 +94,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Multi-Sensory Behavioral Autism\nDetection System',
+                      l10n.translate('system_description_long'), // Fallback
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,

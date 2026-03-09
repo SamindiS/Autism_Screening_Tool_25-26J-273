@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
+import '../../core/localization/app_localizations.dart';
+import '../../widgets/language_selector.dart';
 import '../gaze/data_collection_screen.dart';
 import '../gaze/gaze_service.dart';
 import '../theme.dart';
@@ -47,19 +48,19 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
 
     if (name.isEmpty) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Please enter a name')));
+          .showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.translate('pleaseEnterValidName'))));
       return;
     }
     if (ageText.isEmpty) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Please enter an age')));
+          .showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.translate('pleaseEnterValidAge'))));
       return;
     }
 
     final age = int.tryParse(ageText);
     if (age == null || age < 2 || age > 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Age must be between 2 and 6 years')));
+          SnackBar(content: Text(AppLocalizations.of(context)!.translate('ageRangeHelper'))));
       return;
     }
 
@@ -96,10 +97,18 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            const Text('SenseAI'),
+            Text(AppLocalizations.of(context)!.translate('senseai')),
           ],
         ),
         actions: [
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: SenseAIColors.primaryBlue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const LanguageSelector(),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {
@@ -112,13 +121,13 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'collect_data',
                 child: Row(
                   children: [
-                    Icon(Icons.camera_alt, color: SenseAIColors.primaryBlue),
-                    SizedBox(width: 8),
-                    Text('Collect Training Data'),
+                    const Icon(Icons.camera_alt, color: SenseAIColors.primaryBlue),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.translate('collect_training_data')),
                   ],
                 ),
               ),
@@ -183,9 +192,9 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
               Center(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: const Text(
-                    'Child Information',
-                    style: TextStyle(
+                  child: Text(
+                    AppLocalizations.of(context)!.childInfoTitle,
+                    style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: SenseAIColors.primaryBlue,
@@ -197,7 +206,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
               const SizedBox(height: 12),
               Center(
                 child: Text(
-                  'Let\'s start your adventure',
+                  AppLocalizations.of(context)!.letsStartAdventure,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -224,7 +233,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
                     TextField(
                       controller: _nameController,
                       decoration: InputDecoration(
-                        labelText: 'What\'s your name?',
+                        labelText: AppLocalizations.of(context)!.whatsYourName,
                         labelStyle: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -249,8 +258,8 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
                     TextField(
                       controller: _ageController,
                       decoration: InputDecoration(
-                        labelText: 'How old are you?',
-                        helperText: 'Ages 2–6 only',
+                        labelText: AppLocalizations.of(context)!.howOldAreYou,
+                        helperText: AppLocalizations.of(context)!.translate('age_range_2_6'),
                         labelStyle: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -302,12 +311,12 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
                               borderRadius: BorderRadius.circular(18),
                             ),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                'Let\'s Go!',
-                                style: TextStyle(
+                                AppLocalizations.of(context)!.letsGo,
+                                style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1.2,
@@ -341,8 +350,8 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Fun Games Ahead!',
-                      style: TextStyle(
+                      AppLocalizations.of(context)!.funGamesAhead,
+                      style: const TextStyle(
                         color: SenseAIColors.primaryBlue,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -350,7 +359,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'We\'ll play some exciting visual games together',
+                      AppLocalizations.of(context)!.translate('exciting_visual_games'),
                       style: TextStyle(
                         color: SenseAIColors.primaryBlue.withOpacity(0.8),
                         fontSize: 14,

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../widgets/language_selector.dart';
 import 'video_analysis_page.dart';
 import 'mchat_page.dart';
 import 'milestone_tracker_page.dart';
@@ -19,6 +21,8 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
   final _parentNameController = TextEditingController();
   final _contactNumberController = TextEditingController();
   final _emailController = TextEditingController();
+
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
 
   String _selectedGender = 'Male';
   String _selectedRelationship = 'Mother';
@@ -125,6 +129,7 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       extendBodyBehindAppBar: true,
@@ -136,6 +141,17 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
               const Icon(Icons.arrow_back, color: Color(0xFF2C3E50), size: 28),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: const LanguageSelector(),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Stack(
@@ -269,7 +285,7 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
-                    'Understanding Your Child Better',
+                    l10n.understandingChildBetter,
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -280,7 +296,7 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'A gentle and safe assessment experience designed for parents and children.',
+                    l10n.gentleSafeAssessment,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.white.withOpacity(0.9),
@@ -303,11 +319,11 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
       children: [
         Row(
           children: [
-            _buildStepChip('1', 'Profile Details', isActive: true),
+            _buildStepChip('1', l10n.profileDetails, isActive: true),
             const SizedBox(width: 12),
-            _buildStepChip('2', 'Detection Mode', isActive: false),
+            _buildStepChip('2', l10n.detectionMode, isActive: false),
             const SizedBox(width: 12),
-            _buildStepChip('3', 'Assessment', isActive: false),
+            _buildStepChip('3', l10n.assessment, isActive: false),
           ],
         ),
         const SizedBox(height: 12),
@@ -322,7 +338,7 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
         ),
         const SizedBox(height: 6),
         Text(
-          '${(progress * 100).round()}% completed',
+          l10n.completedPercent.replaceAll('{percent}', '${(progress * 100).round()}'),
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
@@ -427,9 +443,9 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Child Details',
-                style: TextStyle(
+              Text(
+                l10n.childDetails,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF2C3E50),
@@ -441,13 +457,13 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
           // Child Name
           _buildAnimatedTextField(
             controller: _childNameController,
-            label: 'Child Name',
+            label: l10n.childName,
             icon: Icons.person_outline,
-            hint: 'Enter child\'s full name',
+            hint: l10n.enterChildFullName,
             onChanged: _recalculateFormValidity,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter child\'s name';
+                return l10n.pleaseEnterChildName;
               }
               return null;
             },
@@ -456,21 +472,21 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
           // Age
           _buildAnimatedTextField(
             controller: _ageController,
-            label: 'Age',
+            label: l10n.age,
             icon: Icons.cake_outlined,
-            hint: 'Enter child\'s age',
+            hint: l10n.enterChildAge,
             keyboardType: TextInputType.number,
             onChanged: _recalculateFormValidity,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter child\'s age';
+                return l10n.pleaseEnterChildAge;
               }
               final age = int.tryParse(value);
               if (age == null) {
-                return 'Please enter a valid age';
+                return l10n.pleaseEnterValidAge;
               }
               if (age < 1 || age > 6) {
-                return 'Age must be between 1 and 6 years';
+                return l10n.ageBetween1And6;
               }
               return null;
             },
@@ -519,9 +535,9 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Parent / Guardian Details',
-                style: TextStyle(
+              Text(
+                l10n.parentGuardianDetails,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF2C3E50),
@@ -533,13 +549,13 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
           // Parent Name
           _buildAnimatedTextField(
             controller: _parentNameController,
-            label: 'Parent Name',
+            label: l10n.parentName,
             icon: Icons.person_outline,
-            hint: 'Enter parent\'s full name',
+            hint: l10n.enterParentFullName,
             onChanged: _recalculateFormValidity,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter parent\'s name';
+                return l10n.pleaseEnterParentName;
               }
               return null;
             },
@@ -551,17 +567,17 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
           // Contact Number
           _buildAnimatedTextField(
             controller: _contactNumberController,
-            label: 'Contact Number',
+            label: l10n.phoneNumber,
             icon: Icons.phone_outlined,
-            hint: 'Enter contact number',
+            hint: l10n.enterContactNumber,
             keyboardType: TextInputType.phone,
             onChanged: _recalculateFormValidity,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter contact number';
+                return l10n.pleaseEnterContactNumber;
               }
               if (value.length < 10) {
-                return 'Please enter a valid contact number';
+                return l10n.pleaseEnterValidContact;
               }
               return null;
             },
@@ -570,17 +586,17 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
           // Email Address
           _buildAnimatedTextField(
             controller: _emailController,
-            label: 'Email Address',
+            label: l10n.emailAddress,
             icon: Icons.email_outlined,
-            hint: 'Enter email address',
+            hint: l10n.enterEmailAddress,
             keyboardType: TextInputType.emailAddress,
             onChanged: _recalculateFormValidity,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter email address';
+                return l10n.pleaseEnterEmailAddress;
               }
               if (!value.contains('@')) {
-                return 'Please enter a valid email address';
+                return l10n.pleaseEnterValidEmail;
               }
               return null;
             },
@@ -604,7 +620,7 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Your information is encrypted and used only for research purposes.',
+                    l10n.infoEncryptedResearch,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[700],
@@ -691,9 +707,9 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Gender',
-          style: TextStyle(
+        Text(
+          l10n.gender,
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: Color(0xFF2C3E50),
@@ -703,15 +719,15 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
         Row(
           children: [
             Expanded(
-              child: _buildGenderButton('Male', Icons.male),
+              child: _buildGenderButton(l10n.male, Icons.male),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildGenderButton('Female', Icons.female),
+              child: _buildGenderButton(l10n.female, Icons.female),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildGenderButton('Other', Icons.transgender),
+              child: _buildGenderButton(l10n.other, Icons.transgender),
             ),
           ],
         ),
@@ -776,9 +792,9 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Relationship',
-          style: TextStyle(
+        Text(
+          l10n.relationship,
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: Color(0xFF2C3E50),
@@ -804,18 +820,11 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
                 vertical: 16,
               ),
             ),
-            items: ['Mother', 'Father', 'Guardian']
-                .map((relationship) => DropdownMenuItem(
-                      value: relationship,
-                      child: Text(
-                        relationship,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF2C3E50),
-                        ),
-                      ),
-                    ))
-                .toList(),
+            items: [
+                  DropdownMenuItem(value: 'Mother', child: Text(l10n.mother, style: const TextStyle(fontSize: 16, color: Color(0xFF2C3E50)))),
+                  DropdownMenuItem(value: 'Father', child: Text(l10n.father, style: const TextStyle(fontSize: 16, color: Color(0xFF2C3E50)))),
+                  DropdownMenuItem(value: 'Guardian', child: Text(l10n.guardian, style: const TextStyle(fontSize: 16, color: Color(0xFF2C3E50)))),
+                ],
             onChanged: (value) {
               setState(() {
                 _selectedRelationship = value!;
@@ -869,9 +878,9 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
                     color: Color(0xFF7132C1), size: 24),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Benchmark Assessments',
-                style: TextStyle(
+              Text(
+                l10n.benchmarkAssessments,
+                style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF2C3E50)),
@@ -880,7 +889,7 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
           ),
           const SizedBox(height: 8),
           Text(
-            'Standardized screening and developmental tracking. Compare with AI results.',
+            l10n.standardizedScreening,
             style: TextStyle(fontSize: 13, color: Colors.grey[700]),
           ),
           const SizedBox(height: 16),
@@ -909,7 +918,7 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
                       childAge: age,
                       childId: childId)),
                   icon: const Icon(Icons.timeline, size: 20),
-                  label: const Text('Milestones'),
+                  label: Text(l10n.milestones),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF7132C1),
                     side: const BorderSide(color: Color(0xFF7132C1)),
@@ -928,7 +937,7 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
                   childAge: age,
                   childId: childId)),
               icon: const Icon(Icons.assignment, size: 20),
-              label: const Text('Parent Report Questionnaire (PRQ)'),
+              label: Text(l10n.parentReportQuestionnaire),
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFF7132C1),
                 side: const BorderSide(color: Color(0xFF7132C1)),
@@ -972,9 +981,9 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  'Continue',
-                  style: TextStyle(
+                Text(
+                  l10n.continueText,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -999,9 +1008,9 @@ class _ChildParentDetailsPageState extends State<ChildParentDetailsPage>
                 borderRadius: BorderRadius.circular(28),
               ),
             ),
-            child: const Text(
-              'Clear',
-              style: TextStyle(
+            child: Text(
+              l10n.clear,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),

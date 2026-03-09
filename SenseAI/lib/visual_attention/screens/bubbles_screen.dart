@@ -8,9 +8,6 @@ import '../gaze/gaze_service.dart';
 import '../theme.dart';
 import '../widgets/interactive_bubbles.dart';
 import 'results_screen.dart';
-import '../../core/localization/app_localizations.dart';
-import '../../widgets/language_selector.dart';
-
 
 class BubblesScreen extends StatefulWidget {
   final String testId;
@@ -139,7 +136,12 @@ class _BubblesScreenState extends State<BubblesScreen> {
             children: [
               CircularProgressIndicator(),
               SizedBox(width: 20),
-              Text('Analyzing gaze data...'),
+              Expanded(
+                child: Text(
+                  'Analyzing gaze data...',
+                  softWrap: true,
+                ),
+              ),
             ],
           ),
         ),
@@ -147,6 +149,7 @@ class _BubblesScreenState extends State<BubblesScreen> {
     }
 
     double score = 0.0;
+    String riskCategory = '';
     try {
       final res = await http
           .post(
@@ -154,13 +157,17 @@ class _BubblesScreenState extends State<BubblesScreen> {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'test_id': widget.testId, 'events': events}),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 45));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         score = (data['score'] ?? 0.0).toDouble();
+        final scores = data['scores'];
+        riskCategory = (scores is Map && scores['risk_category'] != null)
+            ? scores['risk_category'].toString()
+            : '';
         debugPrint('Bubbles game: Data uploaded successfully, score: $score');
-        debugPrint('Bubbles game: ${data['message'] ?? 'Analysis complete'}');
+        debugPrint('Bubbles game: risk_category=$riskCategory');
       }
     } catch (e) {
       debugPrint('Bubbles game: Upload failed (offline mode): $e');
@@ -169,7 +176,11 @@ class _BubblesScreenState extends State<BubblesScreen> {
     if (mounted) {
       Navigator.of(context).pop();
       Navigator.of(context).pushReplacement(MaterialPageRoute(
-          builder: (_) => ResultsScreen(testId: widget.testId, score: score)));
+          builder: (_) => ResultsScreen(
+            testId: widget.testId,
+            score: score,
+            riskCategory: riskCategory,
+          )));
     }
   }
 
@@ -211,9 +222,9 @@ class _BubblesScreenState extends State<BubblesScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  AppLocalizations.of(context)?.bubblePopGame ?? 'Bubble Pop Game',
-                  style: const TextStyle(
+                const Text(
+                  'Bubble Pop Game',
+                  style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF2C3E50),
@@ -237,26 +248,26 @@ class _BubblesScreenState extends State<BubblesScreen> {
                   ),
                   child: Column(
                     children: [
-                      Text(
-                        '🎯 ${AppLocalizations.of(context)?.howToPlayGame ?? "How to Play"}',
-                        style: const TextStyle(
+                      const Text(
+                        '🎯 How to Play',
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF00838F),
                         ),
                       ),
                       const SizedBox(height: 20),
-                      _buildInstructionItem('🫧', AppLocalizations.of(context)?.seeTheBubbles ?? 'See the bubbles',
-                          AppLocalizations.of(context)?.bubblesFloat ?? 'Colorful bubbles will float on screen'),
+                      _buildInstructionItem('🫧', 'See the bubbles',
+                          'Colorful bubbles will float on screen'),
                       const SizedBox(height: 16),
-                      _buildInstructionItem('👆', AppLocalizations.of(context)?.tapToPop ?? 'Tap to pop!',
-                          AppLocalizations.of(context)?.touchBubblesPop ?? 'Touch the bubbles to pop them!'),
-                      const SizedBox(height: 16),
-                      _buildInstructionItem(
-                          '🎉', AppLocalizations.of(context)?.haveFun ?? 'Have fun!', AppLocalizations.of(context)?.popAsMany ?? 'Pop as many bubbles as you can!'),
+                      _buildInstructionItem('👆', 'Tap to pop!',
+                          'Touch the bubbles to pop them!'),
                       const SizedBox(height: 16),
                       _buildInstructionItem(
-                          '⏱️', AppLocalizations.of(context)?.thirtySeconds ?? '30 seconds', AppLocalizations.of(context)?.gameLasts30 ?? 'The game lasts 30 seconds'),
+                          '🎉', 'Have fun!', 'Pop as many bubbles as you can!'),
+                      const SizedBox(height: 16),
+                      _buildInstructionItem(
+                          '⏱️', '30 seconds', 'The game lasts 30 seconds'),
                     ],
                   ),
                 ),
@@ -274,10 +285,10 @@ class _BubblesScreenState extends State<BubblesScreen> {
                       ),
                       elevation: 4,
                     ),
-                    child: Text(
-                      AppLocalizations.of(context)?.startGameBtn ?? 'Start Game',
+                    child: const Text(
+                      'Start Game',
                       style:
-                          const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -320,19 +331,8 @@ class _BubblesScreenState extends State<BubblesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)?.bubblePopGame ?? 'Pop the Bubbles'),
-        backgroundColor: Colors.white,
-        foregroundColor: SenseAIColors.primaryBlue,
-        elevation: 0,
+        title: const Text('Pop the Bubbles'),
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const LanguageSelector(),
-          ),
           Container(
             margin: const EdgeInsets.all(8),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

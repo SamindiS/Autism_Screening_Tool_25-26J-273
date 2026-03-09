@@ -6,9 +6,6 @@ import 'package:http/http.dart' as http;
 import '../gaze/gaze_calibration_screen.dart';
 import '../models/parent_info.dart';
 import '../theme.dart';
-import '../../core/localization/app_localizations.dart';
-import '../../widgets/language_selector.dart';
-
 
 /// Parent Information Screen
 /// 
@@ -89,6 +86,151 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
     return value.replaceAll(RegExp(r'\s+'), '');
   }
 
+  Future<bool> _trySubmitAndNavigate(Map<String, dynamic> payload) async {
+    // Step 1: Quick health check - fail fast if backend unreachable
+    try {
+      debugPrint('Checking server connectivity...');
+      final healthRes = await http
+          .get(Uri.parse('$API_BASE/health'))
+          .timeout(const Duration(seconds: 8));
+      if (healthRes.statusCode != 200) {
+        debugPrint('Health check failed: ${healthRes.statusCode}');
+        return false;
+      }
+      debugPrint('Server reachable, submitting...');
+    } catch (e) {
+      debugPrint('Health check failed (server unreachable): $e');
+      return false;
+    }
+
+    // Step 2: Submit with longer timeout and retries
+    const connectTimeout = Duration(seconds: 25);
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        debugPrint('Submitting (attempt ${attempt + 1}/3)...');
+        final res = await http
+            .post(
+              Uri.parse('$API_BASE/submit_info'),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode(payload),
+            )
+            .timeout(connectTimeout);
+
+        if (res.statusCode == 200) {
+          final body = jsonDecode(res.body);
+          final testId = body['test_id'] as String;
+          if (!mounted) return true;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => GazeCalibrationScreen(
+                testId: testId,
+                onCalibrationComplete: () {},
+              ),
+            ),
+          );
+          return true;
+        } else {
+          if (!mounted) return true;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Server error: ${res.statusCode}'),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          return true;
+        }
+      } catch (e) {
+        debugPrint('Submit error (attempt ${attempt + 1}): $e');
+        if (attempt < 2) {
+          await Future.delayed(const Duration(milliseconds: 800));
+        }
+      }
+    }
+    return false;
+  }
+
+  void _showConnectionErrorDialog(Map<String, dynamic> payload) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Connection Failed'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Cannot reach the backend server.',
+                style: Theme.of(ctx).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Connecting to: $API_BASE',
+                style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                  fontFamily: 'monospace',
+                  color: Colors.blue.shade700,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Fix steps:\n\n'
+                '1. On PC: Run run_backend.ps1 (keep it open)\n'
+                '2. On PC: Run allow_backend_firewall.ps1 as Administrator (one-time)\n'
+                '3. Same WiFi: Phone and PC on same network\n'
+                '4. Correct IP: Run ipconfig on PC. If IP differs, edit lib/theme.dart',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Verify: Open $API_BASE/health in PC browser.',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              if (!mounted) return;
+              final offlineTestId = 'offline_${DateTime.now().millisecondsSinceEpoch}';
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => GazeCalibrationScreen(
+                    testId: offlineTestId,
+                    onCalibrationComplete: () {},
+                  ),
+                ),
+              );
+            },
+            child: const Text('Continue Offline'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Retrying connection...'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              final ok = await _trySubmitAndNavigate(payload);
+              if (mounted) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              }
+              if (!ok && mounted) {
+                _showConnectionErrorDialog(payload);
+              }
+            },
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -111,70 +253,10 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
     setState(() => _submitting = true);
 
     try {
-      debugPrint('Submitting parent info: $payload');
-      final res = await http
-          .post(
-            Uri.parse('$API_BASE/submit_info'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(payload),
-          )
-          .timeout(const Duration(seconds: 5));
-
-      if (res.statusCode == 200) {
-        final body = jsonDecode(res.body);
-        final testId = body['test_id'] as String;
-
-        if (!mounted) return;
-
-        // Navigate to CalibrationScreen
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => GazeCalibrationScreen(
-              testId: testId,
-              onCalibrationComplete: () {
-                // Calibration complete - GazeCalibrationScreen navigates to ButterflyScreen internally
-              },
-            ),
-          ),
-        );
-      } else {
-        if (!mounted) return;
-        debugPrint('Server error: ${res.statusCode} - ${res.body}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Server error: ${res.statusCode} - ${res.body}')),
-        );
+      final ok = await _trySubmitAndNavigate(payload);
+      if (!ok && mounted) {
+        _showConnectionErrorDialog(payload);
       }
-    } catch (e) {
-      if (!mounted) return;
-      // If backend is not available, use offline mode with a generated test ID
-      debugPrint('Connection error: $e');
-      
-      // Show a user-friendly message without technical details
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Continuing in offline mode'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-
-      // Generate a local test ID and proceed anyway
-      final offlineTestId = 'offline_${DateTime.now().millisecondsSinceEpoch}';
-      
-      // Small delay to let user see the message, then navigate
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      if (!mounted) return;
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => GazeCalibrationScreen(
-            testId: offlineTestId,
-            onCalibrationComplete: () {
-              // Calibration complete - GazeCalibrationScreen navigates to ButterflyScreen internally
-            },
-          ),
-        ),
-      );
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -187,17 +269,7 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
     return Scaffold(
       backgroundColor: SenseAIColors.bgLight,
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)?.parentGuardianInfo ?? 'Parent Information'),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const LanguageSelector(),
-          ),
-        ],
+        title: const Text('Parent Information'),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -256,9 +328,9 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
               Center(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text(
-                    AppLocalizations.of(context)?.parentGuardianInfo ?? 'Parent/Guardian Information',
-                    style: const TextStyle(
+                  child: const Text(
+                    'Parent/Guardian Information',
+                    style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
                       color: SenseAIColors.primaryBlue,
@@ -270,7 +342,7 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
               const SizedBox(height: 12),
               Center(
                 child: Text(
-                  AppLocalizations.of(context)?.tellUsAboutParent ?? 'Tell us about the parent or guardian',
+                  'Tell us about the parent or guardian',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -302,7 +374,7 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                       TextFormField(
                         controller: _nameController,
                         decoration: InputDecoration(
-                          labelText: AppLocalizations.of(context)?.parentGuardianName ?? 'Parent/Guardian Name',
+                          labelText: 'Parent/Guardian Name',
                           labelStyle: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -329,7 +401,7 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                       TextFormField(
                         controller: _emailController,
                         decoration: InputDecoration(
-                          labelText: AppLocalizations.of(context)?.emailAddress ?? 'Email Address',
+                          labelText: 'Email Address',
                           labelStyle: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -357,7 +429,7 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                       TextFormField(
                         controller: _phoneController,
                         decoration: InputDecoration(
-                          labelText: AppLocalizations.of(context)?.phoneNumber ?? 'Phone Number',
+                          labelText: 'Phone Number',
                           labelStyle: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -375,7 +447,7 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                           ),
                           filled: true,
                           fillColor: SenseAIColors.softBlue.withOpacity(0.2),
-                          helperText: AppLocalizations.of(context)?.includeCountryCode ?? 'Include country code (e.g., +1)',
+                          helperText: 'Include country code (e.g., +1)',
                           helperMaxLines: 2,
                         ),
                         keyboardType: TextInputType.phone,
@@ -387,7 +459,7 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                       DropdownButtonFormField<String>(
                         value: _relationship,
                         decoration: InputDecoration(
-                          labelText: AppLocalizations.of(context)?.relationship ?? 'Relationship',
+                          labelText: 'Relationship',
                           labelStyle: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -456,9 +528,9 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                                     width: 2,
                                   ),
                                 ),
-                                child: Text(
-                                  AppLocalizations.of(context)?.backText ?? 'Back',
-                                  style: const TextStyle(
+                                child: const Text(
+                                  'Back',
+                                  style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w600,
                                     color: SenseAIColors.primaryBlue,
@@ -508,9 +580,9 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                                                     Colors.white),
                                           ),
                                         )
-                                      : Text(
-                                          AppLocalizations.of(context)?.continueText ?? 'Continue',
-                                          style: const TextStyle(
+                                      : const Text(
+                                          'Continue',
+                                          style: TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
                                             letterSpacing: 1.0,
@@ -549,16 +621,16 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      AppLocalizations.of(context)?.safeAndSecure ?? 'Safe & Secure',
-                      style: const TextStyle(
+                      'Safe & Secure',
+                      style: TextStyle(
                         color: SenseAIColors.primaryBlue,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
-                      AppLocalizations.of(context)?.infoHelpsReport ?? 'This information helps us create your report',
+                      'This information helps us create your report',
                       style: TextStyle(
                         color: SenseAIColors.primaryBlue.withOpacity(0.8),
                         fontSize: 14,

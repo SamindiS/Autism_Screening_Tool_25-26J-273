@@ -34,6 +34,7 @@ References:
 """
 
 import numpy as np
+import warnings
 from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
 import json
@@ -41,27 +42,38 @@ import pickle
 from pathlib import Path
 import joblib
 
+# Suppress sklearn version mismatch warnings when loading pickled models
+warnings.filterwarnings("ignore", message="Trying to unpickle")
+
 # Try to load trained ML classifier
 ML_CLASSIFIER = None
 ML_SCALER = None
 ML_MODEL_TYPE = None  # 'synthetic' or 'real_data'
+ML_FEATURE_COLUMNS = None  # Exact feature order from training
 
 def _load_ml_classifier():
     """Load trained autism screening classifier if available.
     Prefers real-data model over synthetic model.
     """
-    global ML_CLASSIFIER, ML_SCALER, ML_MODEL_TYPE
+    global ML_CLASSIFIER, ML_SCALER, ML_MODEL_TYPE, ML_FEATURE_COLUMNS, ML_FEATURE_COLUMNS
     
     # First try the real-data model (trained on actual toddler ASD data)
     models_dir = Path(__file__).parent / 'models'
     real_classifier_path = models_dir / 'autism_classifier_real_data.pkl'
     real_scaler_path = models_dir / 'scaler_real_data.pkl'
+    feature_cols_path = models_dir / 'feature_columns_real_data.json'
     
     if real_classifier_path.exists() and real_scaler_path.exists():
         try:
             ML_CLASSIFIER = joblib.load(real_classifier_path)
             ML_SCALER = joblib.load(real_scaler_path)
             ML_MODEL_TYPE = 'real_data'
+            if feature_cols_path.exists():
+                import json
+                with open(feature_cols_path) as f:
+                    ML_FEATURE_COLUMNS = json.load(f)
+            else:
+                ML_FEATURE_COLUMNS = None
             print("✅ Loaded REAL DATA model (trained on Toddler ASD dataset)")
             return True
         except Exception as e:
@@ -513,7 +525,11 @@ class GazePatternAnalyzer:
                 print(f"ML scoring failed, falling back to rule-based: {e}")
         
         # Fallback: Rule-based scoring
-        scores['scoring_method'] = 'rule_based'
+        return self._compute_rule_based_scores(metrics)
+    
+    def _compute_rule_based_scores(self, metrics: GazeMetrics) -> Dict:
+        """Rule-based scoring designed for our butterfly/bubbles game metrics."""
+        scores = {'scoring_method': 'rule_based'}
         
         # 1. ATTENTION SCORE (0-100)
         # Higher score = better attention to targets
@@ -677,11 +693,6 @@ class GazePatternAnalyzer:
         if data_quality_issues:
             print(f"❌ ML Scoring ABORTED due to data quality issues: {data_quality_issues}")
             print("   Returning 'Inconclusive' result to avoid false positive")
-        
-        # If data quality is poor, return safe default scores
-        if data_quality_issues:
-            print(f"❌ ML Scoring ABORTED due to data quality issues: {data_quality_issues}")
-            print("   Returning 'Inconclusive' result to avoid false positive")
             
             return {
                 'overall_score': 50.0,  # Neutral score
@@ -708,78 +719,61 @@ class GazePatternAnalyzer:
             # Map our app's metrics to the dataset features
             # The model expects features like: FD_F, FD_O, freq, DS, trans, etc.
             
-            # Convert our metrics to match dataset structure
-            # Age in months (estimate child's age, default to 30 months)
-            age_months = 30  # Default age for toddler screening
+            # Map our app metrics to dataset-compatible scales (FD 0-100, freq 0-10, trans 0-30)
+            age_months = 30
+            fd_face = metrics.time_in_center
+            fd_object = metrics.time_in_periphery
+            fd_target = metrics.time_on_target
+            freq = min(metrics.saccade_rate * 10, 10.0)
+            freq_norm = min(freq / 5.0, 1.0)
+            ds = min(metrics.mean_fixation_duration * 100, 100.0)
+            ds_norm = min(ds / 50.0, 1.0)
+            trans_base = min(metrics.attention_switches * 2, 30)
+            trans_face = trans_base * 0.6
+            trans_obj = trans_base * 0.4
+            face_object_ratio = fd_face / max(fd_face + fd_object, 0.001)
+            social_attention_index = (fd_face + fd_face * 0.9 + fd_face * 0.8) / 3
+            gaze_shift_variability = min(metrics.std_fixation_duration * 10, 5.0)
+            target_tracking = (fd_target + fd_target * 0.85 + fd_target * 0.7) / 3
+            joint_attention_response = (trans_face * 0.5 + trans_face * 0.4) / 2
             
-            # Fixation Duration features (normalized to dataset scale ~0-100)
-            fd_face = metrics.time_in_center * 1.0  # Center = social/face area
-            fd_object = metrics.time_in_periphery * 1.0  # Periphery = objects
-            fd_target = metrics.time_on_target * 1.0  # Target tracking
+            feature_dict = {
+                'AgeT0': age_months,
+                'TransFTO_RJA_T0': trans_face * 0.8,
+                'transFO_RJA_T0': trans_obj * 0.6,
+                'freq_RJA_T0': freq,
+                'freq_norm_RJA_T0': freq_norm,
+                'DS_RJA_T0': ds,
+                'DS_norm_RJA_T0': ds_norm,
+                'FD_F_RJA_T0': fd_face,
+                'FD_TO_RJA_T0': fd_target,
+                'FD_O_RJA_T0': fd_object,
+                'transTOF_IJA1_T0': trans_face * 0.5,
+                'transOF_IJA1_T0': trans_face * 0.4,
+                'transFTO_IJA1_T0': trans_face * 0.6,
+                'transFO_IJA1_T0': trans_obj * 0.3,
+                'transTOO_IJA1_T0': trans_obj * 0.2,
+                'freq_IJA1_T0': freq * 0.9,
+                'freq_norm_IJA1_T0': freq_norm * 0.9,
+                'DS_IJA1_T0': ds * 0.95,
+                'DS_norm_IJA1_T0': ds_norm * 0.95,
+                'FD_F_IJA1_T0': fd_face * 0.9,
+                'FD_TO_IJA1_T0': fd_target * 0.85,
+                'FD_O_IJA1_T0': fd_object * 1.1,
+                'transTOF_IJA2_T0': trans_face * 0.3,
+                'transFTO_IJA2_T0': trans_face * 0.4,
+                'FD_F_IJA2_T0': fd_face * 0.8,
+                'FD_TO_IJA2_T0': fd_target * 0.7,
+                'face_object_ratio': face_object_ratio,
+                'social_attention_index': social_attention_index,
+                'gaze_shift_variability': gaze_shift_variability,
+                'target_tracking': target_tracking,
+                'joint_attention_response': joint_attention_response,
+            }
+            cols = ML_FEATURE_COLUMNS if ML_FEATURE_COLUMNS else list(feature_dict.keys())
+            features = np.array([[feature_dict.get(c, 0) for c in cols]], dtype=np.float64)
             
-            # Frequency features (gaze shifts per second * 10 to match dataset scale)
-            freq = metrics.saccade_rate * 10
-            freq_norm = min(freq / 5.0, 1.0)  # Normalized 0-1
-            
-            # Dwell time / scan path
-            ds = metrics.mean_fixation_duration * 100  # Convert to dataset scale
-            ds_norm = min(ds / 50.0, 1.0)  # Normalized
-            
-            # Transition features (attention switches normalized)
-            trans_face = metrics.attention_switches * 0.5
-            trans_obj = metrics.attention_switches * 0.3
-            
-            # Joint attention response (transitions to face)
-            joint_attention = (trans_face * 0.5 + trans_face * 0.4) / 2  # Average of transOF and transTOF
-            
-            # Build feature vector matching the real-data model's expected input
-            # 31 features to match training (26 base + 5 derived)
-            features = np.array([
-                # Age
-                age_months,
-                # RJA features (Responding to Joint Attention)
-                trans_face * 0.8,  # TransFTO_RJA
-                trans_obj * 0.6,   # transFO_RJA
-                freq,              # freq_RJA
-                freq_norm,         # freq_norm_RJA
-                ds,                # DS_RJA
-                ds_norm,           # DS_norm_RJA
-                fd_face,           # FD_F_RJA
-                fd_target,         # FD_TO_RJA
-                fd_object,         # FD_O_RJA
-                # IJA1 features (Initiating Joint Attention 1)
-                trans_face * 0.5,  # transTOF_IJA1
-                trans_face * 0.4,  # transOF_IJA1
-                trans_face * 0.6,  # transFTO_IJA1
-                trans_obj * 0.3,   # transFO_IJA1
-                trans_obj * 0.2,   # transTOO_IJA1
-                freq * 0.9,        # freq_IJA1
-                freq_norm * 0.9,   # freq_norm_IJA1
-                ds * 0.95,         # DS_IJA1
-                ds_norm * 0.95,    # DS_norm_IJA1
-                fd_face * 0.9,     # FD_F_IJA1
-                fd_target * 0.85,  # FD_TO_IJA1
-                fd_object * 1.1,   # FD_O_IJA1
-                # IJA2 features
-                trans_face * 0.3,  # transTOF_IJA2
-                trans_face * 0.4,  # transFTO_IJA2
-                fd_face * 0.8,     # FD_F_IJA2
-                fd_target * 0.7,   # FD_TO_IJA2
-                # Derived features (5 total)
-                fd_face / max(fd_face + fd_object, 0.001),  # face_object_ratio
-                (fd_face + fd_face * 0.9 + fd_face * 0.8) / 3,  # social_attention_index
-                metrics.std_fixation_duration * 10,  # gaze_shift_variability
-                (fd_target + fd_target * 0.85 + fd_target * 0.7) / 3,  # target_tracking
-                joint_attention,  # joint_attention_response
-            ]).reshape(1, -1)
-            
-            print(f"\n📊 ML Scoring (Real Data Model) - Mapped features:")
-            print(f"   Age: {age_months} months")
-            print(f"   Face fixation (FD_F): {fd_face:.1f}")
-            print(f"   Object fixation (FD_O): {fd_object:.1f}")
-            print(f"   Target fixation (FD_TO): {fd_target:.1f}")
-            print(f"   Gaze shift frequency: {freq:.2f}")
-            print(f"   Model type: REAL DATA (Toddler ASD)")
+            print(f"\n📊 ML Scoring (Real Data Model): FD_F={fd_face:.1f}, FD_O={fd_object:.1f}, FD_TO={fd_target:.1f}, face_obj_ratio={face_object_ratio:.3f}")
             
         else:
             # Synthetic model - use original features
@@ -845,20 +839,38 @@ class GazePatternAnalyzer:
                   'tracking_score', 'flexibility_score']:
             scores[k] = max(0, min(100, scores[k]))
         
-        # Risk category
         scores['risk_probability'] = round(asd_prob * 100, 1)
         scores['confidence'] = round(max(prob) * 100, 1)
         
-        if asd_prob < 0.25:
+        # SUCCESSFUL ENGAGEMENT OVERRIDE: When child clearly completed activities well,
+        # ML (trained on different clinical data) may give false High Risk. Use rule-based
+        # as sanity check - our metrics are designed for butterfly/bubbles games.
+        engagement_ok = (
+            metrics.time_on_target >= 30 and
+            metrics.smooth_pursuit_ratio >= 25 and
+            metrics.total_events >= 80 and
+            metrics.total_duration >= 20
+        )
+        if engagement_ok and scores['overall_score'] < 55:
+            # Recompute with rule-based (matches our game metrics)
+            rb = self._compute_rule_based_scores(metrics)
+            if rb['overall_score'] > scores['overall_score']:
+                print(f"   Using rule-based override: ML={scores['overall_score']} -> RB={rb['overall_score']} (engagement metrics indicate successful completion)")
+                scores.update(rb)
+                scores['scoring_method'] = 'rule_based_override'
+        
+        # Risk category - balanced thresholds for correct results
+        overall = scores['overall_score']
+        if overall >= 80:
             scores['risk_category'] = 'Low Risk'
-        elif asd_prob < 0.50:
+        elif overall >= 60:
             scores['risk_category'] = 'Moderate - Further Evaluation Recommended'
-        elif asd_prob < 0.75:
+        elif overall >= 40:
             scores['risk_category'] = 'Elevated Risk - Professional Consultation Advised'
         else:
             scores['risk_category'] = 'High Risk - Immediate Professional Evaluation Recommended'
         
-        print(f"\n✅ ML Result: {scores['risk_category']} (score: {scores['overall_score']})")
+        print(f"\n✅ Result: {scores['risk_category']} (score: {scores['overall_score']})")
         
         return scores
     

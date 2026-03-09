@@ -10,26 +10,30 @@ import 'package:share_plus/share_plus.dart';
 import '../gaze/gaze_service.dart';
 import '../theme.dart';
 import 'entry_form_screen.dart';
-import '../../core/localization/app_localizations.dart';
-import '../../widgets/language_selector.dart';
-
 
 class ResultsScreen extends StatelessWidget {
   final String testId;
   final double score;
-  const ResultsScreen({required this.testId, required this.score, super.key});
+  final String riskCategory;
+  const ResultsScreen({
+    required this.testId,
+    required this.score,
+    this.riskCategory = '',
+    super.key,
+  });
 
   Future<File?> _downloadPdfToFile(BuildContext context) async {
     return await _waitForReportAndDownload(context);
   }
 
   Future<void> _showReportOptions(BuildContext context) async {
+    final scaffoldContext = context;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
+      builder: (modalContext) => Container(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -56,21 +60,21 @@ class ResultsScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: _buildOptionButton(
-                    context,
+                    modalContext: modalContext,
                     icon: Icons.share,
                     label: 'Share',
                     color: SenseAIColors.puzzleTeal,
-                    onTap: () => _shareReport(context),
+                    onTap: () => _shareReport(scaffoldContext),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: _buildOptionButton(
-                    context,
+                    modalContext: modalContext,
                     icon: Icons.download,
                     label: 'Download',
                     color: SenseAIColors.puzzleBlue,
-                    onTap: () => _downloadReport(context),
+                    onTap: () => _downloadReport(scaffoldContext),
                   ),
                 ),
               ],
@@ -82,8 +86,8 @@ class ResultsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOptionButton(
-    BuildContext context, {
+  Widget _buildOptionButton({
+    required BuildContext modalContext,
     required IconData icon,
     required String label,
     required Color color,
@@ -91,8 +95,11 @@ class ResultsScreen extends StatelessWidget {
   }) {
     return InkWell(
       onTap: () {
-        Navigator.of(context).pop();
-        onTap();
+        Navigator.of(modalContext).pop();
+        // Delay so modal is fully disposed before async work (prevents _dependents.isEmpty)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          onTap();
+        });
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -216,16 +223,11 @@ class ResultsScreen extends StatelessWidget {
             children: [
               CircularProgressIndicator(),
               SizedBox(height: 20),
-              Text('Generating PDF report...'),
+              Text('Preparing your report...'),
               SizedBox(height: 10),
               Text(
-                'This usually takes 5-15 seconds',
+                'This usually takes a few seconds',
                 style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              SizedBox(height: 5),
-              Text(
-                'Please wait...',
-                style: TextStyle(fontSize: 11, color: Colors.grey),
               ),
             ],
           ),
@@ -234,12 +236,12 @@ class ResultsScreen extends StatelessWidget {
     }
 
     try {
-      const maxAttempts = 45;
-      const pollInterval = Duration(milliseconds: 1000);
+      const maxAttempts = 15;
+      const pollInterval = Duration(milliseconds: 800);
 
       try {
         final downloadUrl = Uri.parse('$API_BASE/report/$testId/download');
-        final response = await http.get(downloadUrl).timeout(const Duration(seconds: 35));
+        final response = await http.get(downloadUrl).timeout(const Duration(seconds: 25));
 
         if (response.statusCode == 200) {
           final directory = await getTemporaryDirectory();
@@ -300,7 +302,7 @@ class ResultsScreen extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Report generation is taking longer than expected. Please try again in a moment.',
+              'Could not load report. Please check your connection and try again.',
             ),
             duration: Duration(seconds: 4),
           ),
@@ -322,6 +324,7 @@ class ResultsScreen extends StatelessWidget {
   }
 
   String _getRiskCategory(double score) {
+    if (riskCategory.isNotEmpty) return riskCategory;
     if (score >= 80) return 'Low Risk';
     if (score >= 60) return 'Moderate - Further Evaluation Recommended';
     if (score >= 40) return 'Elevated Risk - Professional Consultation Advised';
@@ -345,23 +348,13 @@ class ResultsScreen extends StatelessWidget {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('🎊', style: TextStyle(fontSize: 24)),
+            Text('🎊', style: TextStyle(fontSize: 24)),
             const SizedBox(width: 8),
-            Text(AppLocalizations.of(context)?.allDone ?? 'All Done!'),
+            const Text('All Done!'),
             const SizedBox(width: 8),
-            const Text('🎊', style: TextStyle(fontSize: 24)),
+            Text('🎊', style: TextStyle(fontSize: 24)),
           ],
         ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const LanguageSelector(),
-          ),
-        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -381,8 +374,8 @@ class ResultsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                AppLocalizations.of(context)?.youDidGreat ?? 'You Did Great!',
-                style: const TextStyle(
+                'You Did Great!',
+                style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: SenseAIColors.primaryBlue,
@@ -390,7 +383,7 @@ class ResultsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '$celebrationEmoji ${AppLocalizations.of(context)?.amazingJob ?? "Amazing job completing the games!"} $celebrationEmoji',
+                '$celebrationEmoji Amazing job completing the games! $celebrationEmoji',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
@@ -421,8 +414,8 @@ class ResultsScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      AppLocalizations.of(context)?.yourScore ?? 'Your Score',
-                      style: const TextStyle(
+                      'Your Score',
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: SenseAIColors.primaryBlue,
@@ -493,11 +486,11 @@ class ResultsScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    const Text('📄', style: TextStyle(fontSize: 40)),
+                    Text('📄', style: TextStyle(fontSize: 40)),
                     const SizedBox(height: 12),
                     Text(
-                      AppLocalizations.of(context)?.specialReport ?? 'Your Special Report',
-                      style: const TextStyle(
+                      'Your Special Report',
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: SenseAIColors.primaryBlue,
@@ -505,7 +498,12 @@ class ResultsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      AppLocalizations.of(context)?.generatingReportReason ?? 'We\'re creating your amazing report with:\n✨ How well you paid attention\n🦋 Your eye tracking skills\n🎯 Your focus patterns\n💡 Special recommendations\n\nIt will be ready soon!',
+                      'We\'re creating your amazing report with:\n'
+                      '✨ How well you paid attention\n'
+                      '🦋 Your eye tracking skills\n'
+                      '🎯 Your focus patterns\n'
+                      '💡 Special recommendations\n\n'
+                      'It will be ready soon!',
                       style: TextStyle(
                         fontSize: 15,
                         height: 1.6,
@@ -534,10 +532,10 @@ class ResultsScreen extends StatelessWidget {
                   height: 64,
                   child: ElevatedButton.icon(
                     onPressed: () => _showReportOptions(context),
-                    icon: const Text('📄', style: TextStyle(fontSize: 28)),
-                    label: Text(
-                      AppLocalizations.of(context)?.getYourReport ?? 'Get Your Report',
-                      style: const TextStyle(
+                    icon: Text('📄', style: TextStyle(fontSize: 28)),
+                    label: const Text(
+                      'Get Your Report',
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
@@ -569,10 +567,10 @@ class ResultsScreen extends StatelessWidget {
                       (route) => false,
                     );
                   },
-                  icon: const Text('🔄', style: TextStyle(fontSize: 22)),
-                  label: Text(
-                    AppLocalizations.of(context)?.playAgain ?? 'Play Again!',
-                    style: const TextStyle(
+                  icon: Text('🔄', style: TextStyle(fontSize: 22)),
+                  label: const Text(
+                    'Play Again!',
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),

@@ -48,7 +48,7 @@ class BubbleColors {
 class Bubble {
   String id;
   Offset position; // Normalized 0-1
-  double size;
+  double sizeRatio; // 0.8-1.2, multiplied by screen to get actual size
   Color color;
   double wobblePhase;
   bool isBeingLookedAt;
@@ -66,7 +66,7 @@ class Bubble {
   Bubble({
     required this.id,
     required this.position,
-    required this.size,
+    required this.sizeRatio,
     required this.color,
     this.wobblePhase = 0,
     this.isBeingLookedAt = false,
@@ -115,7 +115,7 @@ class _InteractiveBubblesState extends State<InteractiveBubbles>
 
   // Game state
   int _score = 0;
-  String _feedback = 'Tap the bubbles! �🫧';
+  String _feedback = 'Tap the bubbles!';
 
   // Animation
   late AnimationController _wobbleController;
@@ -124,10 +124,12 @@ class _InteractiveBubblesState extends State<InteractiveBubbles>
   
   // No need for AudioCache - we'll use AssetSource directly
 
-  // Game settings - BIGGER bubbles for kids!
-  static const int maxBubbles = 6; // Fewer bubbles, less overwhelming
-  static const double bubbleMinSize = 80; // Bigger for easy tapping
-  static const double bubbleMaxSize = 120; // Even bigger!
+  // Game settings - Bubbles in varied sizes (small, medium, large)
+  // Base size doubled (2x) for easier tapping; wider range for more size variety
+  static const int maxBubbles = 6;
+  static const double bubbleBaseFraction = 0.20; // Base size (2x previous 0.10)
+  static const double bubbleSizeMinRatio = 0.5;  // Small bubbles
+  static const double bubbleSizeMaxRatio = 2.0;  // Large bubbles (more variety)
   static const double gazeThreshold = 0.25; // For tracking only, not popping
   static const double gazeProgressPerTick =
       0.04; // Not used for popping anymore
@@ -180,7 +182,7 @@ class _InteractiveBubblesState extends State<InteractiveBubbles>
       id: 'bubble_$index',
       position: basePos,
       basePosition: basePos,
-      size: bubbleMinSize + rng.nextDouble() * (bubbleMaxSize - bubbleMinSize),
+      sizeRatio: bubbleSizeMinRatio + rng.nextDouble() * (bubbleSizeMaxRatio - bubbleSizeMinRatio), // 0.5-2.0 for varied sizes
       color: BubbleColors.colors[index % BubbleColors.colors.length],
       wobblePhase: rng.nextDouble() * 2 * pi,
       floatPhase: rng.nextDouble() * 2 * pi, // Random starting phase
@@ -252,7 +254,7 @@ class _InteractiveBubblesState extends State<InteractiveBubbles>
       if (bubble.isPopping) continue;
 
       final distance = _getDistance(bubble.position, _currentGaze!);
-      final adjustedThreshold = gazeThreshold * (bubble.size / 80);
+      final adjustedThreshold = gazeThreshold * bubble.sizeRatio;
 
       if (distance < adjustedThreshold) {
         // Child is looking at this bubble - track it
@@ -558,7 +560,7 @@ class _InteractiveBubblesState extends State<InteractiveBubbles>
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Text(
-                '� Tap the bubbles to pop them!',
+                'Tap the bubbles to pop them!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white70,
@@ -573,11 +575,15 @@ class _InteractiveBubblesState extends State<InteractiveBubbles>
   }
 
   Widget _buildBubble(Bubble bubble, double w, double h) {
+    // Responsive size: same proportion on phone and tablet
+    final screenMin = min(w, h);
+    final size = screenMin * bubbleBaseFraction * bubble.sizeRatio;
+
     if (bubble.isPopping) {
-      // Pop animation
+      // Pop animation - use Icon instead of emoji (reliable on all devices)
       return Positioned(
-        left: bubble.position.dx * w - bubble.size / 2,
-        top: bubble.position.dy * h - bubble.size / 2,
+        left: bubble.position.dx * w - size / 2,
+        top: bubble.position.dy * h - size / 2,
         child: TweenAnimationBuilder<double>(
           tween: Tween(begin: 1.0, end: 0.0),
           duration: const Duration(milliseconds: 300),
@@ -587,14 +593,18 @@ class _InteractiveBubblesState extends State<InteractiveBubbles>
               child: Opacity(
                 opacity: value,
                 child: Container(
-                  width: bubble.size,
-                  height: bubble.size,
+                  width: size,
+                  height: size,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: bubble.color.withOpacity(0.3),
                   ),
-                  child: const Center(
-                    child: Text('✨', style: TextStyle(fontSize: 30)),
+                  child: Center(
+                    child: Icon(
+                      Icons.auto_awesome,
+                      color: Colors.white.withOpacity(0.9),
+                      size: size * 0.35,
+                    ),
                   ),
                 ),
               ),
@@ -615,16 +625,16 @@ class _InteractiveBubblesState extends State<InteractiveBubbles>
     final isLookedAt = bubble.isBeingLookedAt && bubble.gazeProgress > 0;
 
     return Positioned(
-      left: bubble.position.dx * w - bubble.size / 2 + wobbleX,
-      top: bubble.position.dy * h - bubble.size / 2 + wobbleY,
+      left: bubble.position.dx * w - size / 2 + wobbleX,
+      top: bubble.position.dy * h - size / 2 + wobbleY,
       child: GestureDetector(
         onTap: () => _popBubble(bubble),
         child: Transform.scale(
           scale: breatheScale,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            width: bubble.size,
-            height: bubble.size,
+            width: size,
+            height: size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
@@ -653,25 +663,16 @@ class _InteractiveBubblesState extends State<InteractiveBubbles>
             ),
             child: Stack(
               children: [
-                // Highlight reflection
+                // Highlight reflection - pure drawn shape, no emoji
                 Positioned(
-                  top: bubble.size * 0.15,
-                  left: bubble.size * 0.2,
+                  top: size * 0.15,
+                  left: size * 0.2,
                   child: Container(
-                    width: bubble.size * 0.3,
-                    height: bubble.size * 0.2,
+                    width: size * 0.3,
+                    height: size * 0.2,
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(bubble.size * 0.15),
-                    ),
-                  ),
-                ),
-                // "Tap me" hint for kids
-                Center(
-                  child: Text(
-                    '🫧',
-                    style: TextStyle(
-                      fontSize: bubble.size * 0.4,
+                      borderRadius: BorderRadius.circular(size * 0.15),
                     ),
                   ),
                 ),

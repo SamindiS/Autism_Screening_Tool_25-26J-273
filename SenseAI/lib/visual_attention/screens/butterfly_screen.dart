@@ -8,9 +8,6 @@ import '../gaze/gaze_service.dart';
 import '../theme.dart';
 import '../widgets/animated_butterfly.dart';
 import 'bubbles_screen.dart';
-import '../../core/localization/app_localizations.dart';
-import '../../widgets/language_selector.dart';
-
 
 class ButterflyScreen extends StatefulWidget {
   final String testId;
@@ -282,9 +279,9 @@ class _ButterflyScreenState extends State<ButterflyScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  AppLocalizations.of(context)?.butterflyGame ?? 'Butterfly Game',
-                  style: const TextStyle(
+                const Text(
+                  'Butterfly Game',
+                  style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF2C3E50),
@@ -308,26 +305,26 @@ class _ButterflyScreenState extends State<ButterflyScreen> {
                   ),
                   child: Column(
                     children: [
-                      Text(
-                        '🌿 ${AppLocalizations.of(context)?.howToPlayGame ?? "How to Play"}',
-                        style: const TextStyle(
+                      const Text(
+                        '🌿 How to Play',
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF2E7D32),
                         ),
                       ),
                       const SizedBox(height: 20),
-                      _buildInstructionItem('🦋', AppLocalizations.of(context)?.watchButterfly ?? 'Watch the butterfly',
-                          AppLocalizations.of(context)?.butterflyFlyAround ?? 'A colorful butterfly will fly around'),
+                      _buildInstructionItem('🦋', 'Watch the butterfly',
+                          'A colorful butterfly will fly around'),
                       const SizedBox(height: 16),
-                      _buildInstructionItem('👀', AppLocalizations.of(context)?.followEyes ?? 'Follow with your eyes',
-                          AppLocalizations.of(context)?.tryLookWhere ?? 'Try to look at where it goes'),
+                      _buildInstructionItem('👀', 'Follow with your eyes',
+                          'Try to look at where it goes'),
                       const SizedBox(height: 16),
-                      _buildInstructionItem('🌸', AppLocalizations.of(context)?.visitFlowers ?? 'Visit the flowers',
-                          AppLocalizations.of(context)?.butterflyLovesFlowers ?? 'The butterfly loves flowers!'),
+                      _buildInstructionItem('🌸', 'Visit the flowers',
+                          'The butterfly loves flowers!'),
                       const SizedBox(height: 16),
                       _buildInstructionItem(
-                          '⏱️', AppLocalizations.of(context)?.fifteenSeconds ?? '15 seconds', AppLocalizations.of(context)?.gameLasts15 ?? 'The game lasts 15 seconds'),
+                          '⏱️', '15 seconds', 'The game lasts 15 seconds'),
                     ],
                   ),
                 ),
@@ -345,10 +342,10 @@ class _ButterflyScreenState extends State<ButterflyScreen> {
                       ),
                       elevation: 4,
                     ),
-                    child: Text(
-                      AppLocalizations.of(context)?.startGameBtn ?? 'Start Game',
+                    child: const Text(
+                      'Start Game',
                       style:
-                          const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -391,16 +388,8 @@ class _ButterflyScreenState extends State<ButterflyScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)?.butterflyGame ?? 'Follow the Butterfly'),
+        title: const Text('Follow the Butterfly'),
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const LanguageSelector(),
-          ),
           Container(
             margin: const EdgeInsets.all(8),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -26,10 +26,12 @@ pip install -r requirements.txt
 3. Run the server
 
 ```powershell
-uvicorn main:app --reload --port 8000
+uvicorn main:app --reload --port 8000 --host 0.0.0.0
 ```
+
+Use `--host 0.0.0.0` so the backend is reachable from a physical device on your network.
 
 Notes
 
 - The inference currently uses a simple heuristic in `main.py`. Replace `compute_score_from_events` with calls to your pretrained model when available.
-- The mobile app in the sibling `mobile/` folder expects the backend at `http://10.0.2.2:8000` for Android emulator. Change the URL for device testing.
+- The mobile app expects the backend at the URL in `frontend/lib/theme.dart` (API_BASE). For a physical device, use your PC's local IP (e.g. 192.168.x.x).

@@ -18,8 +18,6 @@ import 'package:flutter/material.dart';
 import 'gaze_tracker.dart';
 import 'gaze_service.dart';
 import '../screens/butterfly_screen.dart';
-import '../../core/localization/app_localizations.dart';
-import '../../widgets/language_selector.dart';
 
 /// Helper class to hold character data for calibration points
 class _CalibrationCharacter {
@@ -216,6 +214,10 @@ class _GazeCalibrationScreenState extends State<GazeCalibrationScreen>
   }
 
   Future<void> _initializeGazeTracking() async {
+    // Ensure the activity/screen is fully built before initializing camera
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    if (!mounted) return;
     try {
       setState(() {
         _status = 'Getting ready...';
@@ -223,6 +225,7 @@ class _GazeCalibrationScreenState extends State<GazeCalibrationScreen>
       });
 
       await gazeService.initialize();
+      if (!mounted) return;
       await gazeService.startTracking();
 
       _gazeSubscription = gazeService.gazeStream.listen((gazeData) {
@@ -481,7 +484,7 @@ class _GazeCalibrationScreenState extends State<GazeCalibrationScreen>
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Eye Calibration', // Should be localized if possible
+                  'Eye Calibration',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -636,22 +639,6 @@ class _GazeCalibrationScreenState extends State<GazeCalibrationScreen>
 
     return Scaffold(
       backgroundColor: bgTop,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16, top: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const LanguageSelector(),
-          ),
-        ],
-      ),
-      extendBodyBehindAppBar: true,
       body: Stack(
         fit: StackFit.expand,
         children: [

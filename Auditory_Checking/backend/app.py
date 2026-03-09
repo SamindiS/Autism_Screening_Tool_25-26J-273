@@ -12,6 +12,7 @@ from services.video_analyzer import VideoAnalyzer
 from services.tap_game_service import TapGameService
 from services.benchmark_assessment_service import BenchmarkAssessmentService
 from services.video_quality_validator import VideoQualityValidator
+from services.firebase_service import save_analysis_result
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for Flutter app
@@ -19,7 +20,7 @@ benchmark_service = BenchmarkAssessmentService()
 video_quality_validator = VideoQualityValidator()
 
 # Configuration
-UPLOAD_FOLDER = os.path.abspath('uploads')  # Use absolute path for consistency
+UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv', 'webm'}
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
 
@@ -27,11 +28,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
 # Ensure upload directory exists
-if not os.path.exists(UPLOAD_FOLDER):
-    print(f"Creating upload folder at: {UPLOAD_FOLDER}")
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-else:
-    print(f"Using upload folder at: {UPLOAD_FOLDER}")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Initialize services
 video_analyzer = VideoAnalyzer()
@@ -116,37 +113,43 @@ def analyze_video():
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         unique_filename = f"{timestamp}_{filename}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-        
-        print(f"[{timestamp}] Saving uploaded video to: {filepath}")
         file.save(filepath)
         
-        if not os.path.exists(filepath):
-            print(f"ERROR: File failed to save at {filepath}")
-            raise Exception("Failed to save uploaded file on server")
-            
         # Analyze video
-        print(f"[{timestamp}] Starting analysis for child: {child_name}")
         result = video_analyzer.analyze(filepath, child_name, analysis_type)
-        print(f"[{timestamp}] Analysis complete. Result: {result.get('RTN_Status', 'unknown')}")
         
         # Store ML prediction for benchmark comparison (M-CHAT vs AI)
         if child_id and result.get('ML_Prediction'):
             try:
-                print(f"[{timestamp}] Saving ML prediction to benchmark service...")
                 benchmark_service.save_ml_prediction(child_id, result)
-            except Exception as e:
-                print(f"Warning: Failed to save benchmark prediction: {e}")
+            except Exception:
                 pass
-        
-        # Ensure ML_Prediction is always present for UI consistency
-        if 'ML_Prediction' not in result:
-            result['ML_Prediction'] = {
-                'prediction': 'unknown',
-                'autism_probability': 0.0,
-                'typical_probability': 0.0,
-                'confidence': 0.0,
-                'model_available': False
+
+        # Save analysis result to Firebase Firestore (don't fail the request if Firebase errors)
+        try:
+            firebase_data = {
+                'childName': result.get('Child_Name') or child_name or 'Unknown',
+                'childAge': request.form.get('child_age'),
+                'childId': child_id or None,
+                'reactionTime': result.get('Reaction_Time', 0),
+                'confidenceLevel': result.get('Confidence_Score', 0),
+                'rtnStatus': result.get('RTN_Status', ''),
+                'detectedBehaviors': result.get('Detected_Behaviors', []),
+                'videoDuration': result.get('Video_Duration'),
+                'analysisType': analysis_type,
             }
+            if result.get('ML_Prediction'):
+                ml = result['ML_Prediction']
+                firebase_data['mlPrediction'] = ml.get('prediction')
+                firebase_data['autismProbability'] = ml.get('autism_probability')
+                firebase_data['typicalProbability'] = ml.get('typical_probability')
+                firebase_data['mlConfidence'] = ml.get('confidence')
+            save_analysis_result(firebase_data)
+        except Exception as e:
+            print('Firebase save failed:', e)
+
+        # Clean up uploaded file (optional - you may want to keep it)
+        # os.remove(filepath)
         
         return jsonify(result), 200
         
@@ -468,6 +471,6 @@ def get_prq_history():
 
 if __name__ == '__main__':
     print("Starting Flask backend server...")
-    print("Server will run on http://localhost:5008")
-    print("For Android emulator, use: http://10.0.2.2:5008")
-    app.run(host='0.0.0.0', port=5008, debug=True)
+    print("Server will run on http://localhost:5000")
+    print("For Android emulator, use: http://10.0.2.2:5000")
+    app.run(host='0.0.0.0', port=5000, debug=True)

@@ -5,19 +5,11 @@ Now includes audio detection for name calling and child vocalizations
 """
 import cv2
 import numpy as np
-import os
-import time
 from datetime import datetime
-try:
-    from .rtn_calculator import RTNCalculator
-    from .behavior_tracker import BehaviorTracker
-    from .autism_predictor import AutismPredictor
-    from .audio_detector import AudioDetector
-except ImportError:
-    from services.rtn_calculator import RTNCalculator
-    from services.behavior_tracker import BehaviorTracker
-    from services.autism_predictor import AutismPredictor
-    from services.audio_detector import AudioDetector
+from .rtn_calculator import RTNCalculator
+from .behavior_tracker import BehaviorTracker
+from .autism_predictor import AutismPredictor
+from .audio_detector import AudioDetector
 
 
 class VideoAnalyzer:
@@ -62,19 +54,6 @@ class VideoAnalyzer:
             fps = cap.get(cv2.CAP_PROP_FPS)
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             duration = total_frames / fps if fps > 0 else 0
-            
-            print(f"Video opened: {video_path}")
-            print(f"FPS: {fps}, Total Frames: {total_frames}, Duration: {duration:.2f}s")
-            
-            if total_frames == 0:
-                print("ERROR: Video has 0 frames")
-                return {
-                    'error': 'Video has no frames',
-                    'RTN_Status': 'noResponse',
-                    'Reaction_Time': 0.0,
-                    'Confidence_Score': 0,
-                    'Detected_Behaviors': []
-                }
             
             # Analyze frames
             frame_count = 0
@@ -158,9 +137,7 @@ class VideoAnalyzer:
             autism_prediction = None
             if self.autism_predictor.is_model_available():
                 try:
-                    print("Executing ML prediction...")
                     autism_prediction = self.autism_predictor.predict(video_path)
-                    print(f"ML Prediction: {autism_prediction.get('prediction', 'none')}")
                 except Exception as e:
                     print(f"Error getting ML prediction: {e}")
             
@@ -174,13 +151,13 @@ class VideoAnalyzer:
                 response_time_from_call = reaction_time - name_call_time
                 # Clamp to sensible range (0.1s–30s); use 0 if negative or unreasonably long
                 actual_reaction_time = round(
-                    float(max(0.0, min(30.0, response_time_from_call)) if response_time_from_call > 0 else 0.0), 2
+                    max(0.0, min(30.0, response_time_from_call)) if response_time_from_call > 0 else 0.0, 2
                 )
             else:
                 # Fallback: if we saw a response but no clean name call in audio,
                 # use the response timestamp in the video (0–60s) so we don't show "Not detected".
                 if reaction_time > 0:
-                    actual_reaction_time = round(float(min(60.0, reaction_time)), 2)
+                    actual_reaction_time = round(min(60.0, reaction_time), 2)
                 else:
                     actual_reaction_time = 0.0
 
@@ -216,7 +193,7 @@ class VideoAnalyzer:
                     'echolalia_patterns': audio_analysis.get('echolalia_patterns', {}),
                 }
                 if name_calls and reaction_time > 0:
-                    result['Response_Time_From_Name_Call'] = round(float(response_time_from_call), 2)
+                    result['Response_Time_From_Name_Call'] = round(response_time_from_call, 2)
             
             # Add ML prediction if available
             if autism_prediction and autism_prediction.get('model_available'):
@@ -303,53 +280,3 @@ class VideoAnalyzer:
             behavior_dict[b_type]['count'] += 1
         
         return list(behavior_dict.values())
-
-    def validate_video(self, video_path):
-        """
-        Perform pre-analysis validation of video quality
-        """
-        checks = {
-            'resolution': {'passed': False, 'message': 'Checking...'},
-            'duration': {'passed': False, 'message': 'Checking...'},
-            'lighting': {'passed': True, 'message': 'Adequate'},
-            'audio': {'passed': True, 'message': 'Clear'},
-            'face_visibility': {'passed': True, 'message': 'Detected'},
-        }
-        
-        try:
-            cap = cv2.VideoCapture(video_path)
-            if not cap.isOpened():
-                return {'passed': False, 'error': 'Could not open video file', 'checks': checks}
-            
-            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            duration = total_frames / fps if fps > 0 else 0
-            
-            cap.release()
-            
-            # Resolution check (720p min recommended)
-            res_ok = width >= 1280 or height >= 720
-            checks['resolution'] = {
-                'passed': res_ok,
-                'message': f"{width}x{height} {'(High)' if res_ok else '(Low)'}"
-            }
-            
-            # Duration check (at least 5s recommended for RTN)
-            dur_ok = duration >= 5.0
-            checks['duration'] = {
-                'passed': dur_ok,
-                'message': f"{duration:.1f}s {'(Good)' if dur_ok else '(Too short)'}"
-            }
-            
-            passed_all = res_ok and dur_ok
-            
-            return {
-                'passed': passed_all,
-                'checks': checks,
-                'messages': [] if passed_all else ['Video quality might be too low for accurate analysis.']
-            }
-            
-        except Exception as e:
-            return {'passed': False, 'error': str(e), 'checks': checks}

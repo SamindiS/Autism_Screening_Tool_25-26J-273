@@ -70,11 +70,6 @@ const Layout = () => {
             icon: <PersonSearchIcon />,
             path: '/admin/doctor-relations',
           },
-          {
-            text: 'Visual Reports',
-            icon: <AssessmentIcon />,
-            path: '/visual-reports',
-          },
         ]
       : []),
     { text: t('export'), icon: <ExportIcon />, path: '/export' },

@@ -10,7 +10,6 @@ import CognitiveDashboard from './components/Cognitive/CognitiveDashboard'
 import RRBDashboard from './components/RRB/RRBDashboard'
 import AuditoryDashboard from './components/Auditory/AuditoryDashboard'
 import VisualDashboard from './components/Visual/VisualDashboard'
-import VisualReports from './components/Visual/VisualReports'
 import Sessions from './components/Sessions/Sessions'
 import SessionDetails from './components/Sessions/SessionDetails'
 import Doctors from './components/Doctors/Doctors'
@@ -63,7 +62,6 @@ function App() {
             <Route path="rrb" element={<RRBDashboard />} />
             <Route path="auditory" element={<AuditoryDashboard />} />
             <Route path="visual" element={<VisualDashboard />} />
-            <Route path="visual-reports" element={<VisualReports />} />
             <Route path="sessions" element={<Sessions />} />
             <Route path="sessions/:id" element={<SessionDetails />} />
             <Route path="doctors" element={<Doctors />} />

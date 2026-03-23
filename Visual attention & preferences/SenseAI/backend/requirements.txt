@@ -27,6 +27,7 @@ python-dateutil==2.9.0.post0
 pytz==2025.2
 reportlab==4.4.9
 scikit-learn==1.7.2
+# tensorflow: excluded from backend - causes Windows long path error. Use requirements-train.txt for training.
 scipy==1.17.0
 seaborn==0.13.2
 six==1.17.0

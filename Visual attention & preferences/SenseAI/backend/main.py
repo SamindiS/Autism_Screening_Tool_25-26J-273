@@ -102,6 +102,14 @@ class GazeEvent(BaseModel):
         if self.gaze_y is not None and self.gaze_y >= 0:
             return max(0, min(1, self.gaze_y))
         return 0.5  # Default to center
+    
+    def has_valid_gaze(self) -> bool:
+        """True if event has real gaze coordinates (exclude placeholder/invalid)"""
+        if self.x is not None and 0 <= self.x <= 1 and self.y is not None and 0 <= self.y <= 1:
+            return True
+        if self.gaze_x is not None and self.gaze_x >= 0 and self.gaze_y is not None and self.gaze_y >= 0:
+            return True
+        return False
 
 
 class GazeBatch(BaseModel):
@@ -409,30 +417,53 @@ def generate_clinical_pdf_report(test_id: str, dest_path: str):
             y -= 1.6 * inch
         
         # Overall Score (large display)
-        score = record.get('score', 0)
-        # Ensure score is a valid number
-        if score is None:
-            score = 0.0
-        score = float(score)
-        
+        # Always compute from domain scores so report matches the formula:
+        # 0.30*attention + 0.15*fixation + 0.20*exploration + 0.25*tracking + 0.10*flexibility
         scores = record.get('scores', {})
-        risk_category = scores.get('risk_category', 'Unknown')
+        domain_weights = {'attention_score': 0.30, 'fixation_score': 0.15,
+                         'exploration_score': 0.20, 'tracking_score': 0.25,
+                         'flexibility_score': 0.10}
+        domain_avg = sum(
+            float(scores.get(k, 0) or 0) * domain_weights[k]
+            for k in domain_weights
+        )
+        score = round(max(0, min(100, domain_avg)), 1)
+        # Fallback to stored score only if domain scores are missing
+        if not any(scores.get(k) for k in domain_weights):
+            score = float(record.get('score', 0) or 0)
         data_quality_warning = scores.get('data_quality_warning', False)
+        # Derive risk_category from computed score so it matches domain bars
+        if data_quality_warning or 'Inconclusive' in str(scores.get('risk_category', '')):
+            risk_category = scores.get('risk_category', 'Inconclusive - Data Quality Issues (Please Retest)')
+        elif score >= 80:
+            risk_category = 'Low Risk'
+        elif score >= 65:
+            risk_category = 'Mild Concern - Monitoring Recommended'
+        elif score >= 50:
+            risk_category = 'Moderate Risk - Further Evaluation Recommended'
+        elif score >= 35:
+            risk_category = 'Elevated Risk - Professional Consultation Advised'
+        elif score >= 20:
+            risk_category = 'High Risk - Immediate Professional Evaluation Recommended'
+        else:
+            risk_category = 'Very High Risk - Urgent Professional Evaluation Recommended'
         
         # Score color: use neutral gray when Inconclusive/Data Quality (50% default)
         is_inconclusive = data_quality_warning or 'Inconclusive' in str(risk_category) or 'Data Quality' in str(risk_category)
         if is_inconclusive:
             score_color = colors.HexColor('#6C757D')  # Neutral gray - not a risk score
         elif score >= 80:
-            score_color = colors.HexColor('#28A745')  # Green
-        elif score >= 60:
-            score_color = colors.HexColor('#FFC107')  # Yellow
-        elif score >= 40:
-            score_color = colors.HexColor('#FD7E14')  # Orange
+            score_color = colors.HexColor('#28A745')  # Green - Low Risk
+        elif score >= 65:
+            score_color = colors.HexColor('#FFC107')  # Yellow - Mild Concern
+        elif score >= 50:
+            score_color = colors.HexColor('#FFA500')  # Orange - Moderate Risk
+        elif score >= 35:
+            score_color = colors.HexColor('#FD7E14')  # Dark orange - Elevated Risk
         elif score >= 20:
-            score_color = colors.HexColor('#DC3545')  # Red
+            score_color = colors.HexColor('#DC3545')  # Red - High Risk
         else:
-            score_color = colors.HexColor('#8B0000')  # Dark red for very low scores (< 20%)
+            score_color = colors.HexColor('#8B0000')  # Dark red - Very High Risk
         
         c.setFillColor(score_color)
         c.circle(margin + 0.75 * inch, y - 0.5 * inch, 0.6 * inch, fill=True, stroke=False)
@@ -449,18 +480,6 @@ def generate_clinical_pdf_report(test_id: str, dest_path: str):
         
         c.setFont("Helvetica", 12)
         c.setFillColor(score_color)
-        # Display risk category; when inconclusive, show as-is (e.g. "Inconclusive - Data Quality Issues")
-        if risk_category == 'Unknown' or not risk_category:
-            if score >= 80:
-                risk_category = "Low Risk"
-            elif score >= 60:
-                risk_category = "Moderate Risk"
-            elif score >= 40:
-                risk_category = "Elevated Risk"
-            elif score >= 20:
-                risk_category = "High Risk"
-            else:
-                risk_category = "Very High Risk"
         c.drawString(margin + 1.8 * inch, y - 0.55 * inch, risk_category)
         
         # Add score percentage label for clarity
@@ -500,16 +519,18 @@ def generate_clinical_pdf_report(test_id: str, dest_path: str):
             # Color coding: use neutral gray when Inconclusive (data quality), else risk colors
             if is_inconclusive and 49 <= dscore <= 51:
                 bar_color = colors.HexColor('#6C757D')  # Neutral gray - placeholder scores
-            elif dscore >= 70:
+            elif dscore >= 80:
                 bar_color = colors.HexColor('#28A745')  # Green
-            elif dscore >= 50:
+            elif dscore >= 65:
                 bar_color = colors.HexColor('#FFC107')  # Yellow
-            elif dscore >= 30:
-                bar_color = colors.HexColor('#FD7E14')  # Orange
-            elif dscore >= 10:
+            elif dscore >= 50:
+                bar_color = colors.HexColor('#FFA500')  # Orange
+            elif dscore >= 35:
+                bar_color = colors.HexColor('#FD7E14')  # Dark orange
+            elif dscore >= 20:
                 bar_color = colors.HexColor('#DC3545')  # Red
             else:
-                bar_color = colors.HexColor('#8B0000')  # Dark red for very low scores
+                bar_color = colors.HexColor('#8B0000')  # Dark red
             
             c.setFillColor(bar_color)
             c.rect(margin, y - 0.15 * inch, bar_width, 0.25 * inch, fill=True, stroke=False)
@@ -886,14 +907,20 @@ def upload_gaze(batch: GazeBatch, background_tasks: BackgroundTasks):
             raise HTTPException(status_code=404, detail="Test ID not found")
     
     # Convert events to dict and normalize x/y coordinates
-    # Limit events to recent ones if too many (optimization)
+    # Filter out events with invalid gaze (gaze_x=-1 etc) - they would pollute metrics
     events = []
+    skipped_invalid = 0
     for e in batch.events:
+        if not e.has_valid_gaze():
+            skipped_invalid += 1
+            continue
         event_dict = e.dict()
         # Ensure x and y are always present using helper methods
         event_dict['x'] = e.get_x()
         event_dict['y'] = e.get_y()
         events.append(event_dict)
+    if skipped_invalid > 0:
+        print(f"Filtered {skipped_invalid} events with invalid gaze (kept {len(events)})")
     
     # Limit to last 2000 events if too many (for performance)
     if len(events) > 2000:

@@ -1,0 +1,4 @@
+# Extra dependencies for training scripts (train_gaze_model.py, train_with_real_data.py)
+# Install with: pip install -r requirements.txt -r requirements-train.txt
+# Or run training from project root venv which may already have tensorflow.
+tensorflow>=2.12.0

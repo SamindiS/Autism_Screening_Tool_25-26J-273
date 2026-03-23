@@ -205,12 +205,15 @@ def train_model(X, y):
         random_state=42,
     )
     
-    # Compute sample weights for sensitivity - upweight ASD (minority) class
+    # Compute sample weights for sensitivity - strongly upweight ASD (minority) class
+    # so model gives correct below-50 results when atypical patterns detected
     n_td = (y == 0).sum()
     n_asd = (y == 1).sum()
-    sample_weights = np.where(y == 1, n_td / max(n_asd, 1), n_asd / max(n_td, 1))
+    asd_weight = 1.5 * (n_td / max(n_asd, 1))  # 1.5x boost for ASD sensitivity
+    td_weight = n_asd / max(n_td, 1)
+    sample_weights = np.where(y == 1, asd_weight, td_weight)
     sample_weights = sample_weights / sample_weights.mean()  # Normalize
-    print(f"\nSample weights: TD={n_td}, ASD={n_asd} (ASD upweighted for sensitivity)")
+    print(f"\nSample weights: TD={n_td}, ASD={n_asd} (ASD 1.5x upweighted for sensitivity)")
     
     # Leave-One-Out cross-validation (best for small datasets)
     print("\nPerforming Leave-One-Out Cross-Validation...")

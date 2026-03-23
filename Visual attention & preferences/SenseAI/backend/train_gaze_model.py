@@ -24,6 +24,23 @@ pip install tensorflow numpy
 """
 
 import argparse
+import os
+import sys
+import warnings
+
+# Reduce TensorFlow verbosity (must be before import)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0=all, 1=no INFO, 2=no WARNING, 3=no ERROR
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Suppress oneDNN messages
+
+# Check for tensorflow early with clear error
+try:
+    import tensorflow as tf
+    tf.get_logger().setLevel('ERROR')
+    warnings.filterwarnings('ignore', category=UserWarning, module='tensorflow')
+except ImportError:
+    print("Error: tensorflow is required for gaze model training.")
+    print("Install with: pip install tensorflow")
+    sys.exit(1)
 import json
 import os
 import numpy as np
@@ -72,8 +89,6 @@ def load_training_data(json_path):
 
 def create_model():
     """Create the gaze prediction neural network."""
-    import tensorflow as tf
-    
     model = tf.keras.Sequential([
         # Input layer: 32 features from eye landmarks
         tf.keras.layers.Input(shape=(32,), name='eye_landmarks'),
@@ -105,8 +120,6 @@ def create_model():
 
 def train_model(X, y, epochs=100, validation_split=0.2):
     """Train the gaze prediction model."""
-    import tensorflow as tf
-    
     print("\n" + "="*50)
     print("TRAINING GAZE MODEL")
     print("="*50)
@@ -151,8 +164,6 @@ def train_model(X, y, epochs=100, validation_split=0.2):
 
 def convert_to_tflite(model, output_path='gaze_model.tflite'):
     """Convert trained model to TFLite format for mobile deployment."""
-    import tensorflow as tf
-    
     print(f"\nConverting model to TFLite: {output_path}")
     
     # Convert to TFLite
@@ -176,12 +187,12 @@ def convert_to_tflite(model, output_path='gaze_model.tflite'):
 
 def test_tflite_model(tflite_path, X_test):
     """Test the TFLite model with sample data."""
-    import tensorflow as tf
-    
     print(f"\nTesting TFLite model...")
     
-    # Load TFLite model
-    interpreter = tf.lite.Interpreter(model_path=tflite_path)
+    # Load TFLite model (suppress deprecation warning for tf.lite.Interpreter)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        interpreter = tf.lite.Interpreter(model_path=tflite_path)
     interpreter.allocate_tensors()
     
     # Get input/output details
@@ -242,7 +253,7 @@ def main():
     
     # Load or generate data
     if args.synthetic or args.data is None:
-        print("\n⚠️  Using synthetic data for testing the pipeline")
+        print("\n[!] Using synthetic data for testing the pipeline")
         print("   For real training, use --data <path_to_json>")
         X, y = generate_sample_data(args.samples)
     else:

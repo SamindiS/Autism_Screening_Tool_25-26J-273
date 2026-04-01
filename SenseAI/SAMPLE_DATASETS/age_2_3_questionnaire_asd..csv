@@ -1,0 +1,12 @@
+child_id,child_code,age_months,gender,language,study_group,asd_level,clinician_id,hospital,session_date,completion_time_sec,q1_name_response,q2_routine_change,q3_toy_switching,q4_eye_contact,q5_pointing,q6_sensory,q7_imitation,q8_peer_play,q9_joint_attention,q10_communication,total_score,percentage_score,critical_items_failed,critical_fail_rate,failed_items_total,failed_items_rate,social_responsiveness_score,cognitive_flexibility_score,joint_attention_score,social_communication_score,sensory_processing_score,communication_score,attention_level,engagement_level,frustration_tolerance,instruction_following,overall_behavior,enhanced_risk_score,risk_level,asd_label,severity_label
+LRH-001,LRH-001,28,M,si,asd,level_2,10234,LRH,2024-11-27,420,2,1,1,2,1,3,2,2,1,2,17,34.0,5,100.0,8,80.0,40.0,20.0,20.0,40.0,60.0,40.0,2,2,2,2,2,28.0,high,1,2
+LRH-002,LRH-002,32,F,en,asd,level_1,10234,LRH,2024-11-27,380,3,2,2,3,2,4,3,3,2,3,27,54.0,3,60.0,4,40.0,60.0,40.0,40.0,60.0,80.0,60.0,3,3,3,3,3,46.0,moderate,1,1
+LRH-003,LRH-003,30,M,ta,asd,level_3,10567,LRH,2024-11-27,510,1,1,1,1,1,2,1,1,1,1,11,22.0,5,100.0,10,100.0,20.0,20.0,20.0,20.0,40.0,20.0,1,1,2,1,1,18.0,high,1,3
+LRH-004,LRH-004,35,F,si,asd,level_2,10234,LRH,2024-11-28,395,2,2,1,2,1,3,2,2,2,2,19,38.0,4,80.0,7,70.0,40.0,30.0,30.0,40.0,60.0,40.0,2,2,3,2,2,32.0,high,1,2
+LRH-005,LRH-005,29,M,en,asd,level_1,10567,LRH,2024-11-28,340,3,3,2,3,2,4,3,3,3,3,29,58.0,2,40.0,3,30.0,60.0,50.0,50.0,60.0,80.0,60.0,3,3,3,3,3,50.0,moderate,1,1
+LRH-006,LRH-006,33,F,ta,asd,level_2,10234,LRH,2024-11-28,445,2,1,1,2,1,2,2,1,1,2,15,30.0,5,100.0,9,90.0,40.0,20.0,20.0,40.0,40.0,40.0,2,2,2,2,2,25.0,high,1,2
+LRH-007,LRH-007,27,M,si,asd,level_3,10567,LRH,2024-11-29,520,1,1,1,1,1,1,1,1,1,1,10,20.0,5,100.0,10,100.0,20.0,20.0,20.0,20.0,20.0,20.0,1,1,1,1,1,15.0,high,1,3
+LRH-008,LRH-008,34,F,en,asd,level_1,10234,LRH,2024-11-29,365,4,3,3,3,2,4,3,3,3,3,31,62.0,2,40.0,2,20.0,80.0,60.0,50.0,60.0,80.0,60.0,3,4,3,3,3,54.0,moderate,1,1
+LRH-009,LRH-009,31,M,ta,asd,level_2,10567,LRH,2024-11-29,410,2,2,1,2,1,3,2,2,1,2,18,36.0,4,80.0,7,70.0,40.0,30.0,20.0,40.0,60.0,40.0,2,2,2,2,2,30.0,high,1,2
+LRH-010,LRH-010,36,F,si,asd,level_1,10234,LRH,2024-11-30,355,3,3,3,3,2,4,3,3,2,3,29,58.0,2,40.0,3,30.0,60.0,60.0,40.0,60.0,80.0,60.0,3,3,3,3,3,50.0,moderate,1,1
+

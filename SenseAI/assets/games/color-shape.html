@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DCCS - Card Sorting Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #E3F2FD;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        .header {
+            background: #1976D2;
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .title {
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .trial-info {
+            font-size: 14px;
+            background: rgba(255,255,255,0.2);
+            padding: 6px 12px;
+            border-radius: 12px;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            max-width: 500px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Rule Banner - ALWAYS VISIBLE (doctors requirement) */
+        .rule-banner {
+            text-align: center;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .rule-color {
+            background: linear-gradient(135deg, #FFCDD2, #EF9A9A);
+            border: 3px solid #E53935;
+        }
+
+        .rule-shape {
+            background: linear-gradient(135deg, #BBDEFB, #90CAF9);
+            border: 3px solid #1976D2;
+        }
+
+        .rule-mixed {
+            background: linear-gradient(135deg, #E1BEE7, #CE93D8);
+            border: 3px solid #8E24AA;
+        }
+
+        .rule-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #37474F;
+        }
+
+        .rule-text {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 2px;
+        }
+
+        .rule-color .rule-text { color: #C62828; }
+        .rule-shape .rule-text { color: #1565C0; }
+        .rule-mixed .rule-text { color: #6A1B9A; }
+
+        .rule-hint {
+            font-size: 14px;
+            margin-top: 8px;
+            color: #546E7A;
+        }
+
+        /* Sorting Boxes (FIXED - never change) */
+        .sorting-boxes {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .sort-box {
+            flex: 1;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            border: 4px solid #E0E0E0;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .sort-box:active {
+            transform: scale(0.95);
+        }
+
+        .sort-box.correct {
+            border-color: #4CAF50;
+            background: #E8F5E9;
+        }
+
+        .sort-box.wrong {
+            border-color: #F44336;
+            background: #FFEBEE;
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-8px); }
+            80% { transform: translateX(8px); }
+        }
+
+        .box-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: #78909C;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Simple Shapes (circles and squares only) */
+        .shape {
+            width: 80px;
+            height: 80px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .shape-small {
+            width: 60px;
+            height: 60px;
+        }
+
+        .shape-large {
+            width: 120px;
+            height: 120px;
+        }
+
+        .circle { border-radius: 50%; }
+        .square { border-radius: 16px; }
+
+        .red { background: #F44336; }
+        .blue { background: #2196F3; }
+
+        /* Test Card Area */
+        .card-area {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+        }
+
+        .test-card {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            border: 4px dashed #BDBDBD;
+        }
+
+        /* Feedback */
+        .feedback {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            min-height: 40px;
+            margin-top: 20px;
+        }
+
+        .feedback.correct { color: #2E7D32; }
+        .feedback.wrong { color: #C62828; }
+
+        /* Progress */
+        .progress-container {
+            margin-bottom: 16px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #CFD8DC;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1976D2, #42A5F5);
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #607D8B;
+            margin-top: 6px;
+        }
+
+        /* Screens */
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Intro Screen */
+        .intro-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .intro-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1565C0;
+            margin-bottom: 16px;
+        }
+
+        .intro-text {
+            font-size: 16px;
+            color: #546E7A;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            max-width: 400px;
+        }
+
+        .example-row {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .example-card {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .example-title {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .example-shapes {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .example-text {
+            font-size: 12px;
+            color: #78909C;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #1976D2, #42A5F5);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(25, 118, 210, 0.4);
+            margin-top: 20px;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #388E3C, #66BB6A);
+            box-shadow: 0 4px 16px rgba(56, 142, 60, 0.4);
+        }
+
+        /* Results Screen */
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .result-card {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .result-card.highlight {
+            background: #E3F2FD;
+            border: 2px solid #1976D2;
+        }
+
+        .result-card.warning {
+            background: #FFF3E0;
+            border: 2px solid #F57C00;
+        }
+
+        .result-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: #1565C0;
+        }
+
+        .result-label {
+            font-size: 11px;
+            color: #78909C;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        .result-card.warning .result-value {
+            color: #E65100;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-btn" onclick="goBack()">← Back</button>
+        <div class="title">Card Sorting (DCCS)</div>
+        <div class="trial-info" id="trialInfo">Trial 0/32</div>
+    </div>
+
+    <!-- INTRO SCREEN -->
+    <div class="screen active" id="introScreen">
+        <div class="main-container intro-content">
+            <div class="intro-title">Card Sorting Game</div>
+            <p class="intro-text">
+                This game has two parts.<br><br>
+                <strong>First:</strong> Sort cards by <span style="color:#C62828;font-weight:700">COLOR</span><br>
+                <strong>Then:</strong> Sort cards by <span style="color:#1565C0;font-weight:700">SHAPE</span>
+            </p>
+
+            <div class="example-row">
+                <div class="example-card">
+                    <div class="example-title" style="color:#C62828">🎨 COLOR Game</div>
+                    <div class="example-shapes">
+                        <div class="shape shape-small circle red"></div>
+                        <div class="shape shape-small square red"></div>
+                    </div>
+                    <div class="example-text">Same COLOR → Same box</div>
+                </div>
+                <div class="example-card">
+                    <div class="example-title" style="color:#1565C0">🔷 SHAPE Game</div>
+                    <div class="example-shapes">
+                        <div class="shape shape-small circle red"></div>
+                        <div class="shape shape-small circle blue"></div>
+                    </div>
+                    <div class="example-text">Same SHAPE → Same box</div>
+                </div>
+            </div>
+
+            <p class="intro-text" style="font-size:14px;">
+                Tap the LEFT or RIGHT box to sort each card.
+            </p>
+
+            <button class="btn" onclick="startGame()">▶️ Start Game</button>
+        </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div class="screen" id="gameScreen">
+        <div class="main-container">
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+                </div>
+                <div class="progress-text">
+                    <span id="phaseText">Phase: Practice</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+            </div>
+
+            <!-- Rule Banner - ALWAYS VISIBLE -->
+            <div class="rule-banner rule-color" id="ruleBanner">
+                <div class="rule-title">Current Rule:</div>
+                <div class="rule-text" id="ruleText">COLOR</div>
+                <div class="rule-hint" id="ruleHint">Put the card where the COLOR matches</div>
+            </div>
+
+            <!-- Fixed Sorting Boxes -->
+            <div class="sorting-boxes">
+                <div class="sort-box" id="boxLeft" onclick="choose('left')">
+                    <div class="box-label">Left Box</div>
+                    <div class="shape circle red"></div>
+                </div>
+                <div class="sort-box" id="boxRight" onclick="choose('right')">
+                    <div class="box-label">Right Box</div>
+                    <div class="shape square blue"></div>
+                </div>
+            </div>
+
+            <!-- Test Card -->
+            <div class="card-area">
+                <div class="test-card">
+                    <div class="shape shape-large" id="testCard"></div>
+                </div>
+            </div>
+
+            <div class="feedback" id="feedback"></div>
+        </div>
+    </div>
+
+    <!-- RESULTS SCREEN -->
+    <div class="screen" id="resultsScreen">
+        <div class="main-container">
+            <div style="text-align:center; margin-bottom:20px;">
+                <div style="font-size:50px; margin-bottom:10px;">🎉</div>
+                <div class="intro-title">Game Complete!</div>
+                <p class="intro-text">Here are the cognitive flexibility scores:</p>
+            </div>
+
+            <div class="results-grid">
+                <div class="result-card highlight">
+                    <div class="result-value" id="resPreAcc">-</div>
+                    <div class="result-label">Pre-Switch Accuracy</div>
+                </div>
+                <div class="result-card highlight">
+                    <div class="result-value" id="resPostAcc">-</div>
+                    <div class="result-label">Post-Switch Accuracy</div>
+                </div>
+                <div class="result-card warning">
+                    <div class="result-value" id="resPersev">-</div>
+                    <div class="result-label">Perseverative Errors</div>
+                </div>
+                <div class="result-card warning">
+                    <div class="result-value" id="resSwitchCost">-</div>
+                    <div class="result-label">Switch Cost (ms)</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-value" id="resAvgRT">-</div>
+                    <div class="result-label">Avg Reaction Time</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-value" id="resOverall">-</div>
+                    <div class="result-label">Overall Accuracy</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-value" id="resConsecPersev">-</div>
+                    <div class="result-label">Max Consecutive Persev.</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-value" id="resTotalTrials">-</div>
+                    <div class="result-label">Total Trials</div>
+                </div>
+            </div>
+
+            <button class="btn btn-success" onclick="finishGame()">✅ Save & Finish</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Clinical DCCS (Dimensional Change Card Sort) Game
+         * 
+         * Measures: Cognitive Flexibility, Rule-Switching, Perseverative Errors
+         * Age: 5-6+ years (validated for ASD screening)
+         * 
+         * Structure:
+         * - Fixed sorting boxes: Left = Red Circle, Right = Blue Square
+         * - Conflict stimuli ONLY: Red Square OR Blue Circle
+         * - Phases: Practice(4) → Pre-switch Color(8) → Post-switch Shape(12) → Mixed(8)
+         */
+
+        // Fixed targets (standard clinical DCCS)
+        const LEFT_TARGET = { color: 'red', shape: 'circle' };
+        const RIGHT_TARGET = { color: 'blue', shape: 'square' };
+
+        // Conflict stimuli ONLY (each matches one box by color, other by shape)
+        const STIMULI = [
+            { color: 'red', shape: 'square' },   // Color→Left, Shape→Right
+            { color: 'blue', shape: 'circle' }   // Color→Right, Shape→Left
+        ];
+
+        // Phase configuration
+        const CONFIG = {
+            practice: 4,
+            preSwitch: 8,      // Color rule (baseline)
+            postSwitch: 12,    // Shape rule (KEY ASD MARKER)
+            mixed: 8           // Random rule each trial
+        };
+
+        // Game state
+        const state = {
+            phase: 'intro',
+            rule: 'color',
+            lastRule: null,
+            trialIndex: 0,
+            totalTrials: CONFIG.practice + CONFIG.preSwitch + CONFIG.postSwitch + CONFIG.mixed,
+            trials: [],
+            stimulus: null,
+            trialStart: null,
+            streak: 0,
+            maxStreak: 0,
+            sessionStart: null,
+            childMeta: { child_id: null, group_type: null, age_months: null }
+        };
+
+        // Flutter integration
+        function setChildMeta(meta) {
+            state.childMeta = { ...state.childMeta, ...meta };
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function startGame() {
+            state.phase = 'practice';
+            state.rule = 'color';
+            state.lastRule = null;
+            state.trialIndex = 0;
+            state.trials = [];
+            state.streak = 0;
+            state.maxStreak = 0;
+            state.sessionStart = Date.now();
+
+            showScreen('gameScreen');
+            nextTrial();
+        }
+
+        function nextTrial() {
+            state.trialIndex++;
+
+            if (state.trialIndex > state.totalTrials) {
+                endGame();
+                return;
+            }
+
+            // Determine phase and rule
+            const t = state.trialIndex;
+            const p1 = CONFIG.practice;
+            const p2 = p1 + CONFIG.preSwitch;
+            const p3 = p2 + CONFIG.postSwitch;
+
+            let ruleChanged = false;
+
+            if (t <= p1) {
+                state.phase = 'practice';
+                state.rule = 'color';
+            } else if (t <= p2) {
+                state.phase = 'pre_switch';
+                state.rule = 'color';
+            } else if (t <= p3) {
+                if (state.phase !== 'post_switch') {
+                    ruleChanged = true; // THE KEY SWITCH POINT
+                }
+                state.phase = 'post_switch';
+                state.rule = 'shape';
+            } else {
+                state.phase = 'mixed';
+                const newRule = Math.random() < 0.5 ? 'color' : 'shape';
+                if (state.lastRule && newRule !== state.rule) {
+                    ruleChanged = true;
+                }
+                state.rule = newRule;
+            }
+
+            state.lastRule = state.rule;
+
+            // Generate conflict stimulus
+            state.stimulus = STIMULI[Math.floor(Math.random() * STIMULI.length)];
+            state.trialStart = Date.now();
+
+            updateUI(ruleChanged);
+        }
+
+        function updateUI(ruleChanged) {
+            // Update trial counter
+            document.getElementById('trialInfo').textContent = `Trial ${state.trialIndex}/${state.totalTrials}`;
+
+            // Update progress
+            const progress = (state.trialIndex / state.totalTrials) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressPercent').textContent = Math.round(progress) + '%';
+
+            // Update phase text
+            const phaseNames = {
+                'practice': 'Practice (Color)',
+                'pre_switch': 'Color Game',
+                'post_switch': 'Shape Game',
+                'mixed': 'Mixed'
+            };
+            document.getElementById('phaseText').textContent = 'Phase: ' + phaseNames[state.phase];
+
+            // Update rule banner
+            const banner = document.getElementById('ruleBanner');
+            const ruleText = document.getElementById('ruleText');
+            const ruleHint = document.getElementById('ruleHint');
+
+            banner.className = 'rule-banner';
+            if (state.phase === 'mixed') {
+                banner.classList.add('rule-mixed');
+            } else if (state.rule === 'color') {
+                banner.classList.add('rule-color');
+            } else {
+                banner.classList.add('rule-shape');
+            }
+
+            ruleText.textContent = state.rule.toUpperCase();
+            ruleHint.textContent = state.rule === 'color' 
+                ? 'Put the card where the COLOR matches'
+                : 'Put the card where the SHAPE matches';
+
+            // Update test card
+            const testCard = document.getElementById('testCard');
+            testCard.className = 'shape shape-large';
+            testCard.classList.add(state.stimulus.shape);
+            testCard.classList.add(state.stimulus.color);
+
+            // Clear box states
+            document.getElementById('boxLeft').className = 'sort-box';
+            document.getElementById('boxRight').className = 'sort-box';
+
+            // Clear feedback
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+
+        function choose(side) {
+            if (!state.stimulus || !state.trialStart) return;
+
+            const rt = Date.now() - state.trialStart;
+            const stim = state.stimulus;
+
+            // Determine correct answer based on current rule
+            let correctSide;
+            if (state.rule === 'color') {
+                correctSide = stim.color === LEFT_TARGET.color ? 'left' : 'right';
+            } else {
+                correctSide = stim.shape === LEFT_TARGET.shape ? 'left' : 'right';
+            }
+
+            const correct = side === correctSide;
+
+            // Check if this is a switch trial (mixed phase only)
+            let isSwitchTrial = false;
+            if (state.phase === 'mixed' && state.trials.length > 0) {
+                const prev = state.trials[state.trials.length - 1];
+                if (prev.phase === 'mixed' && prev.rule !== state.rule) {
+                    isSwitchTrial = true;
+                }
+            }
+
+            // Check for perseverative error (KEY ASD MARKER)
+            let isPerseverative = false;
+            if (!correct) {
+                if (state.phase === 'post_switch') {
+                    // Still using COLOR rule after switch to SHAPE
+                    const colorCorrect = stim.color === LEFT_TARGET.color ? 'left' : 'right';
+                    if (side === colorCorrect) {
+                        isPerseverative = true;
+                    }
+                } else if (isSwitchTrial && state.trials.length > 0) {
+                    const prev = state.trials[state.trials.length - 1];
+                    let prevCorrect;
+                    if (prev.rule === 'color') {
+                        prevCorrect = stim.color === LEFT_TARGET.color ? 'left' : 'right';
+                    } else {
+                        prevCorrect = stim.shape === LEFT_TARGET.shape ? 'left' : 'right';
+                    }
+                    if (side === prevCorrect) {
+                        isPerseverative = true;
+                    }
+                }
+            }
+
+            // Update streak
+            if (correct) {
+                state.streak++;
+                if (state.streak > state.maxStreak) state.maxStreak = state.streak;
+            } else {
+                state.streak = 0;
+            }
+
+            // Record trial
+            state.trials.push({
+                trial_number: state.trialIndex,
+                phase: state.phase,
+                rule: state.rule,
+                stimulus_color: stim.color,
+                stimulus_shape: stim.shape,
+                correct_choice: correctSide,
+                child_choice: side,
+                reaction_time_ms: rt,
+                correct: correct,
+                is_switch_trial: isSwitchTrial,
+                is_perseverative_error: isPerseverative,
+                is_post_switch: state.phase === 'post_switch',
+                timestamp: new Date().toISOString()
+            });
+
+            // Visual feedback
+            const boxEl = document.getElementById(side === 'left' ? 'boxLeft' : 'boxRight');
+            const feedback = document.getElementById('feedback');
+
+            if (correct) {
+                boxEl.classList.add('correct');
+                feedback.textContent = '✓ Correct!';
+                feedback.className = 'feedback correct';
+            } else {
+                boxEl.classList.add('wrong');
+                feedback.textContent = '✗ Try again';
+                feedback.className = 'feedback wrong';
+            }
+
+            // Clear and next
+            state.stimulus = null;
+            state.trialStart = null;
+
+            setTimeout(nextTrial, correct ? 600 : 1000);
+        }
+
+        function endGame() {
+            const summary = computeSummary();
+
+            // Display results
+            document.getElementById('resPreAcc').textContent = summary.accuracy_pre_color.toFixed(0) + '%';
+            document.getElementById('resPostAcc').textContent = summary.accuracy_post_shape.toFixed(0) + '%';
+            document.getElementById('resPersev').textContent = summary.perseverative_errors;
+            document.getElementById('resSwitchCost').textContent = summary.switch_cost_ms.toFixed(0) + 'ms';
+            document.getElementById('resAvgRT').textContent = summary.avg_reaction_time_ms.toFixed(0) + 'ms';
+            document.getElementById('resOverall').textContent = summary.accuracy_overall.toFixed(0) + '%';
+            document.getElementById('resConsecPersev').textContent = summary.max_consecutive_perseverations;
+            document.getElementById('resTotalTrials').textContent = summary.total_trials;
+
+            showScreen('resultsScreen');
+        }
+
+        function computeSummary() {
+            const trials = state.trials;
+            const total = trials.length;
+
+            const practice = trials.filter(t => t.phase === 'practice');
+            const preSwitch = trials.filter(t => t.phase === 'pre_switch');
+            const postSwitch = trials.filter(t => t.phase === 'post_switch');
+            const mixed = trials.filter(t => t.phase === 'mixed');
+
+            const acc = arr => arr.length === 0 ? 0 : 100 * arr.filter(t => t.correct).length / arr.length;
+            const meanRT = arr => arr.length === 0 ? 0 : arr.reduce((s, t) => s + t.reaction_time_ms, 0) / arr.length;
+
+            const accuracy_pre_color = acc(preSwitch);
+            const accuracy_post_shape = acc(postSwitch);
+            const accuracy_mixed = acc(mixed);
+            const accuracy_overall = acc(trials.filter(t => t.phase !== 'practice'));
+
+            const avg_rt_pre = meanRT(preSwitch);
+            const avg_rt_post = meanRT(postSwitch);
+            const avg_rt_post_correct = meanRT(postSwitch.filter(t => t.correct));
+
+            // Switch cost calculation
+            const mixedSwitch = mixed.filter(t => t.is_switch_trial);
+            const mixedNonSwitch = mixed.filter(t => !t.is_switch_trial);
+            let switch_cost = meanRT(mixedSwitch) - meanRT(mixedNonSwitch);
+            if (isNaN(switch_cost) || mixedSwitch.length === 0) {
+                // Alternative: post-switch vs pre-switch RT
+                switch_cost = avg_rt_post - avg_rt_pre;
+            }
+            if (isNaN(switch_cost)) switch_cost = 0;
+
+            // Perseverative errors (MOST IMPORTANT ASD MARKER)
+            const perseverative_errors = trials.filter(t => t.is_perseverative_error).length;
+            const perseverative_rate_post = postSwitch.length > 0
+                ? (postSwitch.filter(t => t.is_perseverative_error).length / postSwitch.length) * 100
+                : 0;
+
+            // Max consecutive perseverations
+            let max_consecutive = 0, current = 0;
+            for (const t of postSwitch) {
+                if (t.is_perseverative_error) {
+                    current++;
+                    if (current > max_consecutive) max_consecutive = current;
+                } else {
+                    current = 0;
+                }
+            }
+
+            const total_rule_switch_errors = trials.filter(t =>
+                (t.phase === 'post_switch' || t.is_switch_trial) && !t.correct
+            ).length;
+
+            return {
+                total_trials: total,
+                completion_time_sec: Math.round((Date.now() - state.sessionStart) / 1000),
+                
+                // Key accuracy metrics
+                accuracy_pre_color,
+                accuracy_post_shape,        // KEY ASD MARKER
+                accuracy_mixed,
+                accuracy_overall,
+                
+                // Reaction times
+                avg_reaction_time_ms: meanRT(trials),
+                avg_rt_pre_switch_ms: avg_rt_pre,
+                avg_rt_post_switch_ms: avg_rt_post,
+                avg_rt_post_switch_correct_ms: avg_rt_post_correct,
+                
+                // Switch cost
+                switch_cost_ms: switch_cost,
+                
+                // Perseverative errors (MOST IMPORTANT)
+                perseverative_errors,
+                perseverative_error_rate_post_switch: perseverative_rate_post,
+                max_consecutive_perseverations: max_consecutive,
+                total_rule_switch_errors,
+                
+                // Additional
+                longest_streak: state.maxStreak
+            };
+        }
+
+        function finishGame() {
+            const summary = computeSummary();
+
+            // ML Features for ASD Detection
+            const mlFeatures = {
+                // PRIMARY ASD MARKERS
+                post_switch_accuracy: summary.accuracy_post_shape,
+                total_perseverative_errors: summary.perseverative_errors,
+                switch_cost_ms: summary.switch_cost_ms,
+                perseverative_error_rate_post_switch: summary.perseverative_error_rate_post_switch,
+                
+                // SECONDARY MARKERS
+                avg_rt_pre_switch_ms: summary.avg_rt_pre_switch_ms,
+                avg_rt_post_switch_correct_ms: summary.avg_rt_post_switch_correct_ms,
+                number_of_consecutive_perseverations: summary.max_consecutive_perseverations,
+                total_rule_switch_errors: summary.total_rule_switch_errors,
+                
+                // ADDITIONAL FEATURES
+                pre_switch_accuracy: summary.accuracy_pre_color,
+                mixed_block_accuracy: summary.accuracy_mixed,
+                longest_streak_correct: summary.longest_streak,
+                avg_reaction_time_ms: summary.avg_reaction_time_ms
+            };
+
+            const gameResults = {
+                type: 'dccs_complete',
+                game_type: 'dccs_circles_squares',
+                child_meta: state.childMeta,
+                ml_features: mlFeatures,
+                summary: summary,
+                trials: state.trials
+            };
+
+            // Send to Flutter
+            if (window.Flutter && typeof window.Flutter.postMessage === 'function') {
+                window.Flutter.postMessage(JSON.stringify({
+                    type: 'game_complete',
+                    results: gameResults
+                }));
+            } else {
+                console.log('DCCS Results:', gameResults);
+                console.log('ML Features for ASD Detection:', mlFeatures);
+                alert('Game complete! Results logged to console.');
+            }
+        }
+
+        function goBack() {
+            if (window.Flutter && typeof window.Flutter.postMessage === 'function') {
+                window.Flutter.postMessage(JSON.stringify({ type: 'go_back' }));
+            } else {
+                window.history.back();
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🎯 Clinical DCCS Game loaded (circles & squares)');
+            console.log('📊 Measures: Cognitive Flexibility, Rule-Switching, Perseverative Errors');
+        });
+    </script>
+</body>
+</html>

@@ -17,6 +17,7 @@ import 'widgets/info_card.dart';
 import 'widgets/welcome_card.dart';
 import '../../visual_attention/screens/splash_screen.dart' as visual_attention;
 import '../../auditory_checking/pages/auditory_response_to_name_page.dart';
+import '../rrb/screens/rrb_home_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -563,11 +564,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                 Color(0xFF38BDF8),
                 Color(0xFF7DD3FC),
               ],
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(l10n.rrbComingSoon),
-                    backgroundColor: Colors.orange,
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const RrbHomeScreen(),
+                    settings: const RouteSettings(name: '/rrb_home'),
                   ),
                 );
               },

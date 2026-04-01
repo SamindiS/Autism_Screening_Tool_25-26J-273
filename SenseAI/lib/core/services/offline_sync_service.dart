@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -9,6 +10,7 @@ class OfflineSyncService {
   static const String _queueTable = 'sync_queue';
 
   static Future<void> init() async {
+    if (kIsWeb) return; // sqflite is not supported on Web
     final databasesPath = await getDatabasesPath();
     final path = join(databasesPath, 'senseai_offline.db');
 
@@ -35,6 +37,7 @@ class OfflineSyncService {
     required String method, // POST, PUT, or DELETE
     required Map<String, dynamic> payload,
   }) async {
+    if (kIsWeb) return; // sqflite is not supported on Web
     if (_db == null) await init();
     await _db!.insert(_queueTable, {
       'endpoint': endpoint,
@@ -46,6 +49,7 @@ class OfflineSyncService {
 
   // Start background sync loop (non-blocking!)
   static void startSyncLoop() {
+    if (kIsWeb) return; // sqflite is not supported on Web
     // Use Future.doWhile instead of while(true) to avoid blocking
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 30));
@@ -101,6 +105,7 @@ class OfflineSyncService {
 
   // Optional: show badge count
   static Future<int> getPendingCount() async {
+    if (kIsWeb) return 0; // sqflite is not supported on Web
     if (_db == null) await init();
     final result =
         await _db!.rawQuery('SELECT COUNT(*) as count FROM $_queueTable');

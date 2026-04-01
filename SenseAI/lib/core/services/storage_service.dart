@@ -12,7 +12,7 @@ import 'offline_sync_service.dart';
 
 class StorageService {
   static Database? _database;
-  
+
   // Sync tracking to prevent blocking every screen load
   static DateTime? _lastChildrenSync;
   static DateTime? _lastSessionsSync;
@@ -30,7 +30,8 @@ class StorageService {
 
     return await openDatabase(
       path,
-      version: 6, // v6: session status, clinician_note, expanded local session columns
+      version:
+          6, // v6: session status, clinician_note, expanded local session columns
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -101,13 +102,16 @@ class StorageService {
       // Add new study-specific columns for child profile
       await db.execute('ALTER TABLE children ADD COLUMN child_code TEXT');
       await db.execute('ALTER TABLE children ADD COLUMN age_in_months INTEGER');
-      await db.execute('ALTER TABLE children ADD COLUMN study_group TEXT DEFAULT \'typically_developing\'');
+      await db.execute(
+          'ALTER TABLE children ADD COLUMN study_group TEXT DEFAULT \'typically_developing\'');
       await db.execute('ALTER TABLE children ADD COLUMN asd_level TEXT');
-      await db.execute('ALTER TABLE children ADD COLUMN diagnosis_source TEXT DEFAULT \'Unknown\'');
-      
+      await db.execute(
+          'ALTER TABLE children ADD COLUMN diagnosis_source TEXT DEFAULT \'Unknown\'');
+
       // Update existing records to have child_code = name if null
-      await db.execute('UPDATE children SET child_code = name WHERE child_code IS NULL');
-      
+      await db.execute(
+          'UPDATE children SET child_code = name WHERE child_code IS NULL');
+
       // Calculate age_in_months for existing records
       final children = await db.query('children');
       for (final child in children) {
@@ -136,18 +140,14 @@ class StorageService {
     if (oldVersion < 6) {
       await db.execute(
           "ALTER TABLE sessions ADD COLUMN status TEXT NOT NULL DEFAULT 'in_progress'");
-      await db.execute(
-          'ALTER TABLE sessions ADD COLUMN clinician_note TEXT');
-      await db.execute(
-          'ALTER TABLE sessions ADD COLUMN game_results TEXT');
+      await db.execute('ALTER TABLE sessions ADD COLUMN clinician_note TEXT');
+      await db.execute('ALTER TABLE sessions ADD COLUMN game_results TEXT');
       await db.execute(
           'ALTER TABLE sessions ADD COLUMN questionnaire_results TEXT');
-      await db.execute(
-          'ALTER TABLE sessions ADD COLUMN reflection_results TEXT');
-      await db.execute(
-          'ALTER TABLE sessions ADD COLUMN risk_score REAL');
-      await db.execute(
-          'ALTER TABLE sessions ADD COLUMN risk_level TEXT');
+      await db
+          .execute('ALTER TABLE sessions ADD COLUMN reflection_results TEXT');
+      await db.execute('ALTER TABLE sessions ADD COLUMN risk_score REAL');
+      await db.execute('ALTER TABLE sessions ADD COLUMN risk_level TEXT');
       // Mark existing sessions with end_time as completed
       await db.execute(
           "UPDATE sessions SET status = 'completed' WHERE end_time IS NOT NULL");
@@ -170,7 +170,7 @@ class StorageService {
   }
 
   // ---------------- CHILDREN ----------------
-  
+
   /// Save a new child profile with study-specific fields
   static Future<Map<String, dynamic>?> saveChild({
     String? id,
@@ -341,8 +341,7 @@ class StorageService {
         'diagnosis_source': updated['diagnosis_source'] ?? diagnosisSource,
         'clinician_id': updated['clinician_id'] ?? clinicianId,
         'clinician_name': updated['clinician_name'] ?? clinicianName,
-        'diagnosis_type':
-            updated['diagnosis_type'] ?? diagnosisType,
+        'diagnosis_type': updated['diagnosis_type'] ?? diagnosisType,
         'created_at':
             updated['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
       });
@@ -376,25 +375,60 @@ class StorageService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getAllChildren({bool forceRefresh = false}) async {
+  static Future<List<Map<String, dynamic>>> getAllChildren(
+      {bool forceRefresh = false}) async {
+    // Web: sqflite unavailable — fetch directly from API
+    if (kIsWeb) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final clinicianId = prefs.getString('clinician_id');
+        final children = clinicianId != null && clinicianId.isNotEmpty
+            ? await ApiService.getChildrenByClinician(clinicianId)
+                .timeout(const Duration(seconds: 10))
+            : await ApiService.getAllChildren()
+                .timeout(const Duration(seconds: 10));
+        return children
+            .map((child) => <String, dynamic>{
+                  'id': child['id'],
+                  'child_code': child['child_code'] ?? child['name'],
+                  'name': child['name'],
+                  'date_of_birth': child['date_of_birth'],
+                  'age_in_months': child['age_in_months'],
+                  'gender': child['gender'],
+                  'language': child['language'],
+                  'age': child['age'],
+                  'hospital_id': child['hospital_id'],
+                  'study_group': child['group'],
+                  'asd_level': child['asd_level'],
+                  'diagnosis_source': child['diagnosis_source'],
+                  'diagnosis_type': child['diagnosis_type'] ?? 'new',
+                  'created_at': child['created_at'],
+                })
+            .toList();
+      } catch (e) {
+        debugPrint('⚠️ Web: Error fetching children from API: $e');
+        return [];
+      }
+    }
+
     // First, get local data immediately (for offline support)
     final localChildren = await _getChildrenLocal();
-    
+
     // Check if we need to sync
-    final bool shouldSync = forceRefresh || 
-        _lastChildrenSync == null || 
+    final bool shouldSync = forceRefresh ||
+        _lastChildrenSync == null ||
         DateTime.now().difference(_lastChildrenSync!).inMinutes > 5;
-        
+
     if (!shouldSync && localChildren.isNotEmpty) {
       return localChildren;
     }
-    
+
     // Try to sync with backend if online
     try {
       // Check if backend is available (with timeout)
       final isOnline = await ApiService.healthCheck()
           .timeout(const Duration(seconds: 3), onTimeout: () => false);
-      
+
       if (isOnline) {
         // Use clinician-scoped API when logged in so counts are per clinician
         final prefs = await SharedPreferences.getInstance();
@@ -429,7 +463,8 @@ class StorageService {
         return await _getChildrenLocal();
       } else {
         // Offline - return local data
-        debugPrint('📱 Offline mode: Returning ${localChildren.length} local children');
+        debugPrint(
+            '📱 Offline mode: Returning ${localChildren.length} local children');
         return localChildren;
       }
     } catch (e) {
@@ -452,6 +487,9 @@ class StorageService {
     if (normalizedPrefix.isEmpty) {
       return 'CH-${'1'.padLeft(digits, '0')}';
     }
+
+    // Web: sqflite not available, return placeholder — server will assign real code
+    if (kIsWeb) return '$normalizedPrefix-${'1'.padLeft(digits, '0')}';
 
     final db = await database;
     final rows = await db.query(
@@ -503,6 +541,7 @@ class StorageService {
       return mapped;
     } catch (e) {
       debugPrint('⚠️ Error fetching child from API, falling back to local: $e');
+      if (kIsWeb) return null; // sqflite not supported on Web
       final db = await database;
       final rows = await db.query(
         'children',
@@ -525,16 +564,21 @@ class StorageService {
         payload: const {},
       );
     } finally {
-      final db = await database; // ⚠️ Local backend deletion
-      // Delete associated trials for the sessions belonging to this child
-      final sessionRows = await db.query('sessions', columns: ['id'], where: 'child_id = ?', whereArgs: [id]);
-      for (final s in sessionRows) {
-        await db.delete('trials', where: 'session_id = ?', whereArgs: [s['id']]);
+      if (!kIsWeb) {
+        // sqflite not supported on Web — skip local DB deletion
+        final db = await database; // ⚠️ Local backend deletion
+        // Delete associated trials for the sessions belonging to this child
+        final sessionRows = await db.query('sessions',
+            columns: ['id'], where: 'child_id = ?', whereArgs: [id]);
+        for (final s in sessionRows) {
+          await db
+              .delete('trials', where: 'session_id = ?', whereArgs: [s['id']]);
+        }
+        // Delete associated sessions
+        await db.delete('sessions', where: 'child_id = ?', whereArgs: [id]);
+        // Finally, delete the child
+        await db.delete('children', where: 'id = ?', whereArgs: [id]);
       }
-      // Delete associated sessions
-      await db.delete('sessions', where: 'child_id = ?', whereArgs: [id]);
-      // Finally, delete the child
-      await db.delete('children', where: 'id = ?', whereArgs: [id]);
     }
   }
 
@@ -555,10 +599,10 @@ class StorageService {
   }) async {
     // Normalize session type to match backend expectations
     String normalizedSessionType = sessionType
-        .replaceAll('-', '_')  // Convert hyphens to underscores
-        .replaceAll('dccs_', '')  // Remove dccs prefix if present
-        .replaceAll('dccs-', '');  // Remove dccs prefix with hyphen
-    
+        .replaceAll('-', '_') // Convert hyphens to underscores
+        .replaceAll('dccs_', '') // Remove dccs prefix if present
+        .replaceAll('dccs-', ''); // Remove dccs prefix with hyphen
+
     // Map common variations to backend expected values
     final sessionTypeMap = {
       'color_shape': 'color_shape',
@@ -572,9 +616,10 @@ class StorageService {
       'manual_assessment': 'manual_assessment',
       'manual-assessment': 'manual_assessment',
     };
-    
-    normalizedSessionType = sessionTypeMap[normalizedSessionType] ?? normalizedSessionType;
-    
+
+    normalizedSessionType =
+        sessionTypeMap[normalizedSessionType] ?? normalizedSessionType;
+
     final payload = {
       'child_id': childId,
       'session_type': normalizedSessionType,
@@ -619,8 +664,11 @@ class StorageService {
         'end_time': session['end_time'],
         'metrics': jsonEncode(metrics ?? const {}),
         'game_results': gameResults != null ? jsonEncode(gameResults) : null,
-        'questionnaire_results': questionnaireResults != null ? jsonEncode(questionnaireResults) : null,
-        'reflection_results': reflectionResults != null ? jsonEncode(reflectionResults) : null,
+        'questionnaire_results': questionnaireResults != null
+            ? jsonEncode(questionnaireResults)
+            : null,
+        'reflection_results':
+            reflectionResults != null ? jsonEncode(reflectionResults) : null,
         'risk_score': riskScore,
         'risk_level': riskLevel,
         'created_at': session['created_at'],
@@ -641,8 +689,11 @@ class StorageService {
         'end_time': endTime?.millisecondsSinceEpoch,
         'metrics': jsonEncode(metrics ?? const {}),
         'game_results': gameResults != null ? jsonEncode(gameResults) : null,
-        'questionnaire_results': questionnaireResults != null ? jsonEncode(questionnaireResults) : null,
-        'reflection_results': reflectionResults != null ? jsonEncode(reflectionResults) : null,
+        'questionnaire_results': questionnaireResults != null
+            ? jsonEncode(questionnaireResults)
+            : null,
+        'reflection_results':
+            reflectionResults != null ? jsonEncode(reflectionResults) : null,
         'risk_score': riskScore,
         'risk_level': riskLevel,
         'created_at': DateTime.now().millisecondsSinceEpoch,
@@ -662,18 +713,60 @@ class StorageService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getAllSessions({bool forceRefresh = false}) async {
+  static Future<List<Map<String, dynamic>>> getAllSessions(
+      {bool forceRefresh = false}) async {
+    // Web: sqflite unavailable — fetch directly from API
+    if (kIsWeb) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final clinicianId = prefs.getString('clinician_id');
+        final sessions = (clinicianId != null && clinicianId.isNotEmpty)
+            ? await ApiService.getSessionsByClinician(clinicianId)
+            : await ApiService.getAllSessions();
+        return sessions
+            .map((session) => <String, dynamic>{
+                  'id': session['id'],
+                  'child_id': session['child_id'],
+                  'session_type': session['session_type'],
+                  'age_group': session['age_group'],
+                  'status': session['end_time'] != null
+                      ? 'completed'
+                      : (session['status'] ?? 'in_progress'),
+                  'start_time': session['start_time'],
+                  'end_time': session['end_time'],
+                  'metrics': jsonEncode(session['metrics'] ?? const {}),
+                  'game_results': session['game_results'] != null
+                      ? jsonEncode(session['game_results'])
+                      : null,
+                  'questionnaire_results':
+                      session['questionnaire_results'] != null
+                          ? jsonEncode(session['questionnaire_results'])
+                          : null,
+                  'reflection_results': session['reflection_results'] != null
+                      ? jsonEncode(session['reflection_results'])
+                      : null,
+                  'risk_score': session['risk_score'],
+                  'risk_level': session['risk_level'],
+                  'created_at': session['created_at'],
+                })
+            .toList();
+      } catch (e) {
+        debugPrint('⚠️ Web: Error fetching sessions from API: $e');
+        return [];
+      }
+    }
+
     try {
       final localSessions = await _getSessionsLocal();
-      
-      final bool shouldSync = forceRefresh || 
-          _lastSessionsSync == null || 
+
+      final bool shouldSync = forceRefresh ||
+          _lastSessionsSync == null ||
           DateTime.now().difference(_lastSessionsSync!).inMinutes > 5;
-          
+
       if (!shouldSync && localSessions.isNotEmpty) {
         return localSessions;
       }
-      
+
       // If logged in, fetch only this clinician's sessions (much faster)
       final prefs = await SharedPreferences.getInstance();
       final clinicianId = prefs.getString('clinician_id');
@@ -686,13 +779,22 @@ class StorageService {
                 'child_id': session['child_id'],
                 'session_type': session['session_type'],
                 'age_group': session['age_group'],
-                'status': session['end_time'] != null ? 'completed' : (session['status'] ?? 'in_progress'),
+                'status': session['end_time'] != null
+                    ? 'completed'
+                    : (session['status'] ?? 'in_progress'),
                 'start_time': session['start_time'],
                 'end_time': session['end_time'],
                 'metrics': jsonEncode(session['metrics'] ?? const {}),
-        'game_results': session['game_results'] != null ? jsonEncode(session['game_results']) : null,
-                'questionnaire_results': session['questionnaire_results'] != null ? jsonEncode(session['questionnaire_results']) : null,
-                'reflection_results': session['reflection_results'] != null ? jsonEncode(session['reflection_results']) : null,
+                'game_results': session['game_results'] != null
+                    ? jsonEncode(session['game_results'])
+                    : null,
+                'questionnaire_results':
+                    session['questionnaire_results'] != null
+                        ? jsonEncode(session['questionnaire_results'])
+                        : null,
+                'reflection_results': session['reflection_results'] != null
+                    ? jsonEncode(session['reflection_results'])
+                    : null,
                 'risk_score': session['risk_score'],
                 'risk_level': session['risk_level'],
                 'created_at': session['created_at'],
@@ -706,8 +808,46 @@ class StorageService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getSessionsByChild(
-      String childId, {bool forceRefresh = false}) async {
+  static Future<List<Map<String, dynamic>>> getSessionsByChild(String childId,
+      {bool forceRefresh = false}) async {
+    // Web: sqflite unavailable — fetch directly from API
+    if (kIsWeb) {
+      try {
+        final serverSessions = await ApiService.getSessionsByChild(childId)
+            .timeout(const Duration(seconds: 10));
+        return serverSessions
+            .map((session) => <String, dynamic>{
+                  'id': session['id'],
+                  'child_id': session['child_id'],
+                  'session_type': session['session_type'],
+                  'age_group': session['age_group'],
+                  'status': session['end_time'] != null
+                      ? 'completed'
+                      : (session['status'] ?? 'in_progress'),
+                  'start_time': session['start_time'],
+                  'end_time': session['end_time'],
+                  'metrics': jsonEncode(session['metrics'] ?? const {}),
+                  'game_results': session['game_results'] != null
+                      ? jsonEncode(session['game_results'])
+                      : null,
+                  'questionnaire_results':
+                      session['questionnaire_results'] != null
+                          ? jsonEncode(session['questionnaire_results'])
+                          : null,
+                  'reflection_results': session['reflection_results'] != null
+                      ? jsonEncode(session['reflection_results'])
+                      : null,
+                  'risk_score': session['risk_score'],
+                  'risk_level': session['risk_level'],
+                  'created_at': session['created_at'],
+                })
+            .toList();
+      } catch (e) {
+        debugPrint('⚠️ Web: Error fetching sessions for child $childId: $e');
+        return [];
+      }
+    }
+
     // First, get local sessions (preserves offline data)
     final db = await database;
     final localRows = await db.query(
@@ -716,26 +856,27 @@ class StorageService {
       whereArgs: [childId],
       orderBy: 'created_at DESC',
     );
-    final localSessions = localRows.map((row) => row as Map<String, dynamic>).toList();
-    
+    final localSessions =
+        localRows.map((row) => row as Map<String, dynamic>).toList();
+
     final lastSync = _lastChildSessionsSync[childId];
-    final bool shouldSync = forceRefresh || 
-        lastSync == null || 
+    final bool shouldSync = forceRefresh ||
+        lastSync == null ||
         DateTime.now().difference(lastSync).inMinutes > 5;
-        
+
     if (!shouldSync && localSessions.isNotEmpty) {
       return localSessions;
     }
-    
+
     // Try to sync with backend if online
     try {
       final isOnline = await ApiService.healthCheck()
           .timeout(const Duration(seconds: 3), onTimeout: () => false);
-      
+
       if (isOnline) {
         final serverSessions = await ApiService.getSessionsByChild(childId)
             .timeout(const Duration(seconds: 10));
-        
+
         final serverMap = <String, Map<String, dynamic>>{};
         for (final session in serverSessions) {
           final formatted = {
@@ -743,20 +884,28 @@ class StorageService {
             'child_id': session['child_id'],
             'session_type': session['session_type'],
             'age_group': session['age_group'],
-            'status': session['end_time'] != null ? 'completed' : (session['status'] ?? 'in_progress'),
+            'status': session['end_time'] != null
+                ? 'completed'
+                : (session['status'] ?? 'in_progress'),
             'start_time': session['start_time'],
             'end_time': session['end_time'],
             'metrics': jsonEncode(session['metrics'] ?? const {}),
-            'game_results': session['game_results'] != null ? jsonEncode(session['game_results']) : null,
-            'questionnaire_results': session['questionnaire_results'] != null ? jsonEncode(session['questionnaire_results']) : null,
-            'reflection_results': session['reflection_results'] != null ? jsonEncode(session['reflection_results']) : null,
+            'game_results': session['game_results'] != null
+                ? jsonEncode(session['game_results'])
+                : null,
+            'questionnaire_results': session['questionnaire_results'] != null
+                ? jsonEncode(session['questionnaire_results'])
+                : null,
+            'reflection_results': session['reflection_results'] != null
+                ? jsonEncode(session['reflection_results'])
+                : null,
             'risk_score': session['risk_score'],
             'risk_level': session['risk_level'],
             'created_at': session['created_at'],
           };
           serverMap[session['id'] as String] = formatted;
         }
-        
+
         // Merge: server data takes priority, but keep local-only sessions
         final mergedSessions = <String, Map<String, dynamic>>{};
         for (final local in localSessions) {
@@ -766,12 +915,12 @@ class StorageService {
         for (final entry in serverMap.entries) {
           mergedSessions[entry.key] = entry.value;
         }
-        
+
         // Update local DB with merged data (upsert)
         for (final session in mergedSessions.values) {
           await _upsertSessionLocal(session);
         }
-        
+
         // Return merged list, sorted by created_at DESC
         final result = mergedSessions.values.toList();
         result.sort((a, b) {
@@ -779,12 +928,13 @@ class StorageService {
           final bTime = b['created_at'] as int? ?? 0;
           return bTime.compareTo(aTime);
         });
-        
+
         _lastChildSessionsSync[childId] = DateTime.now();
         return result;
       } else {
         // Offline - return local data
-        debugPrint('📱 Offline mode: Returning ${localSessions.length} local sessions');
+        debugPrint(
+            '📱 Offline mode: Returning ${localSessions.length} local sessions');
         return localSessions;
       }
     } catch (e) {
@@ -838,35 +988,44 @@ class StorageService {
         payload: payload,
       );
     } finally {
-      final db = await database;
-      final updateData = <String, dynamic>{};
-      // Auto-derive status: completed when endTime provided, unless explicitly set
-      if (status != null) {
-        updateData['status'] = status;
-      } else if (endTime != null) {
-        updateData['status'] = 'completed';
-      }
-      if (clinicianNote != null) updateData['clinician_note'] = clinicianNote;
-      if (endTime != null) updateData['end_time'] = endTime.millisecondsSinceEpoch;
-      if (metrics != null) updateData['metrics'] = jsonEncode(metrics);
-      if (gameResults != null) updateData['game_results'] = jsonEncode(gameResults);
-      if (questionnaireResults != null) {
-        updateData['questionnaire_results'] = jsonEncode(questionnaireResults);
-      }
-      if (reflectionResults != null) {
-        updateData['reflection_results'] = jsonEncode(reflectionResults);
-      }
-      if (riskScore != null) updateData['risk_score'] = riskScore;
-      if (riskLevel != null) updateData['risk_level'] = riskLevel;
+      if (!kIsWeb) {
+        // sqflite not supported on Web — skip local DB update
+        final db = await database;
+        final updateData = <String, dynamic>{};
+        // Auto-derive status: completed when endTime provided, unless explicitly set
+        if (status != null) {
+          updateData['status'] = status;
+        } else if (endTime != null) {
+          updateData['status'] = 'completed';
+        }
+        if (clinicianNote != null) updateData['clinician_note'] = clinicianNote;
+        if (endTime != null) {
+          updateData['end_time'] = endTime.millisecondsSinceEpoch;
+        }
+        if (metrics != null) updateData['metrics'] = jsonEncode(metrics);
+        if (gameResults != null) {
+          updateData['game_results'] = jsonEncode(gameResults);
+        }
+        if (questionnaireResults != null) {
+          updateData['questionnaire_results'] =
+              jsonEncode(questionnaireResults);
+        }
+        if (reflectionResults != null) {
+          updateData['reflection_results'] = jsonEncode(reflectionResults);
+        }
+        if (riskScore != null) updateData['risk_score'] = riskScore;
+        if (riskLevel != null) updateData['risk_level'] = riskLevel;
 
-      if (updateData.isNotEmpty) {
-        await db.update(
-          'sessions',
-          updateData,
-          where: 'id = ?',
-          whereArgs: [id],
-        );
-        debugPrint('✅ Updated local session $id (status: ${updateData['status']})');
+        if (updateData.isNotEmpty) {
+          await db.update(
+            'sessions',
+            updateData,
+            where: 'id = ?',
+            whereArgs: [id],
+          );
+          debugPrint(
+              '✅ Updated local session $id (status: ${updateData['status']})');
+        }
       }
     }
   }
@@ -1049,6 +1208,7 @@ class StorageService {
       await _replaceTrialsLocal(sessionId, formatted);
       return formatted;
     } catch (_) {
+      if (kIsWeb) return []; // sqflite not supported on Web
       final db = await database;
       return await db.query(
         'trials',
@@ -1061,6 +1221,7 @@ class StorageService {
 
   // -------------- LOCAL HELPERS --------------
   static Future<void> _upsertChildLocal(Map<String, dynamic> child) async {
+    if (kIsWeb) return; // sqflite not supported on Web
     final db = await database;
     await db.insert(
       'children',
@@ -1069,8 +1230,8 @@ class StorageService {
     );
   }
 
-
   static Future<List<Map<String, dynamic>>> _getChildrenLocal() async {
+    if (kIsWeb) return []; // sqflite not supported on Web
     final db = await database;
     return await db.query('children', orderBy: 'created_at DESC');
   }
@@ -1080,9 +1241,10 @@ class StorageService {
   static Future<void> _mergeChildrenLocal(
       List<Map<String, dynamic>> remoteChildren,
       List<Map<String, dynamic>> localChildren) async {
+    if (kIsWeb) return; // sqflite not supported on Web
     final db = await database;
     final batch = db.batch();
-    
+
     // Create a set of child_codes that exist in the remote data
     final remoteChildCodes = remoteChildren
         .map((c) => c['child_code'] as String?)
@@ -1094,24 +1256,25 @@ class StorageService {
       final id = child['id'] as String;
       return id.startsWith('child_');
     }).toList();
-    
+
     int deduplicatedCount = 0;
-    
+
     // First, update/insert all remote children
     for (final remoteChild in remoteChildren) {
       batch.insert('children', remoteChild,
           conflictAlgorithm: ConflictAlgorithm.replace);
     }
-    
+
     // Then, preserve offline entries ONLY if they haven't been synced to remote
     // We determine this by checking if the child_code already exists in remote
     for (final offlineChild in offlineChildren) {
       final childCode = offlineChild['child_code'] as String?;
-      
+
       if (childCode != null && remoteChildCodes.contains(childCode)) {
         // This offline child has been synced to backend and now has a UUID
         // Delete the temporary local version with the 'child_' prefix
-        batch.delete('children', where: 'id = ?', whereArgs: [offlineChild['id']]);
+        batch.delete('children',
+            where: 'id = ?', whereArgs: [offlineChild['id']]);
         deduplicatedCount++;
       } else {
         // This offline child has NOT been synced yet, preserve it
@@ -1119,12 +1282,14 @@ class StorageService {
             conflictAlgorithm: ConflictAlgorithm.replace);
       }
     }
-    
+
     await batch.commit(noResult: true);
-    debugPrint('✅ Merged ${remoteChildren.length} remote + ${offlineChildren.length - deduplicatedCount} offline children ($deduplicatedCount duplicates removed)');
+    debugPrint(
+        '✅ Merged ${remoteChildren.length} remote + ${offlineChildren.length - deduplicatedCount} offline children ($deduplicatedCount duplicates removed)');
   }
 
   static Future<void> _upsertSessionLocal(Map<String, dynamic> session) async {
+    if (kIsWeb) return; // sqflite not supported on Web
     final db = await database;
     await db.insert(
       'sessions',
@@ -1135,6 +1300,7 @@ class StorageService {
 
   static Future<void> _replaceSessionsLocal(
       List<Map<String, dynamic>> sessions) async {
+    if (kIsWeb) return; // sqflite not supported on Web
     final db = await database;
     final batch = db.batch();
     batch.delete('sessions');
@@ -1146,6 +1312,7 @@ class StorageService {
   }
 
   static Future<List<Map<String, dynamic>>> _getSessionsLocal() async {
+    if (kIsWeb) return []; // sqflite not supported on Web
     final db = await database;
     final rows = await db.query('sessions', orderBy: 'created_at DESC');
     return rows.map((row) {
@@ -1154,7 +1321,8 @@ class StorageService {
         m['game_results'] = jsonDecode(m['game_results'] as String);
       }
       if (m['questionnaire_results'] is String) {
-        m['questionnaire_results'] = jsonDecode(m['questionnaire_results'] as String);
+        m['questionnaire_results'] =
+            jsonDecode(m['questionnaire_results'] as String);
       }
       if (m['reflection_results'] is String) {
         m['reflection_results'] = jsonDecode(m['reflection_results'] as String);
@@ -1164,6 +1332,7 @@ class StorageService {
   }
 
   static Future<void> _upsertTrialLocal(Map<String, dynamic> trial) async {
+    if (kIsWeb) return; // sqflite not supported on Web
     final db = await database;
     await db.insert(
       'trials',
@@ -1176,6 +1345,7 @@ class StorageService {
     String sessionId,
     List<Map<String, dynamic>> trials,
   ) async {
+    if (kIsWeb) return; // sqflite not supported on Web
     final db = await database;
     final batch = db.batch();
     batch.delete('trials', where: 'session_id = ?', whereArgs: [sessionId]);

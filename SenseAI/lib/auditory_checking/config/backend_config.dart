@@ -7,7 +7,7 @@ class BackendConfig {
   // For Android emulator, use 10.0.2.2 instead of localhost
   // For physical device, use your computer's IP address (e.g., 'http://192.168.1.100:5000')
   static const String baseUrl =
-      'http://192.168.43.143:5008'; // Physical device - your actual IP
+      'http://192.168.1.2:5008'; // Physical device - your actual IP
   // static const String baseUrl = 'http://localhost:5000'; // For web/desktop
 
   // API endpoints

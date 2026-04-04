@@ -3,7 +3,7 @@ class BackendConfig {
   // Change this to your backend server URL
   // Android emulator: use 10.0.2.2 (emulator's alias for your computer)
   // Physical device on same WiFi: use your computer's IP (e.g. 172.20.10.3)
-  static const String baseUrl = 'http://192.168.43.143:5008'; // Physical device - same WiFi as your computer
+  static const String baseUrl = 'http://172.20.10.3:5000'; // Physical device - same WiFi as your computer
   // static const String baseUrl = 'http://10.0.2.2:5000'; // Android emulator only
 
   // API endpoints

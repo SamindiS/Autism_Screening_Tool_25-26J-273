@@ -22,9 +22,6 @@ class ApiService {
   /// Get the base URL for API calls
   /// Checks SharedPreferences first, then falls back to defaults
   static Future<String> get baseUrl async {
-    // Hardcoded for testing with current IP
-    return 'http://192.168.43.143:3000';
-    
     final prefs = await SharedPreferences.getInstance();
     final savedUrl = prefs.getString(_backendUrlKey);
 

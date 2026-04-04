@@ -2,29 +2,3 @@ Cognitive_Flexibility/senseai_backend/serviceAccountKey.json
 /Cognitive_Flexibility/senseai_backend/backups
 Cognitive_Flexibility/senseai_backend/serviceAccountKey.json
 *.json
-/Cognitive_Flexibility/android
-/Auditory_Checking/backend/__pycache__
-/Auditory_Checking/backend/data/__pycache__
-/Auditory_Checking/backend/services/__pycache__
-/Cognitive_Flexibility/.dart_tool
-/Cognitive_Flexibility/.idea
-/Cognitive_Flexibility/build
-/Cognitive_Flexibility/ios
-/Cognitive_Flexibility/web_application/node_modules
-/Visual attention & preferences/SenseAI/backend/__pycache__
-/Visual attention & preferences/SenseAI/backend/__pycache__
-/Cognitive_Flexibility/senseai_backend/ml_engine/app/__pycache__
-/Cognitive_Flexibility/senseai_backend/ml_engine/app/api/__pycache__
-/Cognitive_Flexibility/senseai_backend/ml_engine/app/core/__pycache__
-/Cognitive_Flexibility/senseai_backend/ml_engine/app/ml/__pycache__
-/Cognitive_Flexibility/senseai_backend/ml_engine/app/schemas/__pycache__
-/Cognitive_Flexibility/windows
-/Cognitive_Flexibility/senseai_backend/ml_scripts/__pycache__
-/Visual attention & preferences/SenseAI/backend/__pycache__
-/Visual attention & preferences/SenseAI/backend/__pycache__
-/Visual attention & preferences/SenseAI/backend/__pycache__
-/Visual attention & preferences/SenseAI/backend/__pycache__
-/SenseAI/windows/flutter
-/Auditory_Checking/packages/shared_config/lib
-Cognitive_Flexibility/.flutter-plugins-dependencies
-/Visual attention & preferences/SenseAI/backend/__pycache__

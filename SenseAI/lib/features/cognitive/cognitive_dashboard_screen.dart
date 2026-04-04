@@ -237,6 +237,9 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                         // Export Options
                         _buildExportOptions(),
                         const SizedBox(height: 24),
+                        // Clinical Standards
+                        _buildClinicalStandards(),
+                        const SizedBox(height: 24),
                         // Search Bar
                         _buildSearchBar(),
                         const SizedBox(height: 24),
@@ -779,6 +782,134 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildClinicalStandards() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Builder(
+          builder: (context) {
+            final l10n = AppLocalizations.of(context);
+            return Text(
+              l10n?.translate('clinical_standards_benchmarks') ?? 'Clinical Standards & Benchmarks',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue.shade700,
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.blue.shade100, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.blue.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'International Standard Alignment',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'The data and benchmarks are aligned with the following "Gold Standards":',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade700,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildStandardItem(
+                'DSM-5',
+                'Criteria for Social Communication and Restricted/Repetitive Behaviors.',
+                Icons.assignment_turned_in,
+                Colors.orange,
+              ),
+              const Divider(height: 24),
+              _buildStandardItem(
+                'M-CHAT-R/F',
+                'The global standard for toddler screening.',
+                Icons.child_friendly,
+                Colors.pink,
+              ),
+              const Divider(height: 24),
+              _buildStandardItem(
+                'NIH Toolbox',
+                'Used for DCCS (Color-Shape) and Flanker (Inhibitory) task norms.',
+                Icons.build_circle,
+                Colors.blue,
+              ),
+              const Divider(height: 24),
+              _buildStandardItem(
+                'CANTAB',
+                'Standardized neuropsychological assessment profiles.',
+                Icons.psychology,
+                Colors.purple,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStandardItem(String title, String description, IconData icon, Color color) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

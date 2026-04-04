@@ -1183,4 +1183,160 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dataMode => 'Data mode';
+
+  @override
+  String get visualCheckingTitle => 'Visual Checking';
+
+  @override
+  String get enhanceFocus => 'Enhance focus and track eye movements';
+
+  @override
+  String get childInfoTitle => 'Child Information';
+
+  @override
+  String get letsStartAdventure => 'Let\'s Start Our Adventure!';
+
+  @override
+  String get whatsYourName => 'What\'s your name?';
+
+  @override
+  String get howOldAreYou => 'How old are you?';
+
+  @override
+  String get letsGo => 'Let\'s Go!';
+
+  @override
+  String get funGamesAhead => 'Fun Games Ahead!';
+
+  @override
+  String get playExcitingGames => 'Play exciting pattern and matching games';
+
+  @override
+  String get parentGuardianInfo => 'Parent/Guardian Information';
+
+  @override
+  String get tellUsAboutParent => 'Tell us about your parent/guardian';
+
+  @override
+  String get parentGuardianName => 'Parent/Guardian Name';
+
+  @override
+  String get emailAddress => 'Email Address (Optional)';
+
+  @override
+  String get phoneNumber => 'Phone Number';
+
+  @override
+  String get includeCountryCode => 'Include country code (e.g., +94)';
+
+  @override
+  String get relationship => 'Relationship to Child';
+
+  @override
+  String get backText => 'Back';
+
+  @override
+  String get continueText => 'Continue';
+
+  @override
+  String get safeAndSecure => 'Safe & Secure';
+
+  @override
+  String get infoHelpsReport => 'This info helps us send you the report';
+
+  @override
+  String get calibrationTitle => 'Calibration';
+
+  @override
+  String get lookAtTheDot => 'Look at the dot:';
+
+  @override
+  String get nextButton => 'Next';
+
+  @override
+  String get startGames => 'Start Games';
+
+  @override
+  String get bubblePopGame => 'Bubble Pop Game';
+
+  @override
+  String get howToPlayGame => 'How to Play';
+
+  @override
+  String get seeTheBubbles => 'See the bubbles';
+
+  @override
+  String get bubblesFloat => 'Colorful bubbles will float on screen';
+
+  @override
+  String get tapToPop => 'Tap to pop!';
+
+  @override
+  String get touchBubblesPop => 'Touch the bubbles to pop them!';
+
+  @override
+  String get haveFun => 'Have fun!';
+
+  @override
+  String get popAsMany => 'Pop as many bubbles as you can!';
+
+  @override
+  String get thirtySeconds => '30 seconds';
+
+  @override
+  String get gameLasts30 => 'The game lasts 30 seconds';
+
+  @override
+  String get startGameBtn => 'Start Game';
+
+  @override
+  String get butterflyGame => 'Butterfly Game';
+
+  @override
+  String get watchButterfly => 'Watch the butterfly';
+
+  @override
+  String get butterflyFlyAround => 'A colorful butterfly will fly around';
+
+  @override
+  String get followEyes => 'Follow with your eyes';
+
+  @override
+  String get tryLookWhere => 'Try to look at where it goes';
+
+  @override
+  String get visitFlowers => 'Visit the flowers';
+
+  @override
+  String get butterflyLovesFlowers => 'The butterfly loves flowers!';
+
+  @override
+  String get fifteenSeconds => '15 seconds';
+
+  @override
+  String get gameLasts15 => 'The game lasts 15 seconds';
+
+  @override
+  String get allDone => 'All Done!';
+
+  @override
+  String get youDidGreat => 'You Did Great!';
+
+  @override
+  String get amazingJob => 'Amazing job completing the games!';
+
+  @override
+  String get yourScore => 'Your Score';
+
+  @override
+  String get specialReport => 'Your Special Report';
+
+  @override
+  String get generatingReportReason => 'We are creating your amazing report...';
+
+  @override
+  String get getYourReport => 'Get Your Report';
+
+  @override
+  String get playAgain => 'Play Again!';
 }

@@ -136,7 +136,12 @@ class _BubblesScreenState extends State<BubblesScreen> {
             children: [
               CircularProgressIndicator(),
               SizedBox(width: 20),
-              Text('Analyzing gaze data...'),
+              Expanded(
+                child: Text(
+                  'Analyzing gaze data...',
+                  softWrap: true,
+                ),
+              ),
             ],
           ),
         ),
@@ -144,6 +149,7 @@ class _BubblesScreenState extends State<BubblesScreen> {
     }
 
     double score = 0.0;
+    String riskCategory = '';
     try {
       final res = await http
           .post(
@@ -151,13 +157,17 @@ class _BubblesScreenState extends State<BubblesScreen> {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'test_id': widget.testId, 'events': events}),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 45));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         score = (data['score'] ?? 0.0).toDouble();
+        final scores = data['scores'];
+        riskCategory = (scores is Map && scores['risk_category'] != null)
+            ? scores['risk_category'].toString()
+            : '';
         debugPrint('Bubbles game: Data uploaded successfully, score: $score');
-        debugPrint('Bubbles game: ${data['message'] ?? 'Analysis complete'}');
+        debugPrint('Bubbles game: risk_category=$riskCategory');
       }
     } catch (e) {
       debugPrint('Bubbles game: Upload failed (offline mode): $e');
@@ -166,7 +176,11 @@ class _BubblesScreenState extends State<BubblesScreen> {
     if (mounted) {
       Navigator.of(context).pop();
       Navigator.of(context).pushReplacement(MaterialPageRoute(
-          builder: (_) => ResultsScreen(testId: widget.testId, score: score)));
+          builder: (_) => ResultsScreen(
+            testId: widget.testId,
+            score: score,
+            riskCategory: riskCategory,
+          )));
     }
   }
 

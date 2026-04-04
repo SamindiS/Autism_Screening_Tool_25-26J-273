@@ -1195,4 +1195,162 @@ class AppLocalizationsSi extends AppLocalizations {
 
   @override
   String get dataMode => 'දත්ත ප්‍රකාරය';
+
+  @override
+  String get visualCheckingTitle => 'දෘශ්‍ය පරීක්ෂාව';
+
+  @override
+  String get enhanceFocus => 'අවධානය වැඩි දියුණු කර ඇසේ චලනයන් නිරීක්ෂණය කරන්න';
+
+  @override
+  String get childInfoTitle => 'ළමා තොරතුරු';
+
+  @override
+  String get letsStartAdventure => 'අපි අපේ වික්‍රමය පටන් ගනිමු!';
+
+  @override
+  String get whatsYourName => 'ඔයාගේ නම මොකක්ද?';
+
+  @override
+  String get howOldAreYou => 'ඔබේ වයස කීයද?';
+
+  @override
+  String get letsGo => 'අපි යමු!';
+
+  @override
+  String get funGamesAhead => 'ඉදිරියේදී විනෝදාත්මක ක්‍රීඩා!';
+
+  @override
+  String get playExcitingGames => 'විචිත්‍රවත් රටා සහ ගැලපෙන ක්‍රීඩා කරන්න';
+
+  @override
+  String get parentGuardianInfo => 'දෙමාපිය/භාරකරු තොරතුරු';
+
+  @override
+  String get tellUsAboutParent => 'ඔබේ දෙමාපියන්/භාරකරු ගැන අපට පවසන්න';
+
+  @override
+  String get parentGuardianName => 'දෙමාපිය/භාරකරුගේ නම';
+
+  @override
+  String get emailAddress => 'ඊමේල් ලිපිනය (විකල්ප)';
+
+  @override
+  String get phoneNumber => 'දුරකථන අංකය';
+
+  @override
+  String get includeCountryCode => 'රටේ කේතය ඇතුළත් කරන්න (උදා: +94)';
+
+  @override
+  String get relationship => 'දරුවාට ඇති සම්බන්ධතාවය';
+
+  @override
+  String get backText => 'ආපසු';
+
+  @override
+  String get continueText => 'ඉදිරියට';
+
+  @override
+  String get safeAndSecure => 'ආරක්ෂිත සහ සුරක්ෂිත';
+
+  @override
+  String get infoHelpsReport => 'මෙම ත শহরතuru ඔබට වාර්තාව යැවීමට උපකාරී වේ';
+
+  @override
+  String get calibrationTitle => 'ක්‍රමාංකනය';
+
+  @override
+  String get lookAtTheDot => 'තිත දෙස බලන්න:';
+
+  @override
+  String get nextButton => 'මීළඟ';
+
+  @override
+  String get startGames => 'ක්‍රීඩා අරඹන්න';
+
+  @override
+  String get bubblePopGame => 'බුබුලු පුපුරවන ක්‍රීඩාව';
+
+  @override
+  String get howToPlayGame => 'සෙල්ලම් කරන්නේ කොහොමද';
+
+  @override
+  String get seeTheBubbles => 'බුබුලු බලන්න';
+
+  @override
+  String get bubblesFloat => 'වර්ණවත් බුබුලු තිරය මත පාවෙනවා ඇත';
+
+  @override
+  String get tapToPop => 'පුපුරන්න තට්ටු කරන්න!';
+
+  @override
+  String get touchBubblesPop => 'බුබුලු පුපුරවන්න ඒවා ස්පර්ශ කරන්න!';
+
+  @override
+  String get haveFun => 'විනෝද වෙන්න!';
+
+  @override
+  String get popAsMany => 'ඔබට හැකි පමණ බුබුලු පුපුරවන්න!';
+
+  @override
+  String get thirtySeconds => 'තත්පර 30';
+
+  @override
+  String get gameLasts30 => 'ක්‍රීඩාව තත්පර 30 ක් පවතී';
+
+  @override
+  String get startGameBtn => 'ක්‍රීඩාව අරඹන්න';
+
+  @override
+  String get butterflyGame => 'සමනල ක්‍රීඩාව';
+
+  @override
+  String get watchButterfly => 'සමනලයා දෙස බලන්න';
+
+  @override
+  String get butterflyFlyAround => 'වර්ණවත් සමනලයෙක් වටේ පියාසර කරයි';
+
+  @override
+  String get followEyes => 'ඔබේ ඇස්වලින් අනුගමනය කරන්න';
+
+  @override
+  String get tryLookWhere => 'එය යන තැන බැලීමට උත්සාහ කරන්න';
+
+  @override
+  String get visitFlowers => 'මල් බලන්න යන්න';
+
+  @override
+  String get butterflyLovesFlowers => 'සමනලයා මල් වලට හරිම ආසයි!';
+
+  @override
+  String get fifteenSeconds => 'තත්පර 15';
+
+  @override
+  String get gameLasts15 => 'ක්‍රීඩාව තත්පර 15 ක් පවතී';
+
+  @override
+  String get allDone => 'සියල්ල අවසන්!';
+
+  @override
+  String get youDidGreat => 'ඔබ විශිෂ්ට ලෙස කළා!';
+
+  @override
+  String get amazingJob =>
+      'ක්‍රීඩා සම්පූර්ණ කිරීමෙන් ඔබ පුදුමාකාර කාර්යයක් කළා!';
+
+  @override
+  String get yourScore => 'ඔබේ ලකුණු';
+
+  @override
+  String get specialReport => 'ඔබේ විශේෂ වාර්තාව';
+
+  @override
+  String get generatingReportReason =>
+      'අපි ඔබගේ පුදුමාකාර වාර්තාව නිර්මාණය කරමින් සිටිමු...';
+
+  @override
+  String get getYourReport => 'ඔබේ වාර්තාව ලබා ගන්න';
+
+  @override
+  String get playAgain => 'නැවත සෙල්ලම් කරන්න!';
 }

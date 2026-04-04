@@ -10,23 +10,32 @@ import 'package:share_plus/share_plus.dart';
 import '../gaze/gaze_service.dart';
 import '../theme.dart';
 import 'entry_form_screen.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../widgets/language_selector.dart';
 
 class ResultsScreen extends StatelessWidget {
   final String testId;
   final double score;
-  const ResultsScreen({required this.testId, required this.score, super.key});
+  final String riskCategory;
+  const ResultsScreen({
+    required this.testId,
+    required this.score,
+    this.riskCategory = '',
+    super.key,
+  });
 
   Future<File?> _downloadPdfToFile(BuildContext context) async {
     return await _waitForReportAndDownload(context);
   }
 
   Future<void> _showReportOptions(BuildContext context) async {
+    final scaffoldContext = context;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
+      builder: (modalContext) => Container(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -40,9 +49,9 @@ class ResultsScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Text(
-              'Report Options',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context)?.reportOptions ?? 'Report Options',
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -53,21 +62,21 @@ class ResultsScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: _buildOptionButton(
-                    context,
+                    modalContext: modalContext,
                     icon: Icons.share,
-                    label: 'Share',
+                    label: AppLocalizations.of(context)?.share ?? 'Share',
                     color: SenseAIColors.puzzleTeal,
-                    onTap: () => _shareReport(context),
+                    onTap: () => _shareReport(scaffoldContext),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: _buildOptionButton(
-                    context,
+                    modalContext: modalContext,
                     icon: Icons.download,
-                    label: 'Download',
+                    label: AppLocalizations.of(context)?.download ?? 'Download',
                     color: SenseAIColors.puzzleBlue,
-                    onTap: () => _downloadReport(context),
+                    onTap: () => _downloadReport(scaffoldContext),
                   ),
                 ),
               ],
@@ -79,8 +88,8 @@ class ResultsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOptionButton(
-    BuildContext context, {
+  Widget _buildOptionButton({
+    required BuildContext modalContext,
     required IconData icon,
     required String label,
     required Color color,
@@ -88,8 +97,11 @@ class ResultsScreen extends StatelessWidget {
   }) {
     return InkWell(
       onTap: () {
-        Navigator.of(context).pop();
-        onTap();
+        Navigator.of(modalContext).pop();
+        // Delay so modal is fully disposed before async work (prevents _dependents.isEmpty)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          onTap();
+        });
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -127,16 +139,17 @@ class ResultsScreen extends StatelessWidget {
     }
 
     try {
+      final localizations = AppLocalizations.of(context);
       await Share.shareXFiles(
         [XFile(file.path)],
-        text: 'SenseAI Assessment Report',
-        subject: 'Gaze Assessment Report',
+        text: localizations?.assessmentReportTitle ?? 'SenseAI Assessment Report',
+        subject: localizations?.gazeReportSubject ?? 'Gaze Assessment Report',
       );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Report shared successfully!'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(localizations?.reportShared ?? 'Report shared successfully!'),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -144,7 +157,7 @@ class ResultsScreen extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error sharing report: ${e.toString()}'),
+            content: Text('${AppLocalizations.of(context)?.errorSharing ?? 'Error sharing report'}: ${e.toString()}'),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -157,43 +170,45 @@ class ResultsScreen extends StatelessWidget {
     if (file == null) return;
 
     try {
+      final localizations = AppLocalizations.of(context);
       final result = await OpenFile.open(file.path);
 
       if (result.type != ResultType.done && context.mounted) {
         if (result.type == ResultType.error || result.type == ResultType.noAppToOpen) {
           await Share.shareXFiles(
             [XFile(file.path)],
-            subject: 'SenseAI Report',
-            text: 'SenseAI Gaze Assessment Report',
+            subject: localizations?.assessmentReportTitle ?? 'SenseAI Report',
+            text: localizations?.assessmentReportTitle ?? 'SenseAI Gaze Assessment Report',
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Could not open report: ${result.message ?? "Unknown error"}'),
+              content: Text('${localizations?.couldNotOpenReport ?? 'Could not open report'}: ${result.message ?? "Unknown error"}'),
               duration: const Duration(seconds: 3),
             ),
           );
         }
       } else if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Report opened successfully'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(localizations?.reportOpened ?? 'Report opened successfully'),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
       if (context.mounted) {
+        final localizations = AppLocalizations.of(context);
         try {
           await Share.shareXFiles(
             [XFile(file.path)],
-            subject: 'SenseAI Report',
-            text: 'SenseAI Gaze Assessment Report',
+            subject: localizations?.assessmentReportTitle ?? 'SenseAI Report',
+            text: localizations?.assessmentReportTitle ?? 'SenseAI Gaze Assessment Report',
           );
         } catch (shareError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error opening report: ${e.toString()}'),
+              content: Text('${localizations?.errorOpening ?? 'Error opening report'}: ${e.toString()}'),
               duration: const Duration(seconds: 3),
             ),
           );
@@ -204,25 +219,21 @@ class ResultsScreen extends StatelessWidget {
 
   Future<File?> _waitForReportAndDownload(BuildContext context) async {
     if (context.mounted) {
+      final localizations = AppLocalizations.of(context);
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const AlertDialog(
+        builder: (context) => AlertDialog(
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 20),
-              Text('Generating PDF report...'),
-              SizedBox(height: 10),
+              const CircularProgressIndicator(),
+              const SizedBox(height: 20),
+              Text(localizations?.preparingReport ?? 'Preparing your report...'),
+              const SizedBox(height: 10),
               Text(
-                'This usually takes 5-15 seconds',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              SizedBox(height: 5),
-              Text(
-                'Please wait...',
-                style: TextStyle(fontSize: 11, color: Colors.grey),
+                localizations?.takesFewSeconds ?? 'This usually takes a few seconds',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],
           ),
@@ -231,12 +242,12 @@ class ResultsScreen extends StatelessWidget {
     }
 
     try {
-      const maxAttempts = 45;
-      const pollInterval = Duration(milliseconds: 1000);
+      const maxAttempts = 15;
+      const pollInterval = Duration(milliseconds: 800);
 
       try {
         final downloadUrl = Uri.parse('$API_BASE/report/$testId/download');
-        final response = await http.get(downloadUrl).timeout(const Duration(seconds: 35));
+        final response = await http.get(downloadUrl).timeout(const Duration(seconds: 25));
 
         if (response.statusCode == 200) {
           final directory = await getTemporaryDirectory();
@@ -295,11 +306,11 @@ class ResultsScreen extends StatelessWidget {
       if (context.mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Report generation is taking longer than expected. Please try again in a moment.',
+              AppLocalizations.of(context)?.couldNotLoadReport ?? 'Could not load report. Please check your connection and try again.',
             ),
-            duration: Duration(seconds: 4),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -318,11 +329,13 @@ class ResultsScreen extends StatelessWidget {
     }
   }
 
-  String _getRiskCategory(double score) {
-    if (score >= 80) return 'Low Risk';
-    if (score >= 60) return 'Moderate - Further Evaluation Recommended';
-    if (score >= 40) return 'Elevated Risk - Professional Consultation Advised';
-    return 'High Risk - Immediate Professional Evaluation Recommended';
+  String _getRiskCategory(BuildContext context, double score) {
+    if (riskCategory.isNotEmpty) return riskCategory;
+    final l = AppLocalizations.of(context);
+    if (score >= 80) return l?.lowRisk ?? 'Low Risk';
+    if (score >= 60) return l?.moderateRisk ?? 'Moderate - Further Evaluation Recommended';
+    if (score >= 40) return l?.elevatedRisk ?? 'Elevated Risk - Professional Consultation Advised';
+    return l?.highRisk ?? 'High Risk - Immediate Professional Evaluation Recommended';
   }
 
   Color _getScoreColor(double score) {
@@ -334,6 +347,7 @@ class ResultsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     final scoreColor = _getScoreColor(score);
     final celebrationEmoji = score >= 80 ? '🎉' : score >= 60 ? '🌟' : score >= 40 ? '👍' : '💪';
 
@@ -342,13 +356,16 @@ class ResultsScreen extends StatelessWidget {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('🎊', style: TextStyle(fontSize: 24)),
+            const Text('🎊', style: TextStyle(fontSize: 24)),
             const SizedBox(width: 8),
-            const Text('All Done!'),
+            Text(localizations?.allDone ?? 'All Done!'),
             const SizedBox(width: 8),
-            Text('🎊', style: TextStyle(fontSize: 24)),
+            const Text('🎊', style: TextStyle(fontSize: 24)),
           ],
         ),
+        actions: const [
+          LanguageSelector(),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -368,8 +385,8 @@ class ResultsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                'You Did Great!',
-                style: TextStyle(
+                localizations?.youDidGreat ?? 'You Did Great!',
+                style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: SenseAIColors.primaryBlue,
@@ -377,7 +394,7 @@ class ResultsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '$celebrationEmoji Amazing job completing the games! $celebrationEmoji',
+                '$celebrationEmoji ${localizations?.amazingJob ?? 'Amazing job completing the games!'} $celebrationEmoji',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
@@ -408,8 +425,8 @@ class ResultsScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      'Your Score',
-                      style: TextStyle(
+                      localizations?.yourScore ?? 'Your Score',
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: SenseAIColors.primaryBlue,
@@ -450,7 +467,7 @@ class ResultsScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        _getRiskCategory(score),
+                        _getRiskCategory(context, score),
                         style: TextStyle(
                           fontSize: 16,
                           color: scoreColor,
@@ -483,8 +500,8 @@ class ResultsScreen extends StatelessWidget {
                     Text('📄', style: TextStyle(fontSize: 40)),
                     const SizedBox(height: 12),
                     Text(
-                      'Your Special Report',
-                      style: TextStyle(
+                      localizations?.yourSpecialReport ?? 'Your Special Report',
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: SenseAIColors.primaryBlue,
@@ -492,12 +509,12 @@ class ResultsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'We\'re creating your amazing report with:\n'
-                      '✨ How well you paid attention\n'
-                      '🦋 Your eye tracking skills\n'
-                      '🎯 Your focus patterns\n'
-                      '💡 Special recommendations\n\n'
-                      'It will be ready soon!',
+                      '${localizations?.creatingReportWith ?? 'We\'re creating your amazing report with:'}\n'
+                      '${localizations?.featureAttention ?? '✨ How well you paid attention'}\n'
+                      '${localizations?.featureEyetracking ?? '🦋 Your eye tracking skills'}\n'
+                      '${localizations?.featureFocus ?? '🎯 Your focus patterns'}\n'
+                      '${localizations?.featureRecommendations ?? '💡 Special recommendations'}\n\n'
+                      '${localizations?.readySoon ?? 'It will be ready soon!'}',
                       style: TextStyle(
                         fontSize: 15,
                         height: 1.6,
@@ -527,9 +544,9 @@ class ResultsScreen extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: () => _showReportOptions(context),
                     icon: Text('📄', style: TextStyle(fontSize: 28)),
-                    label: const Text(
-                      'Get Your Report',
-                      style: TextStyle(
+                    label: Text(
+                      localizations?.getReport ?? 'Get Your Report',
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
@@ -562,9 +579,9 @@ class ResultsScreen extends StatelessWidget {
                     );
                   },
                   icon: Text('🔄', style: TextStyle(fontSize: 22)),
-                  label: const Text(
-                    'Play Again!',
-                    style: TextStyle(
+                  label: Text(
+                    localizations?.playAgain ?? 'Play Again!',
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),

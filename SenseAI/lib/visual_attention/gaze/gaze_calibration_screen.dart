@@ -214,6 +214,10 @@ class _GazeCalibrationScreenState extends State<GazeCalibrationScreen>
   }
 
   Future<void> _initializeGazeTracking() async {
+    // Ensure the activity/screen is fully built before initializing camera
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    if (!mounted) return;
     try {
       setState(() {
         _status = 'Getting ready...';
@@ -221,6 +225,7 @@ class _GazeCalibrationScreenState extends State<GazeCalibrationScreen>
       });
 
       await gazeService.initialize();
+      if (!mounted) return;
       await gazeService.startTracking();
 
       _gazeSubscription = gazeService.gazeStream.listen((gazeData) {

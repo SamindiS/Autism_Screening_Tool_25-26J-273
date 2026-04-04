@@ -3,8 +3,12 @@
 
 import 'package:flutter/material.dart';
 
-/// Backend API base URL - update for device testing
-const String API_BASE = 'http://192.168.8.197:8000';
+/// Backend API base URL - MUST match your setup for online mode:
+/// - Physical device on WiFi: http://YOUR_PC_IP:8000 (find PC IP: ipconfig)
+/// - Android emulator: http://10.0.2.2:8000
+/// - Same machine: http://127.0.0.1:8000
+/// Backend must run with: uvicorn main:app --host 0.0.0.0 --port 8000
+const String API_BASE = 'http://172.28.5.240:8000';
 
 // =============================================================================
 // SENSEAI BRAND COLORS (extracted from logo)

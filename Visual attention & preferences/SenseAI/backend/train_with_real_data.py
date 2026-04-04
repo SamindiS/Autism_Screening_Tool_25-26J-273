@@ -195,15 +195,25 @@ def train_model(X, y):
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
     
-    # Use Gradient Boosting (same as our current model)
+    # Use Gradient Boosting - sample_weight for balanced sensitivity (ASD detection)
     model = GradientBoostingClassifier(
         n_estimators=100,
         max_depth=3,
         learning_rate=0.1,
-        min_samples_split=3,  # Allow smaller splits for small dataset
+        min_samples_split=3,
         min_samples_leaf=2,
-        random_state=42
+        random_state=42,
     )
+    
+    # Compute sample weights for sensitivity - strongly upweight ASD (minority) class
+    # so model gives correct below-50 results when atypical patterns detected
+    n_td = (y == 0).sum()
+    n_asd = (y == 1).sum()
+    asd_weight = 1.5 * (n_td / max(n_asd, 1))  # 1.5x boost for ASD sensitivity
+    td_weight = n_asd / max(n_td, 1)
+    sample_weights = np.where(y == 1, asd_weight, td_weight)
+    sample_weights = sample_weights / sample_weights.mean()  # Normalize
+    print(f"\nSample weights: TD={n_td}, ASD={n_asd} (ASD 1.5x upweighted for sensitivity)")
     
     # Leave-One-Out cross-validation (best for small datasets)
     print("\nPerforming Leave-One-Out Cross-Validation...")
@@ -215,8 +225,8 @@ def train_model(X, y):
     cv_scores = cross_val_score(model, X_scaled, y, cv=5, scoring='accuracy')
     print(f"5-Fold CV Accuracy: {cv_scores.mean():.3f} (+/- {cv_scores.std()*2:.3f})")
     
-    # Train final model on all data
-    model.fit(X_scaled, y)
+    # Train final model on all data with sample weights for balanced sensitivity
+    model.fit(X_scaled, y, sample_weight=sample_weights)
     
     # Feature importance
     print("\nTop 10 Most Important Features:")

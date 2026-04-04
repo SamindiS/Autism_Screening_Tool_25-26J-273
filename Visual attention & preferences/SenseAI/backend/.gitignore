@@ -1,1 +1,12 @@
-/venv
+# Firebase credentials - NEVER commit (contains private keys)
+firebase-credentials.json
+
+# Local database
+data.db
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env

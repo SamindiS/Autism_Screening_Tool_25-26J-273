@@ -2325,6 +2325,318 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Data mode'**
   String get dataMode;
+
+  /// No description provided for @visualCheckingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Visual Checking'**
+  String get visualCheckingTitle;
+
+  /// No description provided for @enhanceFocus.
+  ///
+  /// In en, this message translates to:
+  /// **'Enhance focus and track eye movements'**
+  String get enhanceFocus;
+
+  /// No description provided for @childInfoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Child Information'**
+  String get childInfoTitle;
+
+  /// No description provided for @letsStartAdventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s Start Our Adventure!'**
+  String get letsStartAdventure;
+
+  /// No description provided for @whatsYourName.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s your name?'**
+  String get whatsYourName;
+
+  /// No description provided for @howOldAreYou.
+  ///
+  /// In en, this message translates to:
+  /// **'How old are you?'**
+  String get howOldAreYou;
+
+  /// No description provided for @letsGo.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s Go!'**
+  String get letsGo;
+
+  /// No description provided for @funGamesAhead.
+  ///
+  /// In en, this message translates to:
+  /// **'Fun Games Ahead!'**
+  String get funGamesAhead;
+
+  /// No description provided for @playExcitingGames.
+  ///
+  /// In en, this message translates to:
+  /// **'Play exciting pattern and matching games'**
+  String get playExcitingGames;
+
+  /// No description provided for @parentGuardianInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent/Guardian Information'**
+  String get parentGuardianInfo;
+
+  /// No description provided for @tellUsAboutParent.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us about your parent/guardian'**
+  String get tellUsAboutParent;
+
+  /// No description provided for @parentGuardianName.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent/Guardian Name'**
+  String get parentGuardianName;
+
+  /// No description provided for @emailAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Address (Optional)'**
+  String get emailAddress;
+
+  /// No description provided for @phoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number'**
+  String get phoneNumber;
+
+  /// No description provided for @includeCountryCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Include country code (e.g., +94)'**
+  String get includeCountryCode;
+
+  /// No description provided for @relationship.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship to Child'**
+  String get relationship;
+
+  /// No description provided for @backText.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get backText;
+
+  /// No description provided for @continueText.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueText;
+
+  /// No description provided for @safeAndSecure.
+  ///
+  /// In en, this message translates to:
+  /// **'Safe & Secure'**
+  String get safeAndSecure;
+
+  /// No description provided for @infoHelpsReport.
+  ///
+  /// In en, this message translates to:
+  /// **'This info helps us send you the report'**
+  String get infoHelpsReport;
+
+  /// No description provided for @calibrationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calibration'**
+  String get calibrationTitle;
+
+  /// No description provided for @lookAtTheDot.
+  ///
+  /// In en, this message translates to:
+  /// **'Look at the dot:'**
+  String get lookAtTheDot;
+
+  /// No description provided for @nextButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get nextButton;
+
+  /// No description provided for @startGames.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Games'**
+  String get startGames;
+
+  /// No description provided for @bubblePopGame.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubble Pop Game'**
+  String get bubblePopGame;
+
+  /// No description provided for @howToPlayGame.
+  ///
+  /// In en, this message translates to:
+  /// **'How to Play'**
+  String get howToPlayGame;
+
+  /// No description provided for @seeTheBubbles.
+  ///
+  /// In en, this message translates to:
+  /// **'See the bubbles'**
+  String get seeTheBubbles;
+
+  /// No description provided for @bubblesFloat.
+  ///
+  /// In en, this message translates to:
+  /// **'Colorful bubbles will float on screen'**
+  String get bubblesFloat;
+
+  /// No description provided for @tapToPop.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to pop!'**
+  String get tapToPop;
+
+  /// No description provided for @touchBubblesPop.
+  ///
+  /// In en, this message translates to:
+  /// **'Touch the bubbles to pop them!'**
+  String get touchBubblesPop;
+
+  /// No description provided for @haveFun.
+  ///
+  /// In en, this message translates to:
+  /// **'Have fun!'**
+  String get haveFun;
+
+  /// No description provided for @popAsMany.
+  ///
+  /// In en, this message translates to:
+  /// **'Pop as many bubbles as you can!'**
+  String get popAsMany;
+
+  /// No description provided for @thirtySeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'30 seconds'**
+  String get thirtySeconds;
+
+  /// No description provided for @gameLasts30.
+  ///
+  /// In en, this message translates to:
+  /// **'The game lasts 30 seconds'**
+  String get gameLasts30;
+
+  /// No description provided for @startGameBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Game'**
+  String get startGameBtn;
+
+  /// No description provided for @butterflyGame.
+  ///
+  /// In en, this message translates to:
+  /// **'Butterfly Game'**
+  String get butterflyGame;
+
+  /// No description provided for @watchButterfly.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch the butterfly'**
+  String get watchButterfly;
+
+  /// No description provided for @butterflyFlyAround.
+  ///
+  /// In en, this message translates to:
+  /// **'A colorful butterfly will fly around'**
+  String get butterflyFlyAround;
+
+  /// No description provided for @followEyes.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow with your eyes'**
+  String get followEyes;
+
+  /// No description provided for @tryLookWhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Try to look at where it goes'**
+  String get tryLookWhere;
+
+  /// No description provided for @visitFlowers.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit the flowers'**
+  String get visitFlowers;
+
+  /// No description provided for @butterflyLovesFlowers.
+  ///
+  /// In en, this message translates to:
+  /// **'The butterfly loves flowers!'**
+  String get butterflyLovesFlowers;
+
+  /// No description provided for @fifteenSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'15 seconds'**
+  String get fifteenSeconds;
+
+  /// No description provided for @gameLasts15.
+  ///
+  /// In en, this message translates to:
+  /// **'The game lasts 15 seconds'**
+  String get gameLasts15;
+
+  /// No description provided for @allDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All Done!'**
+  String get allDone;
+
+  /// No description provided for @youDidGreat.
+  ///
+  /// In en, this message translates to:
+  /// **'You Did Great!'**
+  String get youDidGreat;
+
+  /// No description provided for @amazingJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Amazing job completing the games!'**
+  String get amazingJob;
+
+  /// No description provided for @yourScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Score'**
+  String get yourScore;
+
+  /// No description provided for @specialReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Special Report'**
+  String get specialReport;
+
+  /// No description provided for @generatingReportReason.
+  ///
+  /// In en, this message translates to:
+  /// **'We are creating your amazing report...'**
+  String get generatingReportReason;
+
+  /// No description provided for @getYourReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Your Report'**
+  String get getYourReport;
+
+  /// No description provided for @playAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Play Again!'**
+  String get playAgain;
 }
 
 class _AppLocalizationsDelegate

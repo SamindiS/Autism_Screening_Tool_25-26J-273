@@ -170,7 +170,7 @@ class _TapTheSoundPageState extends State<TapTheSoundPage>
     // Register with backend in background
     try {
       final response = await http.post(
-        Uri.parse(BackendConfig.tapGameStartEndpoint),
+        Uri.parse(await BackendConfig.tapGameStartEndpoint),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'child_id': widget.childId,
@@ -566,7 +566,7 @@ class _TapTheSoundPageState extends State<TapTheSoundPage>
       print('  Total taps: ${totalTapsInRound ?? 1}');
 
       await http.post(
-        Uri.parse(BackendConfig.tapGameResponseEndpoint),
+        Uri.parse(await BackendConfig.tapGameResponseEndpoint),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(responseData),
       );

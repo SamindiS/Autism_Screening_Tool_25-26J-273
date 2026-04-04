@@ -7,6 +7,9 @@ import Children from './components/Children/Children'
 import ChildDetails from './components/Children/ChildDetails'
 import Cognitive from './components/Cognitive/Cognitive'
 import CognitiveDashboard from './components/Cognitive/CognitiveDashboard'
+import RRBDashboard from './components/RRB/RRBDashboard'
+import AuditoryDashboard from './components/Auditory/AuditoryDashboard'
+import VisualDashboard from './components/Visual/VisualDashboard'
 import Sessions from './components/Sessions/Sessions'
 import SessionDetails from './components/Sessions/SessionDetails'
 import Doctors from './components/Doctors/Doctors'
@@ -56,9 +59,9 @@ function App() {
             <Route path="children" element={<Children />} />
             <Route path="children/:id" element={<ChildDetails />} />
             <Route path="cognitive" element={<CognitiveDashboard />} />
-            <Route path="rrb" element={<CognitiveDashboard />} />
-            <Route path="auditory" element={<CognitiveDashboard />} />
-            <Route path="visual" element={<CognitiveDashboard />} />
+            <Route path="rrb" element={<RRBDashboard />} />
+            <Route path="auditory" element={<AuditoryDashboard />} />
+            <Route path="visual" element={<VisualDashboard />} />
             <Route path="sessions" element={<Sessions />} />
             <Route path="sessions/:id" element={<SessionDetails />} />
             <Route path="doctors" element={<Doctors />} />

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../widgets/language_selector.dart';
 import 'child_parent_details_page.dart';
 
 /// Landing page: "Auditory Response to the Name" – first screen before Child & Parent Details.
@@ -7,6 +9,8 @@ class AuditoryResponseToNamePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -16,6 +20,16 @@ class AuditoryResponseToNamePage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const LanguageSelector(),
+          ),
+        ],
       ),
       body: Container(
         width: double.infinity,
@@ -68,10 +82,10 @@ class AuditoryResponseToNamePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 28),
                 // Component name: Auditory Response to the Name
-                const Text(
-                  'Auditory Response to the Name',
+                Text(
+                  l10n.auditoryResponseToName,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 30,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -81,7 +95,7 @@ class AuditoryResponseToNamePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'SenseAI – Autism Auditory Learning',
+                  l10n.senseAiAuditoryLearning,
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.white.withOpacity(0.9),
@@ -90,7 +104,7 @@ class AuditoryResponseToNamePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Assess how your child responds when their name is called.',
+                  l10n.assessHowChildResponds,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
@@ -119,9 +133,9 @@ class AuditoryResponseToNamePage extends StatelessWidget {
                       ),
                       elevation: 6,
                     ),
-                    child: const Text(
-                      'Get Started',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.getStarted,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),

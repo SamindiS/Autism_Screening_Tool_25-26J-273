@@ -23,6 +23,7 @@ from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Table, TableStyle
 from model import model as MODEL_WRAPPER
+from firebase_service import save_report_to_firestore
 import os
 
 DB_PATH = "data.db"
@@ -101,6 +102,14 @@ class GazeEvent(BaseModel):
         if self.gaze_y is not None and self.gaze_y >= 0:
             return max(0, min(1, self.gaze_y))
         return 0.5  # Default to center
+    
+    def has_valid_gaze(self) -> bool:
+        """True if event has real gaze coordinates (exclude placeholder/invalid)"""
+        if self.x is not None and 0 <= self.x <= 1 and self.y is not None and 0 <= self.y <= 1:
+            return True
+        if self.gaze_x is not None and self.gaze_x >= 0 and self.gaze_y is not None and self.gaze_y >= 0:
+            return True
+        return False
 
 
 class GazeBatch(BaseModel):
@@ -223,6 +232,27 @@ def save_test_record(test_id: str, info: dict, analysis: dict, events_json: str)
     ))
     conn.commit()
     conn.close()
+
+    # Dual storage: also save to Firebase Firestore (non-blocking, failures logged only)
+    try:
+        created_at = datetime.utcnow().isoformat()
+        record_dict = {
+            "childName": info.get("name") or "Unknown",
+            "childAge": info.get("age") or 0,
+            "testDateTime": info.get("test_datetime") or created_at,
+            "score": float(analysis.get("score", 0.0)),
+            "scores": analysis.get("scores") or {},
+            "metrics": analysis.get("metrics") or {},
+            "interpretation": analysis.get("interpretation") or {},
+            "parent_name": parent_name,
+            "parent_email": parent_email,
+            "parent_phone": parent_phone,
+            "parent_relationship": parent_relationship,
+            "created_at": created_at,
+        }
+        save_report_to_firestore(test_id, record_dict)
+    except Exception as e:
+        print(f"Firebase sync failed (SQLite saved successfully): {e}")
 
 
 def get_test_record(test_id: str) -> Optional[dict]:
@@ -387,26 +417,53 @@ def generate_clinical_pdf_report(test_id: str, dest_path: str):
             y -= 1.6 * inch
         
         # Overall Score (large display)
-        score = record.get('score', 0)
-        # Ensure score is a valid number
-        if score is None:
-            score = 0.0
-        score = float(score)
-        
+        # Always compute from domain scores so report matches the formula:
+        # 0.30*attention + 0.15*fixation + 0.20*exploration + 0.25*tracking + 0.10*flexibility
         scores = record.get('scores', {})
-        risk_category = scores.get('risk_category', 'Unknown')
-        
-        # Score color based on risk - includes all ranges including below 50%
-        if score >= 80:
-            score_color = colors.HexColor('#28A745')  # Green
-        elif score >= 60:
-            score_color = colors.HexColor('#FFC107')  # Yellow
-        elif score >= 40:
-            score_color = colors.HexColor('#FD7E14')  # Orange
+        domain_weights = {'attention_score': 0.30, 'fixation_score': 0.15,
+                         'exploration_score': 0.20, 'tracking_score': 0.25,
+                         'flexibility_score': 0.10}
+        domain_avg = sum(
+            float(scores.get(k, 0) or 0) * domain_weights[k]
+            for k in domain_weights
+        )
+        score = round(max(0, min(100, domain_avg)), 1)
+        # Fallback to stored score only if domain scores are missing
+        if not any(scores.get(k) for k in domain_weights):
+            score = float(record.get('score', 0) or 0)
+        data_quality_warning = scores.get('data_quality_warning', False)
+        # Derive risk_category from computed score so it matches domain bars
+        if data_quality_warning or 'Inconclusive' in str(scores.get('risk_category', '')):
+            risk_category = scores.get('risk_category', 'Inconclusive - Data Quality Issues (Please Retest)')
+        elif score >= 80:
+            risk_category = 'Low Risk'
+        elif score >= 65:
+            risk_category = 'Mild Concern - Monitoring Recommended'
+        elif score >= 50:
+            risk_category = 'Moderate Risk - Further Evaluation Recommended'
+        elif score >= 35:
+            risk_category = 'Elevated Risk - Professional Consultation Advised'
         elif score >= 20:
-            score_color = colors.HexColor('#DC3545')  # Red
+            risk_category = 'High Risk - Immediate Professional Evaluation Recommended'
         else:
-            score_color = colors.HexColor('#8B0000')  # Dark red for very low scores (< 20%)
+            risk_category = 'Very High Risk - Urgent Professional Evaluation Recommended'
+        
+        # Score color: use neutral gray when Inconclusive/Data Quality (50% default)
+        is_inconclusive = data_quality_warning or 'Inconclusive' in str(risk_category) or 'Data Quality' in str(risk_category)
+        if is_inconclusive:
+            score_color = colors.HexColor('#6C757D')  # Neutral gray - not a risk score
+        elif score >= 80:
+            score_color = colors.HexColor('#28A745')  # Green - Low Risk
+        elif score >= 65:
+            score_color = colors.HexColor('#FFC107')  # Yellow - Mild Concern
+        elif score >= 50:
+            score_color = colors.HexColor('#FFA500')  # Orange - Moderate Risk
+        elif score >= 35:
+            score_color = colors.HexColor('#FD7E14')  # Dark orange - Elevated Risk
+        elif score >= 20:
+            score_color = colors.HexColor('#DC3545')  # Red - High Risk
+        else:
+            score_color = colors.HexColor('#8B0000')  # Dark red - Very High Risk
         
         c.setFillColor(score_color)
         c.circle(margin + 0.75 * inch, y - 0.5 * inch, 0.6 * inch, fill=True, stroke=False)
@@ -423,18 +480,6 @@ def generate_clinical_pdf_report(test_id: str, dest_path: str):
         
         c.setFont("Helvetica", 12)
         c.setFillColor(score_color)
-        # Display risk category, or show score range if category is missing
-        if risk_category == 'Unknown' or not risk_category:
-            if score >= 80:
-                risk_category = "Low Risk"
-            elif score >= 60:
-                risk_category = "Moderate Risk"
-            elif score >= 40:
-                risk_category = "Elevated Risk"
-            elif score >= 20:
-                risk_category = "High Risk"
-            else:
-                risk_category = "Very High Risk"
         c.drawString(margin + 1.8 * inch, y - 0.55 * inch, risk_category)
         
         # Add score percentage label for clarity
@@ -471,17 +516,21 @@ def generate_clinical_pdf_report(test_id: str, dest_path: str):
             # Progress bar fill - ensure minimum width for visibility (even for 0%)
             bar_width = max(0.05 * inch, (dscore / 100) * 4 * inch)  # Minimum 0.05 inch width
             
-            # Color coding for all score ranges
-            if dscore >= 70:
+            # Color coding: use neutral gray when Inconclusive (data quality), else risk colors
+            if is_inconclusive and 49 <= dscore <= 51:
+                bar_color = colors.HexColor('#6C757D')  # Neutral gray - placeholder scores
+            elif dscore >= 80:
                 bar_color = colors.HexColor('#28A745')  # Green
-            elif dscore >= 50:
+            elif dscore >= 65:
                 bar_color = colors.HexColor('#FFC107')  # Yellow
-            elif dscore >= 30:
-                bar_color = colors.HexColor('#FD7E14')  # Orange
-            elif dscore >= 10:
+            elif dscore >= 50:
+                bar_color = colors.HexColor('#FFA500')  # Orange
+            elif dscore >= 35:
+                bar_color = colors.HexColor('#FD7E14')  # Dark orange
+            elif dscore >= 20:
                 bar_color = colors.HexColor('#DC3545')  # Red
             else:
-                bar_color = colors.HexColor('#8B0000')  # Dark red for very low scores
+                bar_color = colors.HexColor('#8B0000')  # Dark red
             
             c.setFillColor(bar_color)
             c.rect(margin, y - 0.15 * inch, bar_width, 0.25 * inch, fill=True, stroke=False)
@@ -501,21 +550,29 @@ def generate_clinical_pdf_report(test_id: str, dest_path: str):
         
         y -= 0.3 * inch
         
-        # Data Quality Warning (if applicable)
+        # Data Quality Notice (if applicable) - soft informational style, not alarming yellow
         scores_data = record.get('scores', {})
         if scores_data.get('data_quality_warning'):
-            c.setFillColor(colors.HexColor('#FFC107'))
-            c.rect(margin, y - 0.4 * inch, width - 2 * margin, 0.4 * inch, fill=True, stroke=False)
-            c.setFillColor(colors.black)
-            c.setFont("Helvetica-Bold", 11)
-            c.drawString(margin + 0.1 * inch, y - 0.15 * inch, "⚠ Data Quality Notice:")
-            c.setFont("Helvetica", 10)
+            # Light gray-blue background - informational, not warning
+            c.setFillColor(colors.HexColor('#E8F4F8'))
+            c.rect(margin, y - 0.5 * inch, width - 2 * margin, 0.5 * inch, fill=True, stroke=False)
+            c.setFillColor(colors.HexColor('#2C3E50'))
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(margin + 0.1 * inch, y - 0.2 * inch, "Data Quality Notice")
+            c.setFont("Helvetica", 9)
             quality_issues = scores_data.get('data_quality_issues', [])
-            issue_text = "Some data quality issues were detected. Results should be interpreted with caution."
+            issue_text = "Some data quality issues were detected. Results should be interpreted with caution. Retest recommended."
             if quality_issues:
-                issue_text += f" Issues: {', '.join(quality_issues)}."
-            c.drawString(margin + 0.1 * inch, y - 0.3 * inch, issue_text)
-            y -= 0.5 * inch
+                # Human-readable issue labels
+                labels = {'insufficient_events': 'Insufficient events', 'session_too_short': 'Short session',
+                         'gaze_stuck': 'Limited gaze movement', 'poor_gaze_calibration': 'Calibration may need adjustment',
+                         'no_fixations': 'Few fixations detected', 'gaze_offset_likely': 'Possible calibration offset',
+                         'very_low_dispersion': 'Limited gaze dispersion', 'no_pursuit_data': 'No pursuit data',
+                         'few_fixations': 'Few fixations'}
+                readable = [labels.get(i, i) for i in quality_issues]
+                issue_text += f" ({', '.join(readable)})"
+            c.drawString(margin + 0.1 * inch, y - 0.35 * inch, issue_text[:180] + ('...' if len(issue_text) > 180 else ''))
+            y -= 0.6 * inch
         
         # Interpretation Summary
         interpretation = record.get('interpretation', {})
@@ -817,30 +874,6 @@ def _generate_pdf_background(test_id: str):
             print(f"[BACKGROUND] Created error report at {dest}")
         except Exception as create_error:
             print(f"[BACKGROUND] Could not create error report: {create_error}")
-                
-        except Exception as e:
-            print(f"ERROR generating PDF report (attempt {attempt + 1}): {e}")
-            import traceback
-            traceback.print_exc()
-            
-            if attempt < max_retries - 1:
-                print(f"Retrying PDF generation in 2 seconds...")
-                import time
-                time.sleep(2)
-            else:
-                print(f"Failed to generate PDF after {max_retries} attempts")
-                # Create a minimal error PDF or log the failure
-                try:
-                    # Try to create a simple error report
-                    from reportlab.pdfgen import canvas
-                    from reportlab.lib.pagesizes import letter
-                    c = canvas.Canvas(dest, pagesize=letter)
-                    c.drawString(100, 700, f"Error generating report for test: {test_id}")
-                    c.drawString(100, 680, f"Error: {str(e)}")
-                    c.save()
-                    print(f"Created error report at {dest}")
-                except:
-                    print(f"Could not create error report")
 
 
 @app.post("/upload_gaze", response_model=None)
@@ -857,20 +890,37 @@ def upload_gaze(batch: GazeBatch, background_tasks: BackgroundTasks):
     Returns overall score, domain scores, and clinical interpretation.
     PDF generation happens in the background for faster response.
     """
-    # Verify test exists
+    # Verify test exists; create minimal record for offline tests
     record = get_test_record(batch.test_id)
     if not record:
-        raise HTTPException(status_code=404, detail="Test ID not found")
+        if batch.test_id.startswith("offline_"):
+            # Offline-created test: create minimal record so upload can proceed
+            info = {
+                "name": "Offline Test",
+                "age": 0,
+                "test_datetime": datetime.utcnow().isoformat(),
+                "parent": {},
+            }
+            save_test_record(batch.test_id, info, {"score": 0}, "[]")
+            record = get_test_record(batch.test_id)
+        if not record:
+            raise HTTPException(status_code=404, detail="Test ID not found")
     
     # Convert events to dict and normalize x/y coordinates
-    # Limit events to recent ones if too many (optimization)
+    # Filter out events with invalid gaze (gaze_x=-1 etc) - they would pollute metrics
     events = []
+    skipped_invalid = 0
     for e in batch.events:
+        if not e.has_valid_gaze():
+            skipped_invalid += 1
+            continue
         event_dict = e.dict()
         # Ensure x and y are always present using helper methods
         event_dict['x'] = e.get_x()
         event_dict['y'] = e.get_y()
         events.append(event_dict)
+    if skipped_invalid > 0:
+        print(f"Filtered {skipped_invalid} events with invalid gaze (kept {len(events)})")
     
     # Limit to last 2000 events if too many (for performance)
     if len(events) > 2000:
@@ -894,7 +944,7 @@ def upload_gaze(batch: GazeBatch, background_tasks: BackgroundTasks):
     }
     save_test_record(batch.test_id, info, analysis, json.dumps(events))
     
-    # Generate PDF report in background (non-blocking)
+    # Generate PDF in background - results return immediately, report ready within ~5s
     dest = os.path.join(REPORTS_DIR, f"{batch.test_id}.pdf")
     background_tasks.add_task(_generate_pdf_background, batch.test_id)
     

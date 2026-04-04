@@ -48,7 +48,7 @@ class _MchatPageState extends State<MchatPage> {
     });
     try {
       final res = await http
-          .get(Uri.parse(BackendConfig.mchatQuestionsEndpoint))
+          .get(Uri.parse(await BackendConfig.mchatQuestionsEndpoint))
           .timeout(BackendConfig.connectionTimeout);
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -79,7 +79,7 @@ class _MchatPageState extends State<MchatPage> {
   Future<void> _loadLastSavedResult() async {
     try {
       final uri = Uri.parse(
-          '${BackendConfig.mchatHistoryEndpoint}?child_id=$_effectiveChildId');
+          '${await BackendConfig.mchatHistoryEndpoint}?child_id=$_effectiveChildId');
       final res =
           await http.get(uri).timeout(BackendConfig.connectionTimeout);
       if (res.statusCode != 200) return;
@@ -144,7 +144,7 @@ class _MchatPageState extends State<MchatPage> {
       };
       final res = await http
           .post(
-            Uri.parse(BackendConfig.mchatSubmitEndpoint),
+            Uri.parse(await BackendConfig.mchatSubmitEndpoint),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(body),
           )
@@ -175,7 +175,7 @@ class _MchatPageState extends State<MchatPage> {
   Future<void> _loadComparison() async {
     try {
       final res = await http
-          .get(Uri.parse(BackendConfig.compareEndpoint(_effectiveChildId)))
+          .get(Uri.parse(await BackendConfig.compareEndpoint(_effectiveChildId)))
           .timeout(BackendConfig.connectionTimeout);
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);

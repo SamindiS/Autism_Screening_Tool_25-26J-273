@@ -320,6 +320,15 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         actions: [
           TextButton(
+            onPressed: () async {
+              await ApiService.resetBackendUrl();
+              final defaultUrl = await ApiService.getBackendUrl();
+              urlController.text = defaultUrl;
+              _showSuccess('♻️ Reset to default URL: $defaultUrl');
+            },
+            child: const Text('Reset to Default', style: TextStyle(color: Colors.orange)),
+          ),
+          TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
           ),
@@ -334,11 +343,8 @@ class _LoginScreenState extends State<LoginScreen>
                   Navigator.of(context).pop();
                   _showSuccess('✓ Connection successful! Backend URL saved.');
                 } else {
-                  _showError('Connection failed. Please check:\n'
-                      '1. Backend server is running on port 3000\n'
-                      '2. Your computer and tablet are on the same Wi-Fi\n'
-                      '3. Windows Firewall allows port 3000\n'
-                      '4. IP address is correct: $url');
+                  final msg = await ApiService.connectionErrorMessage();
+                  _showError(msg);
                 }
               }
             },

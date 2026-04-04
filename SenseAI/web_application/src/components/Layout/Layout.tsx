@@ -56,7 +56,11 @@ const Layout = () => {
   const menuItems = [
     { text: t('dashboard'), icon: <DashboardIcon />, path: '/dashboard' },
     { text: t('children'), icon: <PeopleIcon />, path: '/children' },
+    // Component-level dashboards for all users
     { text: t('cognitive'), icon: <PsychologyIcon />, path: '/cognitive' },
+    { text: t('rrb'), icon: <AssessmentIcon />, path: '/rrb' },
+    { text: t('auditory_checking'), icon: <AssessmentIcon />, path: '/auditory' },
+    { text: t('visual_checking'), icon: <AssessmentIcon />, path: '/visual' },
     { text: t('sessions'), icon: <AssessmentIcon />, path: '/sessions' },
     ...(admin
       ? [

@@ -17,6 +17,7 @@ import 'widgets/info_card.dart';
 import 'widgets/welcome_card.dart';
 import '../../visual_attention/screens/splash_screen.dart' as visual_attention;
 import '../../auditory_checking/pages/auditory_response_to_name_page.dart';
+import '../rrb/screens/rrb_home_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -527,9 +528,13 @@ class _DashboardScreenState extends State<DashboardScreen>
           ],
         ),
         const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 1.0,
           children: [
             ComponentTile(
               icon: Icons.psychology_rounded,
@@ -554,16 +559,17 @@ class _DashboardScreenState extends State<DashboardScreen>
               icon: Icons.repeat_rounded,
               title: l10n.rrb,
               subtitle: l10n.restrictedRepetitive,
-              color: const Color(0xFF7C3AED),
+              color: const Color(0xFF0284C7), // Light Blue
               gradient: const [
-                Color(0xFF8B5CF6),
-                Color(0xFFA78BFA),
+                Color(0xFF38BDF8),
+                Color(0xFF7DD3FC),
               ],
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(l10n.rrbComingSoon),
-                    backgroundColor: Colors.orange,
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const RrbHomeScreen(),
+                    settings: const RouteSettings(name: '/rrb_home'),
                   ),
                 );
               },
@@ -572,10 +578,10 @@ class _DashboardScreenState extends State<DashboardScreen>
               icon: Icons.hearing_rounded,
               title: l10n.auditoryChecking,
               subtitle: l10n.soundProcessing,
-              color: const Color(0xFF0EA5E9),
+              color: const Color(0xFF7E22CE), // Purple
               gradient: const [
-                Color(0xFF06B6D4),
-                Color(0xFF22D3EE),
+                Color(0xFFA855F7),
+                Color(0xFFD8B4FE),
               ],
               onTap: () async {
                 await Navigator.push(

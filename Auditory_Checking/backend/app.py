@@ -19,7 +19,7 @@ benchmark_service = BenchmarkAssessmentService()
 video_quality_validator = VideoQualityValidator()
 
 # Configuration
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = os.path.abspath('uploads')  # Use absolute path for consistency
 ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv', 'webm'}
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
 
@@ -27,7 +27,11 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
 # Ensure upload directory exists
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+if not os.path.exists(UPLOAD_FOLDER):
+    print(f"Creating upload folder at: {UPLOAD_FOLDER}")
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+else:
+    print(f"Using upload folder at: {UPLOAD_FOLDER}")
 
 # Initialize services
 video_analyzer = VideoAnalyzer()
@@ -112,20 +116,37 @@ def analyze_video():
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         unique_filename = f"{timestamp}_{filename}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        
+        print(f"[{timestamp}] Saving uploaded video to: {filepath}")
         file.save(filepath)
         
+        if not os.path.exists(filepath):
+            print(f"ERROR: File failed to save at {filepath}")
+            raise Exception("Failed to save uploaded file on server")
+            
         # Analyze video
+        print(f"[{timestamp}] Starting analysis for child: {child_name}")
         result = video_analyzer.analyze(filepath, child_name, analysis_type)
+        print(f"[{timestamp}] Analysis complete. Result: {result.get('RTN_Status', 'unknown')}")
         
         # Store ML prediction for benchmark comparison (M-CHAT vs AI)
         if child_id and result.get('ML_Prediction'):
             try:
+                print(f"[{timestamp}] Saving ML prediction to benchmark service...")
                 benchmark_service.save_ml_prediction(child_id, result)
-            except Exception:
+            except Exception as e:
+                print(f"Warning: Failed to save benchmark prediction: {e}")
                 pass
         
-        # Clean up uploaded file (optional - you may want to keep it)
-        # os.remove(filepath)
+        # Ensure ML_Prediction is always present for UI consistency
+        if 'ML_Prediction' not in result:
+            result['ML_Prediction'] = {
+                'prediction': 'unknown',
+                'autism_probability': 0.0,
+                'typical_probability': 0.0,
+                'confidence': 0.0,
+                'model_available': False
+            }
         
         return jsonify(result), 200
         

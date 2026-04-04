@@ -1212,4 +1212,166 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get dataMode => 'Data mode';
+
+  @override
+  String get visualCheckingTitle => 'பார்வை சோதனை';
+
+  @override
+  String get enhanceFocus => 'கவனத்தை மேம்படுத்தி கண் அசைவுகளை கண்காணிக்கவும்';
+
+  @override
+  String get childInfoTitle => 'குழந்தை தகவல்';
+
+  @override
+  String get letsStartAdventure => 'நமது சாகசத்தை ஆரம்பிப்போம்!';
+
+  @override
+  String get whatsYourName => 'உன் பெயர் என்ன?';
+
+  @override
+  String get howOldAreYou => 'உன் வயது என்ன?';
+
+  @override
+  String get letsGo => 'போகலாம்!';
+
+  @override
+  String get funGamesAhead => 'வேடிக்கையான விளையாட்டுகள் காத்திருக்கின்றன!';
+
+  @override
+  String get playExcitingGames =>
+      'சுவாரஸ்யமான மாதிரி மற்றும் பொருத்தும் விளையாட்டுகளை விளையாடுங்கள்';
+
+  @override
+  String get parentGuardianInfo => 'பெற்றோர்/பாதுகாவலர் தகவல்';
+
+  @override
+  String get tellUsAboutParent =>
+      'உங்கள் பெற்றோர்/பாதுகாவலர் பற்றி சொல்லுங்கள்';
+
+  @override
+  String get parentGuardianName => 'பெற்றோர்/பாதுகாவலர் பெயர்';
+
+  @override
+  String get emailAddress => 'மின்னஞ்சல் முகவரி (விருப்பமானால்)';
+
+  @override
+  String get phoneNumber => 'தொலைபேசி எண்';
+
+  @override
+  String get includeCountryCode =>
+      'நாட்டின் குறியீட்டைச் சேர்க்கவும் (எ.கா: +94)';
+
+  @override
+  String get relationship => 'குழந்தையுடன் உறவு';
+
+  @override
+  String get backText => 'பின் செல்ல';
+
+  @override
+  String get continueText => 'தொடர்க';
+
+  @override
+  String get safeAndSecure => 'பாதுகாப்பான மற்றும் உறுதியான';
+
+  @override
+  String get infoHelpsReport => 'இந்தத் தகவல் உங்களுக்கு அறிக்கை அனுப்ப உதவும்';
+
+  @override
+  String get calibrationTitle => 'அளவீடு';
+
+  @override
+  String get lookAtTheDot => 'புள்ளியைப் பார்க்கவும்:';
+
+  @override
+  String get nextButton => 'அடுத்து';
+
+  @override
+  String get startGames => 'விளையாட்டுகளைத் தொடங்கு';
+
+  @override
+  String get bubblePopGame => 'குமிழி வெடிக்கும் விளையாட்டு';
+
+  @override
+  String get howToPlayGame => 'எப்படி விளையாடுவது';
+
+  @override
+  String get seeTheBubbles => 'குமிழிகளைப் பார்க்கவும்';
+
+  @override
+  String get bubblesFloat => 'வண்ணமயமான குமிழிகள் திரையில் மிதக்கும்';
+
+  @override
+  String get tapToPop => 'வெடிக்கத் தட்டவும்!';
+
+  @override
+  String get touchBubblesPop => 'குமிழிகளை வெடிக்கச் செய்ய அவற்றைத் தொடவும்!';
+
+  @override
+  String get haveFun => 'மகிழுங்கள்!';
+
+  @override
+  String get popAsMany => 'உங்களால் முடிந்தவரை குமிழிகளை வெடிக்கவும்!';
+
+  @override
+  String get thirtySeconds => '30 விநாடிகள்';
+
+  @override
+  String get gameLasts30 => 'விளையாட்டு 30 விநாடிகள் நீடிக்கும்';
+
+  @override
+  String get startGameBtn => 'விளையாட்டைத் தொடங்கு';
+
+  @override
+  String get butterflyGame => 'பட்டாம்பூச்சி விளையாட்டு';
+
+  @override
+  String get watchButterfly => 'பட்டாம்பூச்சியைக் கவனியுங்கள்';
+
+  @override
+  String get butterflyFlyAround =>
+      'ஒரு வண்ணமயமான பட்டாம்பூச்சி சுற்றி பறக்கும்';
+
+  @override
+  String get followEyes => 'உங்கள் கண்களால் பின்தொடரவும்';
+
+  @override
+  String get tryLookWhere =>
+      'அது எங்கே செல்கிறது என்பதைப் பார்க்க முயற்சிக்கவும்';
+
+  @override
+  String get visitFlowers => 'பூக்களைப் பார்க்கச் செல்லுங்கள்';
+
+  @override
+  String get butterflyLovesFlowers => 'பட்டாம்பூச்சிக்கு பூக்கள் பிடிக்கும்!';
+
+  @override
+  String get fifteenSeconds => '15 விநாடிகள்';
+
+  @override
+  String get gameLasts15 => 'விளையாட்டு 15 விநாடிகள் நீடிக்கும்';
+
+  @override
+  String get allDone => 'எல்லாம் முடிந்தது!';
+
+  @override
+  String get youDidGreat => 'நீங்கள் சிறப்பாக செய்தீர்கள்!';
+
+  @override
+  String get amazingJob => 'விளையாட்டுகளை முடித்ததில் சிறப்பான வேலை!';
+
+  @override
+  String get yourScore => 'உங்கள் மதிப்பெண்';
+
+  @override
+  String get specialReport => 'உங்கள் சிறப்பு அறிக்கை';
+
+  @override
+  String get generatingReportReason =>
+      'உங்கள் அற்புதமான அறிக்கையை உருவாக்குகிறோம்...';
+
+  @override
+  String get getYourReport => 'உங்கள் அறிக்கையைப் பெறுங்கள்';
+
+  @override
+  String get playAgain => 'மீண்டும் விளையாடு!';
 }

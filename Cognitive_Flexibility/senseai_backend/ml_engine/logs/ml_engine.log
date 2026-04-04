@@ -1,0 +1,370 @@
+2026-01-04 08:14:58 | senseai-ml | INFO | Loading ML models...
+2026-01-04 08:15:02 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-04 08:15:02 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-04 08:15:02 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-04 08:15:02 | senseai-ml | INFO | ==================================================
+2026-01-04 08:15:02 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-04 08:15:02 | senseai-ml | INFO | ==================================================
+2026-01-04 08:15:53 | senseai-ml | INFO | Loading ML models...
+2026-01-04 08:15:56 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-04 08:15:56 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-04 08:15:56 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-04 08:15:56 | senseai-ml | INFO | ==================================================
+2026-01-04 08:15:56 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-04 08:15:56 | senseai-ml | INFO | ==================================================
+2026-01-04 08:23:25 | senseai-ml | INFO | Loading ML models...
+2026-01-04 08:23:29 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-04 08:23:29 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-04 08:23:29 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-04 08:23:29 | senseai-ml | INFO | ==================================================
+2026-01-04 08:23:29 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-04 08:23:29 | senseai-ml | INFO | ==================================================
+2026-01-04 10:05:45 | senseai-ml | INFO | Loading ML models...
+2026-01-04 10:05:57 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-04 10:05:57 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-04 10:05:57 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-04 10:05:59 | senseai-ml | INFO | ==================================================
+2026-01-04 10:05:59 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-04 10:05:59 | senseai-ml | INFO | ==================================================
+2026-01-04 10:56:15 | senseai-ml | INFO | Loading ML models...
+2026-01-04 10:56:21 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-04 10:56:21 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-04 10:56:21 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-04 10:56:21 | senseai-ml | INFO | ==================================================
+2026-01-04 10:56:21 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-04 10:56:21 | senseai-ml | INFO | ==================================================
+2026-01-04 10:56:26 | senseai-ml | INFO | Loading ML models...
+2026-01-04 10:56:30 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-04 10:56:30 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-04 10:56:30 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-04 10:56:30 | senseai-ml | INFO | ==================================================
+2026-01-04 10:56:30 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-04 10:56:31 | senseai-ml | INFO | ==================================================
+2026-01-04 12:04:02 | senseai-ml | INFO | Loading ML models...
+2026-01-04 12:04:12 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-04 12:04:12 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-04 12:04:12 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-04 12:04:12 | senseai-ml | INFO | ==================================================
+2026-01-04 12:04:12 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-04 12:04:12 | senseai-ml | INFO | ==================================================
+2026-01-04 12:05:52 | senseai-ml | INFO | Loading ML models...
+2026-01-04 12:06:02 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-04 12:06:02 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-04 12:06:02 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-04 12:06:02 | senseai-ml | INFO | ==================================================
+2026-01-04 12:06:03 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-04 12:06:03 | senseai-ml | INFO | ==================================================
+2026-01-04 12:27:30 | senseai-ml | INFO | Loading ML models...
+2026-01-04 12:27:37 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-04 12:27:37 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-04 12:27:37 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-04 12:27:38 | senseai-ml | INFO | ==================================================
+2026-01-04 12:27:38 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-04 12:27:38 | senseai-ml | INFO | ==================================================
+2026-01-05 16:02:38 | senseai-ml | INFO | Loading ML models...
+2026-01-05 16:02:56 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-05 16:02:56 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-05 16:02:56 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-05 16:02:57 | senseai-ml | INFO | ==================================================
+2026-01-05 16:02:57 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-05 16:02:57 | senseai-ml | INFO | ==================================================
+2026-01-06 04:04:38 | senseai-ml | INFO | Loading ML models...
+2026-01-06 04:04:42 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 04:04:42 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 04:04:42 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 04:04:43 | senseai-ml | INFO | ==================================================
+2026-01-06 04:04:43 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 04:04:43 | senseai-ml | INFO | ==================================================
+2026-01-06 04:05:01 | senseai-ml | INFO | Loading ML models...
+2026-01-06 04:05:05 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 04:05:05 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 04:05:05 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 04:05:06 | senseai-ml | INFO | ==================================================
+2026-01-06 04:05:06 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 04:05:06 | senseai-ml | INFO | ==================================================
+2026-01-06 04:05:27 | senseai-ml | INFO | Loading ML models...
+2026-01-06 04:05:33 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 04:05:33 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 04:05:33 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 04:05:33 | senseai-ml | INFO | ==================================================
+2026-01-06 04:05:33 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 04:05:33 | senseai-ml | INFO | ==================================================
+2026-01-06 04:05:38 | senseai-ml | INFO | Loading ML models...
+2026-01-06 04:05:44 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 04:05:44 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 04:05:44 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 04:05:44 | senseai-ml | INFO | ==================================================
+2026-01-06 04:05:44 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 04:05:44 | senseai-ml | INFO | ==================================================
+2026-01-06 04:05:57 | senseai-ml | INFO | Loading ML models...
+2026-01-06 04:06:02 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 04:06:02 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 04:06:02 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 04:06:02 | senseai-ml | INFO | ==================================================
+2026-01-06 04:06:02 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 04:06:02 | senseai-ml | INFO | ==================================================
+2026-01-06 04:07:06 | senseai-ml | INFO | Loading ML models...
+2026-01-06 04:07:11 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 04:07:11 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 04:07:11 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 04:07:12 | senseai-ml | INFO | ==================================================
+2026-01-06 04:07:12 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 04:07:12 | senseai-ml | INFO | ==================================================
+2026-01-06 04:12:54 | senseai-ml | INFO | Loading ML models...
+2026-01-06 04:12:58 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 04:12:58 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 04:12:58 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 04:12:59 | senseai-ml | INFO | ==================================================
+2026-01-06 04:12:59 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 04:12:59 | senseai-ml | INFO | ==================================================
+2026-01-06 04:24:39 | senseai-ml | INFO | Loading ML models...
+2026-01-06 04:24:43 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 04:24:43 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 04:24:43 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 04:24:43 | senseai-ml | INFO | ==================================================
+2026-01-06 04:24:43 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 04:24:43 | senseai-ml | INFO | ==================================================
+2026-01-06 04:28:13 | senseai-ml | INFO | Loading ML models...
+2026-01-06 04:28:17 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 04:28:17 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 04:28:17 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 04:28:17 | senseai-ml | INFO | ==================================================
+2026-01-06 04:28:17 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 04:28:17 | senseai-ml | INFO | ==================================================
+2026-01-06 06:22:52 | senseai-ml | INFO | Loading ML models...
+2026-01-06 06:23:01 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 06:23:01 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 06:23:01 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 06:23:01 | senseai-ml | INFO | ==================================================
+2026-01-06 06:23:01 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 06:23:01 | senseai-ml | INFO | ==================================================
+2026-01-06 06:23:23 | senseai-ml | INFO | Loading ML models...
+2026-01-06 06:23:26 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 06:23:26 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 06:23:26 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 06:23:26 | senseai-ml | INFO | ==================================================
+2026-01-06 06:23:26 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 06:23:26 | senseai-ml | INFO | ==================================================
+2026-01-06 06:24:09 | senseai-ml | INFO | Loading ML models...
+2026-01-06 06:24:14 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 06:24:14 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 06:24:14 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 06:24:14 | senseai-ml | INFO | ✅ All models loaded successfully
+2026-01-06 06:24:14 | senseai-ml | INFO | ==================================================
+2026-01-06 06:24:14 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 06:24:14 | senseai-ml | INFO | ==================================================
+2026-01-06 06:24:14 | senseai-ml | INFO | ✅ ML Engine ready
+2026-01-06 06:26:00 | senseai-ml | INFO | Loading ML models...
+2026-01-06 06:26:04 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 06:26:04 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 06:26:04 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 06:26:04 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-01-06 06:26:04 | senseai-ml | INFO | ==================================================
+2026-01-06 06:26:04 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 06:26:04 | senseai-ml | INFO | ==================================================
+2026-01-06 06:26:04 | senseai-ml | INFO | [OK] ML Engine ready
+2026-01-06 06:26:04 | senseai-ml | INFO | Age-specific models: 2/3 ready
+2026-01-06 06:29:51 | senseai-ml | INFO | Loading ML models...
+2026-01-06 06:29:56 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 06:29:56 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 06:29:56 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 06:29:56 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-01-06 06:29:56 | senseai-ml | INFO | ==================================================
+2026-01-06 06:29:56 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 06:29:56 | senseai-ml | INFO | ==================================================
+2026-01-06 06:29:56 | senseai-ml | INFO | [OK] ML Engine ready
+2026-01-06 06:29:56 | senseai-ml | INFO | Age-specific models: 2/3 ready
+2026-01-06 06:30:17 | senseai-ml | INFO | Loading ML models...
+2026-01-06 06:30:20 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 06:30:20 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 06:30:20 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 06:30:20 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-01-06 06:30:20 | senseai-ml | INFO | ==================================================
+2026-01-06 06:30:20 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 06:30:20 | senseai-ml | INFO | ==================================================
+2026-01-06 06:30:20 | senseai-ml | INFO | [OK] ML Engine ready
+2026-01-06 06:30:20 | senseai-ml | INFO | Age-specific models: 2/3 ready
+2026-01-06 09:52:28 | senseai-ml | INFO | Loading ML models...
+2026-01-06 09:52:33 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 09:52:33 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 09:52:33 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 09:52:33 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-01-06 09:52:33 | senseai-ml | INFO | ==================================================
+2026-01-06 09:52:33 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 09:52:33 | senseai-ml | INFO | ==================================================
+2026-01-06 09:52:33 | senseai-ml | INFO | [OK] ML Engine ready
+2026-01-06 09:52:33 | senseai-ml | INFO | Age-specific models: 3/3 ready
+2026-01-06 12:43:04 | senseai-ml | INFO | Loading ML models...
+2026-01-06 12:43:10 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 12:43:10 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 12:43:10 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 12:43:10 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-01-06 12:43:10 | senseai-ml | INFO | ==================================================
+2026-01-06 12:43:10 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 12:43:10 | senseai-ml | INFO | ==================================================
+2026-01-06 12:43:10 | senseai-ml | INFO | [OK] ML Engine ready
+2026-01-06 12:43:10 | senseai-ml | INFO | Age-specific models: 3/3 ready
+2026-01-06 12:46:49 | senseai-ml | INFO | Loading ML models...
+2026-01-06 12:46:58 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-06 12:46:58 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-06 12:46:58 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-06 12:46:58 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-01-06 12:46:58 | senseai-ml | INFO | ==================================================
+2026-01-06 12:46:58 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-06 12:46:58 | senseai-ml | INFO | ==================================================
+2026-01-06 12:46:58 | senseai-ml | INFO | [OK] ML Engine ready
+2026-01-06 12:46:58 | senseai-ml | INFO | Age-specific models: 3/3 ready
+2026-01-31 10:53:52 | senseai-ml | INFO | Loading ML models...
+2026-01-31 10:53:58 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-01-31 10:53:58 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-01-31 10:53:58 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-01-31 10:53:58 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-01-31 10:53:58 | senseai-ml | INFO | ==================================================
+2026-01-31 10:53:58 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-01-31 10:53:58 | senseai-ml | INFO | ==================================================
+2026-01-31 10:53:58 | senseai-ml | INFO | [OK] ML Engine ready
+2026-01-31 10:53:58 | senseai-ml | INFO | Age-specific models: 3/3 ready
+2026-02-22 23:22:45 | senseai-ml | INFO | Loading ML models...
+2026-02-22 23:22:56 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-02-22 23:22:56 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-02-22 23:22:56 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-02-22 23:22:56 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-02-22 23:22:56 | senseai-ml | INFO | ==================================================
+2026-02-22 23:22:56 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-02-22 23:22:56 | senseai-ml | INFO | ==================================================
+2026-02-22 23:22:56 | senseai-ml | INFO | [OK] ML Engine ready
+2026-02-22 23:22:56 | senseai-ml | INFO | Age-specific models: 3/3 ready
+2026-02-25 03:03:16 | senseai-ml | INFO | Loading ML models...
+2026-02-25 03:03:18 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-02-25 03:03:18 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-02-25 03:03:18 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-02-25 03:03:18 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-02-25 03:03:19 | senseai-ml | INFO | ==================================================
+2026-02-25 03:03:19 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-02-25 03:03:19 | senseai-ml | INFO | ==================================================
+2026-02-25 03:03:19 | senseai-ml | INFO | [OK] ML Engine ready
+2026-02-25 03:03:19 | senseai-ml | INFO | Age-specific models: 3/3 ready
+2026-02-25 03:05:19 | senseai-ml | INFO | Prediction requested: age=24, child_id=N/A
+2026-02-25 03:05:19 | senseai-ml | INFO | Loading model for age group: 2-3.5 (age: 24 months)
+2026-02-25 03:05:19 | senseai-ml | INFO | Model loaded: model_age_2_3_5_questionnaire.pkl
+2026-02-25 03:05:19 | senseai-ml | INFO | Scaler loaded: scaler_age_2_3_5_questionnaire.pkl (expects 9 features)
+2026-02-25 03:05:19 | senseai-ml | INFO | Features loaded: features_age_2_3_5_questionnaire.json (9 features)
+2026-02-25 03:05:19 | senseai-ml | INFO | Metadata loaded: model_metadata_age_2_3_5.json
+2026-02-25 03:05:19 | senseai-ml | INFO | [OK] Model loaded successfully for age group: 2-3.5
+2026-02-25 03:05:19 | senseai-ml | INFO | Using age-specific model for age group: 2-3.5
+2026-02-25 03:05:19 | senseai-ml | WARNING | Missing features (will use 0): ['low_attention_flag', 'high_critical_items_flag', 'low_social_flag']...
+2026-02-25 03:05:19 | senseai-ml | INFO | Prediction complete (2-3.5): LOW risk (score=0.0%, prob=0.000)
+2026-02-25 03:08:03 | senseai-ml | INFO | Prediction requested: age=41, child_id=N/A
+2026-02-25 03:08:03 | senseai-ml | INFO | Using age-specific model for age group: 2-3.5
+2026-02-25 03:08:03 | senseai-ml | WARNING | Missing features (will use 0): ['low_attention_flag', 'high_critical_items_flag', 'critical_items_failed', 'low_social_flag']...
+2026-02-25 03:08:03 | senseai-ml | INFO | Prediction complete (2-3.5): LOW risk (score=0.0%, prob=0.000)
+2026-02-25 21:52:52 | senseai-ml | INFO | Prediction requested: age=48, child_id=N/A
+2026-02-25 21:52:52 | senseai-ml | INFO | Loading model for age group: 3.5-5.5 (age: 48 months)
+2026-02-25 21:52:52 | senseai-ml | INFO | Model loaded: model_age_3_5_5_5_frog_jump.pkl
+2026-02-25 21:52:52 | senseai-ml | INFO | Scaler loaded: scaler_age_3_5_5_5_frog_jump.pkl (expects 22 features)
+2026-02-25 21:52:52 | senseai-ml | INFO | Features loaded: features_age_3_5_5_5_frog_jump.json (22 features)
+2026-02-25 21:52:52 | senseai-ml | INFO | Metadata loaded: model_metadata_age_3_5_5_5.json
+2026-02-25 21:52:52 | senseai-ml | INFO | [OK] Model loaded successfully for age group: 3.5-5.5
+2026-02-25 21:52:52 | senseai-ml | INFO | Using age-specific model for age group: 3.5-5.5
+2026-02-25 21:52:52 | senseai-ml | WARNING | Missing features (will use 0): ['omission_errors', 'questionnaire_score', 'go_accuracy', 'omission_error_rate', 'commission_errors']...
+2026-02-25 21:52:52 | senseai-ml | INFO | Prediction complete (3.5-5.5): HIGH risk (score=100.0%, prob=1.000)
+2026-02-27 18:51:43 | senseai-ml | INFO | Loading ML models...
+2026-02-27 18:51:47 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-02-27 18:51:47 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-02-27 18:51:47 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-02-27 18:51:47 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-02-27 18:51:47 | senseai-ml | INFO | ==================================================
+2026-02-27 18:51:47 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-02-27 18:51:47 | senseai-ml | INFO | ==================================================
+2026-02-27 18:51:47 | senseai-ml | INFO | [OK] ML Engine ready
+2026-02-27 18:51:47 | senseai-ml | INFO | Age-specific models: 3/3 ready
+2026-02-27 18:54:37 | senseai-ml | INFO | Loading ML models...
+2026-02-27 18:54:43 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-02-27 18:54:43 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-02-27 18:54:43 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-02-27 18:54:43 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-02-27 18:54:43 | senseai-ml | INFO | ==================================================
+2026-02-27 18:54:43 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-02-27 18:54:43 | senseai-ml | INFO | ==================================================
+2026-02-27 18:54:43 | senseai-ml | INFO | [OK] ML Engine ready
+2026-02-27 18:54:43 | senseai-ml | INFO | Age-specific models: 3/3 ready
+2026-02-27 20:40:00 | senseai-ml | INFO | Loading ML models...
+2026-02-27 20:40:05 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-02-27 20:40:05 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-02-27 20:40:05 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-02-27 20:40:05 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-02-27 20:40:05 | senseai-ml | INFO | ==================================================
+2026-02-27 20:40:05 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-02-27 20:40:05 | senseai-ml | INFO | ==================================================
+2026-02-27 20:40:05 | senseai-ml | INFO | [OK] ML Engine ready
+2026-02-27 20:40:05 | senseai-ml | INFO | Age-specific models: 3/3 ready
+2026-03-01 10:58:17 | senseai-ml | INFO | Loading ML models...
+2026-03-01 10:58:21 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-03-01 10:58:21 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-03-01 10:58:21 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-03-01 10:58:21 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-03-01 10:58:21 | senseai-ml | INFO | ==================================================
+2026-03-01 10:58:21 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-03-01 10:58:21 | senseai-ml | INFO | ==================================================
+2026-03-01 10:58:21 | senseai-ml | INFO | [OK] ML Engine ready
+2026-03-01 10:58:21 | senseai-ml | INFO | Age-specific models: 3/3 ready
+2026-03-01 11:27:46 | senseai-ml | INFO | Loading ML models...
+2026-03-01 11:27:48 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-03-01 11:27:48 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-03-01 11:27:48 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-03-01 11:27:48 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-03-01 11:27:48 | senseai-ml | INFO | ==================================================
+2026-03-01 11:27:48 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-03-01 11:27:48 | senseai-ml | INFO | ==================================================
+2026-03-01 11:27:48 | senseai-ml | INFO | [OK] ML Engine ready
+2026-03-01 11:27:48 | senseai-ml | INFO | Age-specific models: 3/3 ready
+2026-03-03 17:24:52 | senseai-ml | INFO | Prediction requested: age=48, child_id=N/A
+2026-03-03 17:24:52 | senseai-ml | INFO | Loading model for age group: 3.5-5.5 (age: 48 months)
+2026-03-03 17:24:52 | senseai-ml | INFO | Model loaded: model_age_3_5_5_5_frog_jump.pkl
+2026-03-03 17:24:52 | senseai-ml | INFO | Scaler loaded: scaler_age_3_5_5_5_frog_jump.pkl (expects 22 features)
+2026-03-03 17:24:52 | senseai-ml | INFO | Features loaded: features_age_3_5_5_5_frog_jump.json (22 features)
+2026-03-03 17:24:52 | senseai-ml | INFO | Metadata loaded: model_metadata_age_3_5_5_5.json
+2026-03-03 17:24:52 | senseai-ml | INFO | [OK] Model loaded successfully for age group: 3.5-5.5
+2026-03-03 17:24:52 | senseai-ml | INFO | Using age-specific model for age group: 3.5-5.5
+2026-03-03 17:24:52 | senseai-ml | WARNING | Missing features (will use 0): ['response_control_index', 'attention_level', 'frustration_tolerance', 'instruction_following', 'engagement_level']...
+2026-03-03 17:24:52 | senseai-ml | INFO | Prediction complete (3.5-5.5): HIGH risk (score=100.0%, prob=1.000)
+2026-03-03 18:18:33 | senseai-ml | INFO | Prediction requested: age=41, child_id=N/A
+2026-03-03 18:18:33 | senseai-ml | INFO | Loading model for age group: 2-3.5 (age: 41 months)
+2026-03-03 18:18:33 | senseai-ml | INFO | Model loaded: model_age_2_3_5_questionnaire.pkl
+2026-03-03 18:18:33 | senseai-ml | INFO | Scaler loaded: scaler_age_2_3_5_questionnaire.pkl (expects 9 features)
+2026-03-03 18:18:33 | senseai-ml | INFO | Features loaded: features_age_2_3_5_questionnaire.json (9 features)
+2026-03-03 18:18:33 | senseai-ml | INFO | Metadata loaded: model_metadata_age_2_3_5.json
+2026-03-03 18:18:33 | senseai-ml | INFO | [OK] Model loaded successfully for age group: 2-3.5
+2026-03-03 18:18:33 | senseai-ml | INFO | Using age-specific model for age group: 2-3.5
+2026-03-03 18:18:33 | senseai-ml | WARNING | Missing features (will use 0): ['high_critical_items_flag', 'critical_items_failed', 'low_attention_flag', 'low_social_flag']...
+2026-03-03 18:18:33 | senseai-ml | INFO | Prediction complete (2-3.5): LOW risk (score=0.0%, prob=0.000)
+2026-03-04 04:17:45 | senseai-ml | INFO | Loading ML models...
+2026-03-04 04:17:50 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-03-04 04:17:50 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-03-04 04:17:50 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-03-04 04:17:50 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-03-04 04:17:50 | senseai-ml | INFO | ==================================================
+2026-03-04 04:17:50 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-03-04 04:17:50 | senseai-ml | INFO | ==================================================
+2026-03-04 04:17:50 | senseai-ml | INFO | [OK] ML Engine ready
+2026-03-04 04:17:50 | senseai-ml | INFO | Age-specific models: 3/3 ready
+2026-03-04 05:41:05 | senseai-ml | INFO | Loading ML models...
+2026-03-04 05:41:07 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-03-04 05:41:07 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-03-04 05:41:07 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-03-04 05:41:07 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-03-04 05:41:07 | senseai-ml | INFO | ==================================================
+2026-03-04 05:41:07 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-03-04 05:41:07 | senseai-ml | INFO | ==================================================
+2026-03-04 05:41:07 | senseai-ml | INFO | [OK] ML Engine ready
+2026-03-04 05:41:07 | senseai-ml | INFO | Age-specific models: 3/3 ready
+2026-03-04 17:19:34 | senseai-ml | INFO | Loading ML models...
+2026-03-04 17:19:38 | senseai-ml | INFO | Model loaded from: asd_detection_model.pkl
+2026-03-04 17:19:38 | senseai-ml | INFO | Scaler loaded: feature_scaler.pkl (expects 18 features)
+2026-03-04 17:19:38 | senseai-ml | WARNING | Age norms not found: age_norms.json (age normalization disabled)
+2026-03-04 17:19:38 | senseai-ml | INFO | [OK] All models loaded successfully
+2026-03-04 17:19:38 | senseai-ml | INFO | ==================================================
+2026-03-04 17:19:38 | senseai-ml | INFO | Starting SenseAI ASD ML Engine v1.0.0
+2026-03-04 17:19:38 | senseai-ml | INFO | ==================================================
+2026-03-04 17:19:38 | senseai-ml | INFO | [OK] ML Engine ready
+2026-03-04 17:19:38 | senseai-ml | INFO | Age-specific models: 3/3 ready

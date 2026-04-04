@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 
 /// Backend API base URL - update for device testing
-const String API_BASE = 'http://192.168.8.197:8000';
+const String API_BASE = 'http://192.168.43.143:8000';
 
 // =============================================================================
 // SENSEAI BRAND COLORS (extracted from logo)

@@ -1,5 +1,19 @@
 """
-Main prediction logic with age-specific model routing
+Main prediction logic with age-specific model routing.
+
+This module is the core inference engine. It is responsible for orchestrating 
+the entire prediction pipeline when a request is received from the client.
+
+Workflow:
+1. Extracts age information to determine the correct age band (e.g., 2-3.5, 3.5-5.5).
+2. Dynamically routes to the appropriate model and scaler loaded via `age_specific_loader`.
+   If the specific model isn't available, falls back to the legacy unified model.
+3. Validates and prepares the incoming feature dictionary against expected `feature_names`.
+4. Scales the raw features using the cached `StandardScaler`.
+5. Executes the inference to get absolute prediction and probabilistic confidence.
+6. Maps the output probability to Risk Thresholds (LOW, MODERATE, HIGH).
+7. Invokes `_build_explanations` to compute feature contributions (SHAP-like linear weighting)
+   for clinical transparency.
 """
 
 import numpy as np

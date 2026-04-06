@@ -1,5 +1,15 @@
 """
-Age-specific model loader for different age groups
+Age-specific model loader for different age groups.
+
+This module handles the disk-to-memory loading and caching of specialized ML models. 
+Because developmental milestones vary drastically across ages, SenseAI uses 
+distinct models for different age silos.
+
+Key Features:
+- Caching System (`_model_cache`): Once a model/scaler pair is loaded for an age 
+  group, it remains in memory to eliminate future disk I/O bottlenecks.
+- Graceful Degradation: Implements comprehensive fallback logic (e.g., alternative 
+  naming structures, inferring missing feature names directly from the scaler object).
 """
 
 import joblib

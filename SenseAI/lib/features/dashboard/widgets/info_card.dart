@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../core/localization/app_localizations.dart';
 
+/// An adaptive, non-interactive card displaying current system/app diagnostic info.
+/// 
+/// Surfaces the app version, operational mode (e.g., 'Offline First'), and general 
+/// system health to the clinician on the [DashboardScreen].
 class InfoCard extends StatelessWidget {
   const InfoCard({Key? key}) : super(key: key);
 

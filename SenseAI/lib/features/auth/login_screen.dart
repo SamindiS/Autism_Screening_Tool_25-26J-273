@@ -6,6 +6,11 @@ import '../../core/services/auth_service.dart';
 import '../../core/services/api_service.dart';
 import '../dashboard/dashboard_screen.dart';
 
+/// The primary authentication gateway for clinicians.
+/// 
+/// Provides a secure, PIN-based login and registration interface with rich 
+/// animations and robust error handling. Includes a hidden backend configuration 
+/// dialog accessible via the settings icon in the app bar.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
 

@@ -9,6 +9,13 @@ import '../../widgets/language_selector.dart';
 import '../settings/settings_screen.dart';
 import '../assessment/result_screen.dart';
 
+/// Post-assessment clinician observation form.
+/// 
+/// Completes the screening workflow by capturing expert clinical ratings on
+/// key behavioral indicators (attention, engagement, frustration, instructions, 
+/// overall). Crucially, it manages the fusion of the child's raw game performance
+/// metrics with the clinician's subjective ratings to determine a finalized 
+/// synthesized risk score/level.
 class ClinicianReflectionScreen extends StatefulWidget {
   final Child child;
   final String sessionId;

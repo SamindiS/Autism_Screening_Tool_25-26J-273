@@ -5,10 +5,19 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'api_service.dart';
 
+/// Service responsible for handling offline data synchronization.
+/// 
+/// This service uses a local SQLite database to queue API requests when the
+/// device is offline, and periodically attempts to sync them with the backend
+/// when an internet connection becomes available.
 class OfflineSyncService {
   static Database? _db;
   static const String _queueTable = 'sync_queue';
 
+  /// Initializes the local SQLite database for the sync queue.
+  /// 
+  /// This method creates the database file and the necessary table if they
+  /// don't exist. It gracefully exits on web platforms where SQLite is not supported.
   static Future<void> init() async {
     if (kIsWeb) return; // sqflite is not supported on Web
     final databasesPath = await getDatabasesPath();
@@ -31,7 +40,10 @@ class OfflineSyncService {
     );
   }
 
-  // Enqueue when offline
+  /// Adds a new API request to the local sync queue.
+  /// 
+  /// The request will be stored locally and synced later when the network
+  /// is reachable. Requires the target [endpoint], HTTP [method], and JSON [payload].
   static Future<void> enqueueRequest({
     required String endpoint,
     required String method, // POST, PUT, or DELETE
@@ -47,7 +59,10 @@ class OfflineSyncService {
     });
   }
 
-  // Start background sync loop (non-blocking!)
+  /// Starts a continuous, non-blocking loop to process the sync queue.
+  /// 
+  /// It checks the backend health every 30 seconds and processes queued
+  /// requests if the backend is reachable.
   static void startSyncLoop() {
     if (kIsWeb) return; // sqflite is not supported on Web
     // Use Future.doWhile instead of while(true) to avoid blocking
@@ -61,6 +76,10 @@ class OfflineSyncService {
     });
   }
 
+  /// Internal strategy to dispatch queued items to the server.
+  /// 
+  /// Iterates through the stored requests chronologically and sends them.
+  /// Removes them from the queue upon successful transmission.
   static Future<void> _processQueue() async {
     if (_db == null) return;
     final rows = await _db!.query(_queueTable, orderBy: 'timestamp ASC');
@@ -103,7 +122,9 @@ class OfflineSyncService {
     }
   }
 
-  // Optional: show badge count
+  /// Gets the total number of items pending synchronization.
+  /// 
+  /// Returns 0 if using the Web platform or no items are pending.
   static Future<int> getPendingCount() async {
     if (kIsWeb) return 0; // sqflite is not supported on Web
     if (_db == null) await init();

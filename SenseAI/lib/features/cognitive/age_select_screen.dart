@@ -7,6 +7,12 @@ import '../../data/models/child.dart';
 import '../assessment/game_screen.dart';
 import '../assessment/ai_doctor_bot_screen.dart';
 
+/// Pre-assessment routing gateway based on calculated age.
+/// 
+/// Validates and verifies the child's exact age before launching an assessment. 
+/// Automatically routes the patient to the clinically appropriate screening flow 
+/// (e.g., Parent Questionnaire for 2-3 years, Frog Jump for 3-5 years, 
+/// or Color-Shape for 5-6.9 years).
 class AgeSelectScreen extends StatefulWidget {
   final String childId;
   const AgeSelectScreen({Key? key, required this.childId}) : super(key: key);

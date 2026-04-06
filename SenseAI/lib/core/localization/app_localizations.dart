@@ -2,17 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import '../services/localization_service.dart';
 
+/// Localization class for managing application-wide translations.
+///
+/// This class provides a centralized way to access localized strings
+/// across the application using the [LocalizationService].
 class AppLocalizations {
   final Locale locale;
 
   AppLocalizations(this.locale);
 
+  /// Retrieves the [AppLocalizations] instance from the current [BuildContext].
   static AppLocalizations? of(BuildContext context) {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
+  /// The delegate used by Flutter to load the localized resources.
   static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
 
+  /// List of locales supported by the application.
   static const List<Locale> supportedLocales = [
     Locale('en'),
     Locale('si'),
@@ -26,11 +33,14 @@ class AppLocalizations {
     GlobalCupertinoLocalizations.delegate,
   ];
 
+  /// Translates a given [key] using the [LocalizationService].
   String translate(String key) {
     return LocalizationService.translate(key);
   }
 
-  // Convenience getters for common translations
+  // ===========================================================================
+  // Convenience Getters for Common Translations
+  // ===========================================================================
   String get appName => translate('app_name');
   String get welcome => translate('welcome');
   String get login => translate('login');
@@ -133,12 +143,16 @@ class AppLocalizations {
   String get retry => translate('retry');
   String get logoutConfirmation => translate('logout_confirmation');
 
-  // Game UI strings (used by assessment games)
+  // ===========================================================================
+  // Game UI Strings (Used by Assessment Games)
+  // ===========================================================================
   String get greatJob => translate('greatJob');
   String get tryAgain => translate('tryAgain');
   String get wellDone => translate('wellDone');
 
-  // Frog Jump game
+  // ===========================================================================
+  // Frog Jump Game Strings
+  // ===========================================================================
   String get frogJumpGameTitle => translate('frogJumpGameTitle');
   String get frogJumpGameInstructions => translate('frogJumpGameInstructions');
   String get tapMe => translate('tapMe');
@@ -148,7 +162,9 @@ class AppLocalizations {
   String get dontTapSleepyTurtle => translate('dontTapSleepyTurtle');
   String get gameComplete => translate('gameComplete');
 
+  // ===========================================================================
   // Visual Attention & Preferences Getters
+  // ===========================================================================
   String get visualCheckingTitle => translate('visualCheckingTitle');
   String get enhanceFocus => translate('enhanceFocus');
   String get childInfoTitle => translate('childInfoTitle');
@@ -202,7 +218,9 @@ class AppLocalizations {
   String get getYourReport => translate('getYourReport');
   String get playAgain => translate('playAgain');
 
+  // ===========================================================================
   // Auditory Checking Getters
+  // ===========================================================================
   String get auditoryResponseToName => translate('auditoryResponseToName');
   String get senseAiAuditoryLearning => translate('senseAiAuditoryLearning');
   String get assessHowChildResponds => translate('assessHowChildResponds');
@@ -294,20 +312,24 @@ class AppLocalizations {
   String get parentInformation => translate('parent_information');
 }
 
+/// Delegate class for loading [AppLocalizations].
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
+  /// Checks if the provided [locale] is supported by this application.
   @override
   bool isSupported(Locale locale) {
     return ['en', 'si', 'ta'].contains(locale.languageCode);
   }
 
+  /// Loads the localized resources for the given [locale].
   @override
   Future<AppLocalizations> load(Locale locale) async {
     await LocalizationService.load(locale);
     return AppLocalizations(locale);
   }
 
+  /// Decides whether the delegate should be reloaded.
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }

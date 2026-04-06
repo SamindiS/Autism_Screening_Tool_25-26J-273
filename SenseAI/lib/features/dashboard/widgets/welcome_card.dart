@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../auth/clinician_profile_screen.dart';
 
+/// A stylized banner card displaying the currently logged-in clinician's name and hospital.
+/// 
+/// Tapping on this card routes the user to the [ClinicianProfileScreen] to manage
+/// their account.
 class WelcomeCard extends StatelessWidget {
   final String? name;
   final String? hospital;

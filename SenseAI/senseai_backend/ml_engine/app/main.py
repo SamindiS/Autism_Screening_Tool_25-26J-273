@@ -1,6 +1,17 @@
 """
 SenseAI ML Engine - FastAPI Application
 ASD Screening Inference Service
+
+This module acts as the entry point and API Gateway for the SenseAI machine 
+learning backend. It utilizes FastAPI to expose endpoints for health checking 
+and model inference. 
+
+Key Responsibilities:
+1. Application Initialization: Configures FastAPI with metadata and CORS rules.
+2. Startup Event Handling: Upon service start, it proactively calls `load_models()` 
+   and `check_age_specific_models()` to cache the ML models (unified and age-banded) 
+   into memory. This ensures minimal latency during actual inference requests.
+3. Route Registration: Mounts the `/health` and `/predict` endpoints.
 """
 
 from fastapi import FastAPI

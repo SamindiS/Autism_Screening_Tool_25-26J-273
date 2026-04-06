@@ -1,3 +1,8 @@
+/// Firebase Integration Service (Currently Disabled)
+/// 
+/// This service contains the logic for real-time database synchronization 
+/// with Firebase. It is currently commented out in favor of the new 
+/// REST API and SQLite-based offline storage.
 // import 'package:firebase_database/firebase_database.dart';
 // import 'package:flutter/foundation.dart';
 

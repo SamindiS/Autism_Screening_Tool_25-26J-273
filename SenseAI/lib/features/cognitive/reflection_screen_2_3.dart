@@ -8,6 +8,12 @@ import '../../widgets/language_selector.dart';
 import '../settings/settings_screen.dart';
 import '../assessment/result_screen.dart';
 
+/// Specialized post-assessment reflection form for the 2-3.5 age bracket.
+/// 
+/// Because children in this age group do not perform tablet-based games, 
+/// this screen provides a structured rubric for clinicians to rate manual, physical 
+/// cognitive flexibility tasks (e.g., block sorting, imitation). It calculates an 
+/// aggregated risk score combining the parent questionnaire and these manual task ratings.
 class ClinicianReflectionScreen2_3 extends StatefulWidget {
   final Child child;
   final String sessionId;

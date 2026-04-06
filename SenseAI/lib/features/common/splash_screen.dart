@@ -6,6 +6,12 @@ import '../auth/login_screen.dart';
 import '../../core/services/auth_service.dart';
 import '../dashboard/dashboard_screen.dart';
 
+/// The initial entry screen displayed when the application launches.
+/// 
+/// Handles pre-loading sequences, dynamic animations, and automatic 
+/// routing based on the clinician's cached authentication status. 
+/// If a valid session exists, it routes to [DashboardScreen], otherwise 
+/// falls back to [LoginScreen].
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
 

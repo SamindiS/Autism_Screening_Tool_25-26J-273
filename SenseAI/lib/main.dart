@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,12 +12,34 @@ import 'visual_attention/screens/splash_screen.dart'
     as visual; // From your friend's code
 import 'visual_attention/theme.dart'; // From your friend's code
 
+/// Custom [HttpOverrides] to handle SSL certification for development.
+/// 
+/// In debug mode, this allows the app to communicate with servers using
+/// self-signed certificates or when there is a hostname mismatch.
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
+}
+
+/// The entry point of the SenseAI application.
+/// 
+/// Initializes core services and sets up the root widget.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Allow self-signed or mismatched certs in debug mode (fixes Vercel mismatch)
+  if (kDebugMode) {
+    HttpOverrides.global = MyHttpOverrides();
+  }
 
   // Initialize services
   // sqflite (SQLite) is not supported on Web — skip on Chrome, runs normally on mobile/desktop
   if (!kIsWeb) {
+    // Initializing offline synchronization and local storage
     await OfflineSyncService.init();
     OfflineSyncService.startSyncLoop();
     await StorageService.database;
@@ -25,9 +48,14 @@ void main() async {
   runApp(const SenseAIApp());
 }
 
+/// The root widget of the SenseAI application.
+/// 
+/// Sets up the [ChangeNotifierProvider] for language management and
+/// configures the [MaterialApp] with theme and localization.
 class SenseAIApp extends StatelessWidget {
   const SenseAIApp({super.key});
 
+  /// Global navigator key for accessing the [NavigatorState] without a context.
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
@@ -71,6 +99,7 @@ class SenseAIApp extends StatelessWidget {
           locale: languageProvider.locale,
           supportedLocales: AppLocalizations.supportedLocales,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
+          // Initial screen of the application
           home: const common
               .SplashScreen(), // You can decide which SplashScreen to use
           debugShowCheckedModeBanner: false,
@@ -79,6 +108,7 @@ class SenseAIApp extends StatelessWidget {
     );
   }
 
+  /// Determines the appropriate font family based on the [languageCode].
   String? _getFontFamily(String languageCode) {
     switch (languageCode) {
       case 'si':

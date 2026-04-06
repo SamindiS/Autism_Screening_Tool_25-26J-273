@@ -7,6 +7,11 @@ import '../../core/localization/app_localizations.dart';
 import '../../widgets/language_selector.dart';
 import 'login_screen.dart';
 
+/// Personal management dashboard for authenticated clinicians.
+/// 
+/// Allows users to view their registration details, edit their identifying information 
+/// and PIN, or irreversibly delete their profile from the system. Built with offline 
+/// caching support to ensure basic profile readability without an active network connection.
 class ClinicianProfileScreen extends StatefulWidget {
   const ClinicianProfileScreen({Key? key}) : super(key: key);
 

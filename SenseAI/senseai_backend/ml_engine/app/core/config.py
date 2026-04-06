@@ -1,6 +1,15 @@
 """
-Centralized configuration for ML Engine
-Ensures reproducibility and prevents hard-coded paths
+Centralized Configuration for SenseAI ML Engine.
+
+This module is the single source of truth for the machine learning backend. 
+It defines constant path mappings to serialized `.pkl`, `.json` arrays (for feature names), 
+and age norm records, preventing hard-coded path anomalies across operating systems. 
+
+Key Structures:
+- AGE_GROUPS: Defines the absolute month constraints for the 3 separate clinical models.
+- RISK_THRESHOLDS: Configures the numeric cut-offs to categorize model probabilities 
+  into LOW, MODERATE, or HIGH risk.
+- FEATURES_TO_NORMALIZE: Lists all specific metrics requiring Z-score normalization.
 """
 
 from pathlib import Path

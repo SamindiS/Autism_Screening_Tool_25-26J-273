@@ -1,7 +1,11 @@
 """
-Prediction endpoint for ASD risk assessment
-"""
+Prediction REST API endpoint for ASD risk assessment.
 
+This module exposes the POST `/predict` route. It receives JSON payloads matching 
+the `PredictionRequest` schema (containing age and feature metrics), validates them, 
+and hands them off to the asynchronous ML inference engine `predict_asd`. It handles 
+exceptions gracefully, ensuring HTTP 400s or 503s are returned instead of crashing.
+"""
 from fastapi import APIRouter, HTTPException
 from app.core.logger import logger
 from app.schemas.request import PredictionRequest

@@ -1,25 +1,56 @@
-/// Child profile model for clinical autism screening
+/// Child profile model for clinical autism screening.
 /// 
 /// Captures data for children with and without a prior ASD diagnosis.
+/// Used extensively throughout the app to identify patients, track their
+/// demographic information, and bind them to assessment sessions.
 class Child {
+  /// Unique identifier (usually UUID or backend-generated ID).
   final String id;
-  final String childCode; // e.g., LRH-027, PRE-112
+  
+  /// Human-readable study code (e.g., LRH-027, PRE-112).
+  final String childCode;
+  
+  /// The full or abbreviated name of the child.
   final String name;
+  
+  /// The exact date of birth for precise age calculation.
   final DateTime dateOfBirth;
+  
+  /// Calculated age in full months at the time of profile creation.
   final int ageInMonths;
+  
+  /// String representation of gender (e.g., 'male', 'female').
   final String gender;
+  
+  /// Preferred language for assessment instructions.
   final String language;
-  final double age; // Age in years (decimal)
+  
+  /// Calculated age in decimal years.
+  final double age; 
+  
+  /// Profile creation timestamp.
   final DateTime createdAt;
+  
+  /// Optional hospital or clinic tracking identifier.
   final String? hospitalId;
   
-  // Study-specific fields
-  final ChildGroup group; // ASD or Typically Developing
-  final AsdLevel? asdLevel; // Only for ASD group (legacy / optional)
-  final String diagnosisSource; // Hospital/clinic name or referral context
-  final String? clinicianId; // Clinician ID for ASD group (e.g., DR_001_LRH)
-  final String? clinicianName; // Clinician name for ASD group
-  final String diagnosisType; // 'existing' (diagnosis before) or 'new'
+  /// Distinguishes between control group and previously diagnosed group.
+  final ChildGroup group;
+  
+  /// Specific DSM-5 level, only applicable if in the ASD group.
+  final AsdLevel? asdLevel;
+  
+  /// The source of diagnosis or referral (e.g., Hospital clinic name).
+  final String diagnosisSource;
+  
+  /// Unique identifier of the clinician managing this profile.
+  final String? clinicianId;
+  
+  /// Human-readable name of the managing clinician.
+  final String? clinicianName;
+  
+  /// Tracks if the child is a 'new' screening or 'existing' diagnosis.
+  final String diagnosisType;
 
   Child({
     required this.id,
@@ -40,6 +71,7 @@ class Child {
     this.diagnosisType = 'new',
   });
 
+  /// Converts the profile to a JSON map for API payload or SQLite storage.
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -61,6 +93,7 @@ class Child {
     };
   }
 
+  /// Instantiates a [Child] from a JSON map (API response or SQLite row).
   factory Child.fromJson(Map<String, dynamic> json) {
     return Child(
       id: json['id'] as String,
@@ -86,6 +119,7 @@ class Child {
     );
   }
 
+  /// Creates a new instance of [Child] with specific fields overridden.
   Child copyWith({
     String? id,
     String? childCode,
@@ -131,17 +165,17 @@ class Child {
     return months;
   }
 
-  /// Get display string for the child's diagnosis status
+  /// Get display string for the child's diagnosis status.
   String get groupDisplayName =>
       group == ChildGroup.asd ? 'Previously diagnosed with ASD' : 'No prior ASD diagnosis';
 
-  /// Get display string for ASD level (if applicable)
+  /// Get display string for ASD level (if applicable).
   String? get asdLevelDisplayName => asdLevel?.displayName;
 
-  /// Check if this child is in the ASD group
+  /// Check if this child is in the ASD group.
   bool get isAsdGroup => group == ChildGroup.asd;
 
-  /// Check if this child has no prior ASD diagnosis (screening case)
+  /// Check if this child has no prior ASD diagnosis (screening case).
   bool get isControlGroup => group == ChildGroup.typicallyDeveloping;
 }
 

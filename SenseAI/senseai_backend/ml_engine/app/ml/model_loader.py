@@ -1,5 +1,16 @@
 """
-Load trained ML models, scaler, and configuration files
+Load trained ML models, scaler, and configuration files.
+
+This module acts as the fallback or legacy unified model loader. Prior to the 
+implementation of the age-banded specific models (handled by `age_specific_loader.py`), 
+the SenseAI backend relied on a single unified model. 
+
+Key Responsibilities:
+- Loads the base `RandomForestClassifier` (or `LogisticRegression`) model from the `models/` dir.
+- Loads the universal `StandardScaler` to ensure request features match the training distribution.
+- Parses `feature_names.json` to guarantee features are supplied to the model in the exact 
+  order they were trained on.
+- Loads `age_norms.json` if available for Z-score normalization of developmental metrics.
 """
 
 import joblib

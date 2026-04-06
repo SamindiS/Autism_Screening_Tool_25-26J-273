@@ -101,7 +101,9 @@ flutter:
     - assets/audio/
     - assets/images/
     - assets/games/
-    - assets/translations/
+    - assets/translations/en.json
+    - assets/translations/si.json
+    - assets/translations/ta.json
     - assets/logo/
     - assets/logo/bubble/bubble_pop.mp3
 

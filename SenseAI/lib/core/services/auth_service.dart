@@ -4,8 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'api_service.dart';
 
+/// Service responsible for managing clinician authentication and session state.
+/// 
+/// Uses a combination of [FlutterSecureStorage] for sensitive tokens and 
+/// [SharedPreferences] for non-sensitive configuration data.
 class AuthService {
-  // Secure storage for sensitive data (tokens, session info)
+  // Secure storage instance for sensitive data (tokens, session info)
   static final _secureStorage = FlutterSecureStorage(
     aOptions: const AndroidOptions(
       encryptedSharedPreferences: true,
@@ -15,19 +19,22 @@ class AuthService {
     ),
   );
   
-  // SharedPreferences for non-sensitive data (backward compatibility)
+  // SharedPreferences keys for non-sensitive data
   static const String _keyIsLoggedIn = 'is_logged_in';
   static const String _keyClinicianId = 'clinician_id';
   
-  // Secure storage keys
+  // Secure storage keys for sensitive session data
   static const String _keySessionToken = 'session_token';
   static const String _keyLoginTimestamp = 'login_timestamp';
   static const String _keyClinicianData = 'clinician_data';
   
-  // Session expiry: 7 days (configurable)
+  // Session expiry configuration (Default: 7 days)
   static const Duration _sessionExpiry = Duration(days: 7);
 
-  // Check if user is registered (check backend)
+  /// Checks if a clinician is already registered in the system.
+  /// 
+  /// Performs a health check on the backend before attempting to 
+  /// retrieve clinician information.
   static Future<bool> isRegistered() async {
     try {
       // First check if backend is available
@@ -45,7 +52,10 @@ class AuthService {
     }
   }
 
-  // Check if user is logged in (with session expiry check)
+  /// Verifies if there is an active and valid login session.
+  /// 
+  /// This method checks for the presence of a session token and ensures 
+  /// that the session has not exceeded [_sessionExpiry].
   static Future<bool> isLoggedIn() async {
     try {
       // Check if session token exists
@@ -81,14 +91,13 @@ class AuthService {
     }
   }
   
-  // Clear session data (secure storage)
+  /// Clears all session-related data from both secure and public storage.
   static Future<void> _clearSession() async {
     try {
       await _secureStorage.delete(key: _keySessionToken);
       await _secureStorage.delete(key: _keyLoginTimestamp);
       await _secureStorage.delete(key: _keyClinicianData);
       
-      // Also clear SharedPreferences for backward compatibility
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyIsLoggedIn, false);
       await prefs.remove(_keyClinicianId);
@@ -97,7 +106,7 @@ class AuthService {
     }
   }
   
-  // Get stored clinician data
+  /// Retrieves the cached clinician profile from secure storage.
   static Future<Map<String, dynamic>?> getStoredClinicianData() async {
     try {
       final clinicianDataStr = await _secureStorage.read(key: _keyClinicianData);
@@ -111,14 +120,15 @@ class AuthService {
     }
   }
 
-  // Register new clinician (via API)
+  /// Registers a new clinician and initializes an active session.
+  /// 
+  /// On success, stores clinicians details securely and sets a session token.
   static Future<Map<String, dynamic>> register({
     required String name,
     required String hospital,
     required String pin,
   }) async {
     try {
-      // First check if backend is available
       final isBackendAvailable = await ApiService.healthCheck();
       if (!isBackendAvailable) {
         final msg = await ApiService.backendUnavailableMessage();
@@ -129,23 +139,19 @@ class AuthService {
         };
       }
 
-      // Register via API
       final clinician = await ApiService.registerClinician(
         name: name,
         hospital: hospital,
         pin: pin,
       );
 
-      // Generate session token (simple UUID-like string)
       final sessionToken = _generateSessionToken();
       final loginTimestamp = DateTime.now().toIso8601String();
       
-      // Save to secure storage (encrypted)
       await _secureStorage.write(key: _keySessionToken, value: sessionToken);
       await _secureStorage.write(key: _keyLoginTimestamp, value: loginTimestamp);
       await _secureStorage.write(key: _keyClinicianData, value: jsonEncode(clinician));
       
-      // Also save to SharedPreferences for backward compatibility
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyIsLoggedIn, true);
       if (clinician['id'] != null) {
@@ -153,7 +159,6 @@ class AuthService {
       }
       
       debugPrint('Clinician registered successfully: ${clinician['id']}');
-      debugPrint('Session token saved. Session expires in ${_sessionExpiry.inDays} days');
       return {
         'success': true,
         'clinician': clinician,
@@ -191,10 +196,11 @@ class AuthService {
     }
   }
 
-  // Login with PIN (via API)
+  /// Log in a clinician using their PIN and initializes an active session.
+  /// 
+  /// Verifies credentials with the backend and stores the result locally.
   static Future<Map<String, dynamic>> login(String pin) async {
     try {
-      // First check if backend is available
       final isBackendAvailable = await ApiService.healthCheck();
       if (!isBackendAvailable) {
         final msg = await ApiService.backendUnavailableMessage();
@@ -205,19 +211,15 @@ class AuthService {
         };
       }
 
-      // Login via API
       final clinician = await ApiService.loginClinician(pin: pin);
 
-      // Generate session token (simple UUID-like string)
       final sessionToken = _generateSessionToken();
       final loginTimestamp = DateTime.now().toIso8601String();
       
-      // Save to secure storage (encrypted)
       await _secureStorage.write(key: _keySessionToken, value: sessionToken);
       await _secureStorage.write(key: _keyLoginTimestamp, value: loginTimestamp);
       await _secureStorage.write(key: _keyClinicianData, value: jsonEncode(clinician));
       
-      // Also save to SharedPreferences for backward compatibility
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyIsLoggedIn, true);
       if (clinician['id'] != null) {
@@ -225,7 +227,6 @@ class AuthService {
       }
       
       debugPrint('Clinician logged in successfully: ${clinician['id']}');
-      debugPrint('Session token saved. Session expires in ${_sessionExpiry.inDays} days');
       return {
         'success': true,
         'clinician': clinician,
@@ -263,7 +264,7 @@ class AuthService {
     }
   }
 
-  // Get clinician info (from API)
+  /// Retrieves the current clinician's profile directly from the backend.
   static Future<Map<String, String?>> getClinicianInfo() async {
     try {
       final clinician = await ApiService.getClinicianInfo();
@@ -282,21 +283,21 @@ class AuthService {
     }
   }
 
-  // Logout (clears all session data)
+  /// Logs out the current clinician and wipes all session data.
   static Future<void> logout() async {
     debugPrint('Logging out...');
     await _clearSession();
     debugPrint('Logout complete. All session data cleared.');
   }
   
-  // Generate a simple session token (UUID-like)
+  /// Generates a unique, non-reversible session token based on the current time.
   static String _generateSessionToken() {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final random = (timestamp * 1000 + (timestamp % 1000)).toString();
     return 'session_${timestamp}_${random.substring(random.length - 6)}';
   }
   
-  // Get remaining session time
+  /// Calculates the time remaining before the current session expires.
   static Future<Duration?> getRemainingSessionTime() async {
     try {
       final loginTimestampStr = await _secureStorage.read(key: _keyLoginTimestamp);

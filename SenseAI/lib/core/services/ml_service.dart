@@ -1,15 +1,18 @@
-// ml_service.dart - ML Model Prediction Service
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'api_service.dart';
 
-/// Service for making ML predictions using trained model
+/// Service for interacting with the backend Machine Learning models.
+/// 
+/// This service sends extracted features to the backend and receives 
+/// ASD risk predictions, confidence scores, and feature explanations.
 class MLService {
-  /// Predict ASD risk using trained ML model
+  /// Predicts ASD risk using a trained ML model on the backend.
   /// 
-  /// Returns ML prediction result with risk score and level
-  /// Falls back to null if prediction fails (use rule-based instead)
+  /// Requires extracted [mlFeatures], the child's [ageGroup], and the [sessionType].
+  /// Returns an [MLPredictionResult] on success, or null if the ML service 
+  /// is unavailable (permitting fallback to rule-based logic).
   static Future<MLPredictionResult?> predict({
     required Map<String, dynamic> mlFeatures,
     required String ageGroup,
@@ -52,7 +55,7 @@ class MLService {
     }
   }
 
-  /// Check if ML service is available
+  /// Performs a health check to verify if the ML backend is reachable.
   static Future<bool> isAvailable() async {
     try {
       final url = await ApiService.baseUrl;
@@ -67,16 +70,36 @@ class MLService {
   }
 }
 
-/// ML Prediction Result
+/// Represents the output of an ML risk assessment.
+/// 
+/// Includes binary classification, probability scores, confidence levels, 
+/// and a list of internal explanations for the prediction.
 class MLPredictionResult {
-  final bool isASD; // prediction == 1
+  /// Whether the model predicts a risk of ASD.
+  final bool isASD; 
+  
+  /// The calculated probability of the child having ASD (0.0 to 1.0).
   final double asdProbability;
+  
+  /// The calculated probability of the child being a control (0.0 to 1.0).
   final double controlProbability;
+  
+  /// General confidence metric for the prediction accuracy.
   final double confidence;
-  final String riskLevel; // 'low', 'moderate', 'high'
-  final double riskScore; // 0-100
-  final String method; // 'ml' or 'fallback'
-  final String? modelAgeGroup; // '2-3.5', '3.5-5.5', '5.5-6.9'
+  
+  /// categorical risk level (low, moderate, high).
+  final String riskLevel; 
+  
+  /// Normalized risk score (usually 0 to 100).
+  final double riskScore; 
+  
+  /// Identification of the method used (ml or fallback).
+  final String method; 
+  
+  /// The age group model used for this prediction.
+  final String? modelAgeGroup; 
+  
+  /// List of features and their contributions to this specific prediction.
   final List<MLExplanationItem> explanations;
 
   MLPredictionResult({
@@ -91,6 +114,7 @@ class MLPredictionResult {
     required this.explanations,
   });
 
+  /// Factory for creating a result from JSON backend responses.
   factory MLPredictionResult.fromJson(Map<String, dynamic> json) {
     final prediction = json['prediction'] as int? ?? 0;
     final probabilities = json['probability'] as List<dynamic>? ?? [0.5, 0.5];
@@ -112,14 +136,22 @@ class MLPredictionResult {
     );
   }
 
-  /// Convert risk level to uppercase for compatibility
+  /// Convenience getter for the risk level string in uppercase.
   String get riskLevelUpper => riskLevel.toUpperCase();
 }
 
+/// Details about a specific feature's contribution to an ML prediction.
 class MLExplanationItem {
+  /// The name of the feature (e.g., total_perseverative_errors).
   final String feature;
+  
+  /// The raw value of the feature for this session.
   final double value;
+  
+  /// The relative contribution of this feature to the final prediction.
   final double contribution;
+  
+  /// Whether this feature increases or decreases the calculated ASD risk.
   final String direction; // increases_risk | decreases_risk
 
   const MLExplanationItem({
@@ -129,6 +161,7 @@ class MLExplanationItem {
     required this.direction,
   });
 
+  /// Factory for creating an explanation item from JSON parts.
   factory MLExplanationItem.fromJson(Map<String, dynamic> json) {
     return MLExplanationItem(
       feature: json['feature'] as String? ?? '',

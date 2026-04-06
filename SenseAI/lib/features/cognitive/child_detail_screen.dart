@@ -10,6 +10,12 @@ import 'add_child_screen.dart';
 import 'age_select_screen.dart';
 import 'session_detail_screen.dart';
 
+/// Comprehensive clinical dossier for a specific child.
+/// 
+/// Displays the child's profile summaries alongside a chronologically ordered 
+/// history of all past screening sessions. Exposes critical actions to clinicians 
+/// such as starting a new assessment, editing profile info, or instantly generating 
+/// and sharing a PDF clinical report.
 class ChildDetailScreen extends StatefulWidget {
   final Map<String, dynamic> child;
 

@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+/// A prominent, horizontally expandable action button used in the [DashboardScreen].
+/// 
+/// Supports two distinct visual paradigms:
+/// 1. A primary, solid gradient style for primary actions (e.g., Add New Child).
+/// 2. A secondary, outlined style for secondary actions (e.g., View Reports).
 class QuickActionButton extends StatelessWidget {
   final String label;
   final IconData icon;

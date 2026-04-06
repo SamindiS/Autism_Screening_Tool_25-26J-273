@@ -10,6 +10,12 @@ import '../../data/models/child.dart';
 import 'api_service.dart';
 import 'offline_sync_service.dart';
 
+/// Centralized service for local data persistence and offline capabilities.
+/// 
+/// This service orchestrates all database operations using `sqflite`. It provides
+/// a sophisticated caching layer that seamlessly syncs with the remote API when
+/// online, while ensuring that all CRUD operations function immediately and reliably 
+/// when offline. It primarily handles [children], [sessions], and [trials].
 class StorageService {
   static Database? _database;
 

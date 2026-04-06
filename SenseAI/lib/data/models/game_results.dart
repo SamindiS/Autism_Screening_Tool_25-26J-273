@@ -1,18 +1,50 @@
+/// Holds the consolidated results of a distinct clinical game or module.
+/// 
+/// Captures both high-level summaries (accuracy, speed, error rates) and
+/// raw granular data ([TrialData]), which are essential for ML inference and 
+/// behavioral analysis in ASD screening.
 class GameResults {
+  /// The type of game/module executed (e.g., 'frog_jump', 'color_shape').
   final String gameType;
+  
+  /// The total number of trials presented during the game.
   final int totalTrials;
+  
+  /// The total number of successfully completed trials.
   final int correctTrials;
+  
+  /// The percentage of correct trials (usually 0.0 to 1.0).
   final double accuracy;
+  
+  /// The mean reaction time across all trials (in milliseconds).
   final int averageReactionTime;
+  
+  /// The temporal cost associated with switching rules (applicable in set-shifting games).
   final int? switchCost;
+  
+  /// The count of perseverative errors (failing to switch rules when prompted).
   final int? perseverativeErrors;
+  
+  /// Total duration the child took to complete the module (in milliseconds).
   final int completionTime;
+  
+  /// A chronological list of granular data for each individual trial.
   final List<TrialData> trials;
+  
+  /// Flexible map for module-specific metrics not captured by standard fields.
   final Map<String, dynamic>? additionalMetrics;
-  final Map<String, dynamic>? mlFeatures; // ML features for ASD detection
-  final double? riskScore; // ML-based risk score (0-100)
-  final String? riskLevel; // ML-based risk level ('low', 'moderate', 'high')
-  final Map<String, dynamic>? mlPrediction; // Full ML prediction result
+  
+  /// Abstract extracted features explicitly formatted for ML model inference.
+  final Map<String, dynamic>? mlFeatures;
+  
+  /// The generated risk score from the ML model specifically for this game (if isolated).
+  final double? riskScore;
+  
+  /// The categorical risk level assigned ('low', 'moderate', 'high').
+  final String? riskLevel;
+  
+  /// The full structured JSON response from the underlying ML prediction service.
+  final Map<String, dynamic>? mlPrediction;
 
   GameResults({
     required this.gameType,
@@ -31,6 +63,7 @@ class GameResults {
     this.mlPrediction,
   });
 
+  /// Serializes the game results to a JSON map for storage or network transport.
   Map<String, dynamic> toJson() {
     return {
       'game_type': gameType,
@@ -50,6 +83,7 @@ class GameResults {
     };
   }
 
+  /// Deserializes a JSON map into a [GameResults] instance.
   factory GameResults.fromJson(Map<String, dynamic> json) {
     return GameResults(
       gameType: json['game_type'] as String,
@@ -72,7 +106,7 @@ class GameResults {
     );
   }
   
-  /// Create a copy with updated ML prediction data
+  /// Creates a copy with updated (often ML prediction) data.
   GameResults copyWith({
     String? gameType,
     int? totalTrials,
@@ -108,16 +142,39 @@ class GameResults {
   }
 }
 
+/// Represents the granular behavioral data captured during a single game trial.
+/// 
+/// Used to precisely monitor reaction times, correctness, and specifically
+/// clinical indicators like perseverative errors across cognitive shifts.
 class TrialData {
+  /// The chronological index of the trial within the session.
   final int trialNumber;
+  
+  /// The visual or auditory prompt presented (e.g., 'red_circle').
   final String? stimulus;
+  
+  /// The active cognitive rule during the trial (e.g., 'match_by_color').
   final String? rule;
+  
+  /// The deliberate action or choice taken by the child.
   final String? response;
+  
+  /// Whether the child's response correctly aligned with the active rule.
   final bool correct;
+  
+  /// The time elapsed (in ms) between stimulus presentation and response.
   final int reactionTime;
+  
+  /// Exact timestamp of the interaction for time-series analysis.
   final DateTime timestamp;
+  
+  /// Indicates if this trial occurred immediately after a rule switch.
   final bool? isPostSwitch;
+  
+  /// Indicates if an error occurred due to stubbornly following a previous rule.
   final bool? isPerseverativeError;
+  
+  /// Extended arbitrary data specific to unique game types.
   final Map<String, dynamic>? additionalData;
 
   TrialData({
@@ -133,6 +190,7 @@ class TrialData {
     this.additionalData,
   });
 
+  /// Serializes the trial data into a JSON map.
   Map<String, dynamic> toJson() {
     return {
       'trial_number': trialNumber,
@@ -148,6 +206,7 @@ class TrialData {
     };
   }
 
+  /// Deserializes a JSON map into [TrialData]. Note: SQLite stores booleans as 1/0.
   factory TrialData.fromJson(Map<String, dynamic> json) {
     return TrialData(
       trialNumber: json['trial_number'] as int,

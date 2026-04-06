@@ -4,3 +4,6 @@ Cognitive_Flexibility/senseai_backend/serviceAccountKey.json
 *.json
 
 !package.json
+/Auditory_Checking/backend/__pycache__
+*.pyc
+/Auditory_Checking/backend/data/__pycache__

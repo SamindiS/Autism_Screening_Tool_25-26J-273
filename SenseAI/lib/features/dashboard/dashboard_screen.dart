@@ -19,6 +19,11 @@ import '../../visual_attention/screens/splash_screen.dart' as visual_attention;
 import '../../auditory_checking/pages/auditory_response_to_name_page.dart';
 import '../rrb/screens/rrb_home_screen.dart';
 
+/// Central landing page for clinicians post-authentication.
+/// 
+/// Displays aggregated session statistics, provides quick actions to add 
+/// new children, and acts as the primary navigational hub to individual 
+/// assessment modules (Cognitive, Visual, Auditory, RRB).
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 

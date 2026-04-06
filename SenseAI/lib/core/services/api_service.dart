@@ -7,6 +7,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/models/child.dart';
 
+/// Service responsible for all backend API communications.
+/// 
+/// Handles authentication, child management, session tracking, and 
+/// assessment trial data synchronization.
 class ApiService {
   // Default URLs for different platforms
   static const String _defaultEmulatorUrl =
@@ -23,8 +27,10 @@ class ApiService {
   /// Set when health check fails with 401 and Vercel auth page (Deployment Protection).
   static String? lastHealthCheckFailureHint;
 
-  /// Get the base URL for API calls
-  /// Checks SharedPreferences first, then falls back to defaults
+  /// Gets the base URL for API calls.
+  /// 
+  /// Checks [SharedPreferences] first for a user-defined URL, 
+  /// then falls back to platform-specific defaults.
   static Future<String> get baseUrl async {
     final prefs = await SharedPreferences.getInstance();
     final savedUrl = prefs.getString(_backendUrlKey);
@@ -38,7 +44,10 @@ class ApiService {
     return _defaultRealDeviceUrl;
   }
 
-  /// Set the backend URL (for real device configuration)
+  /// Sets the backend URL and persists it in [SharedPreferences].
+  /// 
+  /// This is used primarily for configuring real devices to connect 
+  /// to a local development server.
   static Future<void> setBackendUrl(String url) async {
     final prefs = await SharedPreferences.getInstance();
     // Remove trailing slash if present
@@ -47,7 +56,7 @@ class ApiService {
     debugPrint('Backend URL set to: $cleanUrl');
   }
 
-  /// Get the current backend URL
+  /// Retrieves the current effective backend URL.
   static Future<String> getBackendUrl() async {
     return await baseUrl;
   }
@@ -109,7 +118,10 @@ class ApiService {
     'Content-Type': 'application/json',
   };
 
-  // Helper method for error handling
+  /// Centralized error handler for HTTP responses.
+  /// 
+  /// Throws an [Exception] if the status code indicates a failure (>= 400).
+  /// Attempts to parse error details from the response body.
   static void _handleError(http.Response response) {
     if (response.statusCode >= 400) {
       final errorBody = response.body;
@@ -131,7 +143,9 @@ class ApiService {
 
   // ==================== CLINICIANS ====================
 
-  /// Register or update a clinician
+  /// Registers a new clinician or updates an existing profile.
+  /// 
+  /// Returns the registered clinician data as a [Map].
   static Future<Map<String, dynamic>> registerClinician({
     required String name,
     required String hospital,
@@ -159,7 +173,9 @@ class ApiService {
     }
   }
 
-  /// Login with PIN
+  /// Authenticates a clinician using their unique PIN.
+  /// 
+  /// Returns the clinician profile on success.
   static Future<Map<String, dynamic>> loginClinician({
     required String pin,
   }) async {
@@ -327,7 +343,9 @@ class ApiService {
 
   // ==================== CHILDREN ====================
 
-  /// Create a new child with study profile fields
+  /// Creates a new child profile in the backend database.
+  /// 
+  /// Captures clinical metadata including age, gender, and study group.
   static Future<Map<String, dynamic>> createChild({
     required String childCode,
     required String name,
@@ -525,7 +543,9 @@ class ApiService {
 
   // ==================== SESSIONS ====================
 
-  /// Create a new session
+  /// Initializes a new assessment session for a child.
+  /// 
+  /// Returns the newly created session object.
   static Future<Map<String, dynamic>> createSession({
     required String childId,
     required String sessionType,

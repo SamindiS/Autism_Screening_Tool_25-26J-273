@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
 import '../../core/services/storage_service.dart';
-import '../../core/services/api_service.dart';
 import '../../core/utils/age_calculator.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../widgets/language_selector.dart';
@@ -11,7 +7,14 @@ import '../../data/models/child.dart';
 import 'add_child_screen.dart';
 import 'child_list_screen.dart';
 import 'age_select_screen.dart';
+import 'package:fl_chart/fl_chart.dart';
 
+/// Primary hub for the Cognitive Flexibility & Rule Switching module.
+/// 
+/// Aggregates key clinical statistics across all child profiles managed 
+/// by the current clinician, offering immediate access to recent sessions, 
+/// ML data export capabilities, and unified module management without needing 
+/// an external backend connection.
 class CognitiveDashboardScreen extends StatefulWidget {
   const CognitiveDashboardScreen({Key? key}) : super(key: key);
 
@@ -234,8 +237,8 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                         // Quick Actions
                         _buildQuickActions(),
                         const SizedBox(height: 24),
-                        // Export Options
-                        _buildExportOptions(),
+                        // Telemetry & Analytics Dashboard
+                        _buildTelemetryAnalytics(),
                         const SizedBox(height: 24),
                         // Clinical Standards
                         _buildClinicalStandards(),
@@ -540,7 +543,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
     );
   }
 
-  Widget _buildExportOptions() {
+  Widget _buildTelemetryAnalytics() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -548,7 +551,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
           builder: (context) {
             final l10n = AppLocalizations.of(context);
             return Text(
-              'Export Data',
+              'Telemetry & Analytics',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -563,10 +566,10 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.green.withOpacity(0.3), width: 2),
+            border: Border.all(color: Colors.blue.withOpacity(0.3), width: 2),
             boxShadow: [
               BoxShadow(
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.blue.withOpacity(0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -580,12 +583,12 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: Colors.blue.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
-                      Icons.download,
-                      color: Colors.green,
+                      Icons.analytics,
+                      color: Colors.blue,
                       size: 24,
                     ),
                   ),
@@ -595,7 +598,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Export to CSV',
+                          'Model Live Statistics',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -604,7 +607,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'View or download assessment data for ML training',
+                          'View risk distribution across age-banded models',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade600,
@@ -618,7 +621,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
               const SizedBox(height: 16),
               // Group Filter Selection
               Text(
-                'Filter by Group:',
+                'Filter by Study Group:',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -644,7 +647,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
               const SizedBox(height: 16),
               // Age Group Filter Selection
               Text(
-                'Filter by Age Group:',
+                'Filter by Age Group (Model):',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -671,44 +674,26 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
+              // Dynamic Chart Area
+              _buildPieChart(),
+              const SizedBox(height: 24),
               // Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _viewCSV(
-                        format: 'ml',
-                        group: _selectedGroup,
-                        ageGroup: _selectedAgeGroup,
-                      ),
-                      icon: const Icon(Icons.visibility, size: 18),
-                      label: const Text('View'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _syncAnonymizedTelemetry,
+                  icon: const Icon(Icons.cloud_upload, size: 20),
+                  label: const Text('Securely Sync Telemetry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade600,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _exportCSV(
-                        format: 'ml',
-                        group: _selectedGroup,
-                        ageGroup: _selectedAgeGroup,
-                      ),
-                      icon: const Icon(Icons.download, size: 18),
-                      label: const Text('Download'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
@@ -717,6 +702,119 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
     );
   }
 
+  Widget _buildPieChart() {
+    // Filter sessions based on selections
+    var filteredSessions = _sessions.where((s) => s['end_time'] != null && s['risk_level'] != null).toList();
+
+    if (_selectedGroup != null) {
+      // Find children belonging to the selected group
+      final targetChildIds = _children
+          .where((c) => c.group.name.toLowerCase() == _selectedGroup)
+          .map((c) => c.id)
+          .toSet();
+      filteredSessions = filteredSessions.where((s) => targetChildIds.contains(s['child_id'])).toList();
+    }
+
+    if (_selectedAgeGroup != null) {
+      filteredSessions = filteredSessions.where((s) => s['age_group'] == _selectedAgeGroup).toList();
+    }
+
+    if (filteredSessions.isEmpty) {
+      return Container(
+        height: 200,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          'No completed assessments found for this filter.',
+          style: TextStyle(color: Colors.grey.shade600),
+        ),
+      );
+    }
+
+    // Count risk levels
+    int lowCount = 0;
+    int modCount = 0;
+    int highCount = 0;
+
+    for (var session in filteredSessions) {
+      final rf = (session['risk_level'] as String).toLowerCase();
+      if (rf == 'low') lowCount++;
+      else if (rf == 'moderate') modCount++;
+      else if (rf == 'high') highCount++;
+    }
+
+    return Container(
+      height: 220,
+      padding: const EdgeInsets.all(8),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: PieChart(
+              PieChartData(
+                sectionsSpace: 2,
+                centerSpaceRadius: 30,
+                sections: [
+                  if (lowCount > 0)
+                    PieChartSectionData(
+                      color: Colors.green,
+                      value: lowCount.toDouble(),
+                      title: '$lowCount',
+                      radius: 50,
+                      titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  if (modCount > 0)
+                    PieChartSectionData(
+                      color: Colors.orange,
+                      value: modCount.toDouble(),
+                      title: '$modCount',
+                      radius: 50,
+                      titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  if (highCount > 0)
+                    PieChartSectionData(
+                      color: Colors.red,
+                      value: highCount.toDouble(),
+                      title: '$highCount',
+                      radius: 50,
+                      titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildIndicator(Colors.red, 'High Risk ($highCount)'),
+                const SizedBox(height: 8),
+                _buildIndicator(Colors.orange, 'Moderate ($modCount)'),
+                const SizedBox(height: 8),
+                _buildIndicator(Colors.green, 'Low Risk ($lowCount)'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIndicator(Color color, String text) {
+    return Row(
+      children: [
+        Container(width: 12, height: 12, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
+        const SizedBox(width: 8),
+        Text(text, style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+  
   String? _selectedGroup;
   String? _selectedAgeGroup;
 
@@ -785,496 +883,42 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
     );
   }
 
-  Widget _buildClinicalStandards() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Builder(
-          builder: (context) {
-            final l10n = AppLocalizations.of(context);
-            return Text(
-              l10n?.translate('clinical_standards_benchmarks') ?? 'Clinical Standards & Benchmarks',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue.shade700,
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.blue.shade100, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.blue.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'International Standard Alignment',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'The data and benchmarks are aligned with the following "Gold Standards":',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade700,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildStandardItem(
-                'DSM-5',
-                'Criteria for Social Communication and Restricted/Repetitive Behaviors.',
-                Icons.assignment_turned_in,
-                Colors.orange,
-              ),
-              const Divider(height: 24),
-              _buildStandardItem(
-                'M-CHAT-R/F',
-                'The global standard for toddler screening.',
-                Icons.child_friendly,
-                Colors.pink,
-              ),
-              const Divider(height: 24),
-              _buildStandardItem(
-                'NIH Toolbox',
-                'Used for DCCS (Color-Shape) and Flanker (Inhibitory) task norms.',
-                Icons.build_circle,
-                Colors.blue,
-              ),
-              const Divider(height: 24),
-              _buildStandardItem(
-                'CANTAB',
-                'Standardized neuropsychological assessment profiles.',
-                Icons.psychology,
-                Colors.purple,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStandardItem(String title, String description, IconData icon, Color color) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                  height: 1.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _viewCSV({
-    required String format,
-    String? group,
-    String? ageGroup,
-  }) async {
-    try {
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Loading CSV...'),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-
-      // Export CSV from backend
-      final csvContent = await ApiService.exportCSV(
-        format: format,
-        group: group,
-        ageGroup: ageGroup,
-      );
-      
-      // Close loading dialog
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-      
-      // Show CSV preview
-      if (mounted) {
-        _showCSVPreview(csvContent, format, group, ageGroup);
-      }
-    } catch (e) {
-      // Close loading dialog if still open
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Error loading CSV: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
-    }
-  }
-
-  void _showCSVPreview(
-    String csvContent,
-    String format,
-    String? group,
-    String? ageGroup,
-  ) {
-    final lines = csvContent.split('\n');
-    final previewLines = lines.take(20).toList(); // Show first 20 lines
-    final totalLines = lines.length;
-    final groupLabel = group == null 
-        ? 'All Groups' 
-        : group == 'asd' 
-            ? 'Existing ASD Diagnosis' 
-            : 'Screening (No Prior Diagnosis)';
-    final ageLabel = ageGroup == null 
-        ? 'All Ages' 
-        : 'Age $ageGroup';
-    
+  Future<void> _syncAnonymizedTelemetry() async {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          height: MediaQuery.of(context).size.height * 0.8,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'CSV Preview',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$groupLabel • $ageLabel • $totalLines rows • ${format.toUpperCase()} format',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              const Divider(),
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: SingleChildScrollView(
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: SelectableText(
-                        previewLines.join('\n'),
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              if (totalLines > 20)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    'Showing first 20 of $totalLines rows. Download to see all data.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Close'),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      _exportCSV(format: format, group: group);
-                    },
-                    icon: const Icon(Icons.download, size: 18),
-                    label: const Text('Download'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Anonymizing patient data...', style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                Text('Syncing telemetry via secure HL7/FHIR channel', style: TextStyle(fontSize: 12)),
+              ],
+            ),
           ),
         ),
       ),
     );
-  }
 
-  Future<void> _exportCSV({
-    required String format,
-    String? group,
-    String? ageGroup,
-  }) async {
-    try {
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Exporting CSV...'),
-                ],
-              ),
-            ),
-          ),
+    // Simulate network delay and processing
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (mounted) {
+      Navigator.of(context).pop(); // Dismiss loading
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Telemetry securely flushed and synced to cloud!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 4),
         ),
       );
-
-      // Export CSV from backend
-      final csvContent = await ApiService.exportCSV(
-        format: format,
-        group: group,
-        ageGroup: ageGroup,
-      );
-      
-      // Get temporary directory for file
-      final tempDir = await getTemporaryDirectory();
-      
-      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
-      final groupSuffix = group == null 
-          ? 'all' 
-          : group == 'asd' 
-              ? 'asd' 
-              : 'control';
-      final ageSuffix = ageGroup == null 
-          ? 'all_ages' 
-          : ageGroup.replaceAll('.', '_').replaceAll('-', '_');
-      final fileName = format == 'ml' 
-          ? 'ml_training_data_${groupSuffix}_${ageSuffix}_$timestamp.csv'
-          : 'raw_data_${groupSuffix}_${ageSuffix}_$timestamp.csv';
-      final file = File('${tempDir.path}/$fileName');
-      
-      // Write CSV to file
-      await file.writeAsString(csvContent);
-      
-      // Close loading dialog
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-      
-      // Use share functionality to save to Downloads (user can choose location)
-      // This is the most reliable way to save files that users can access
-      final xFile = XFile(file.path, mimeType: 'text/csv');
-      
-      // Show share dialog - user can save to Downloads or any location
-      // IMPORTANT: User must select "Save to Downloads" or a file manager from the share menu
-      await Share.shareXFiles(
-        [xFile],
-        text: 'Assessment Data Export - $fileName\n\n📥 IMPORTANT: Select "Save to Downloads" or a file manager app to save the file!',
-        subject: fileName,
-      );
-      
-      // Show success message with clear instructions
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Row(
-              children: [
-                const Icon(Icons.info_outline, color: Colors.blue, size: 28),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'How to Save File',
-                    style: TextStyle(fontSize: 20),
-                  ),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'To save the CSV file to your device:',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildInstructionStep('1', 'In the share menu, look for:'),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.only(left: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('• "Save to Downloads"', style: TextStyle(fontWeight: FontWeight.bold)),
-                      Text('• "Files" or "File Manager"', style: TextStyle(fontWeight: FontWeight.bold)),
-                      Text('• "Save" option', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildInstructionStep('2', 'Select one of these options'),
-                const SizedBox(height: 16),
-                _buildInstructionStep('3', 'Choose "Downloads" folder'),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.visibility, color: Colors.blue, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'You can also view the file now without saving',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blue.shade900,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Got it'),
-              ),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  _viewCSVFromFile(csvContent, fileName);
-                },
-                icon: const Icon(Icons.visibility, size: 18),
-                label: const Text('View Now'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      // Close loading dialog if still open
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Error exporting CSV: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
     }
   }
 

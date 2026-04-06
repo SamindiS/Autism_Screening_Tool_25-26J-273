@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+/// Reusable UI widget displaying a specific metric with an associated icon.
+/// 
+/// Primarily used in the [DashboardScreen] to show high-level summary KPIs
+/// (e.g., total children processed, pending assessments). It adjusts its rendering 
+/// automatically for light/dark themes and provides accessibility semantics.
 class StatCard extends StatelessWidget {
   final String label;
   final int value;

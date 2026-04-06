@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 
+/// Helper service for mapping and retrieving localized clinical questions.
+/// 
+/// This class dynamically fetches translated questions, categories, and options
+/// for various assessment tools (like the AI Bot, manual tasks, and behavioral 
+/// observations) using [AppLocalizations]. It provides robust fallbacks to English
+/// if localizations are unavailable.
 class TranslationHelper {
-  // Load AI Bot questions with translations for age 2-3.5
-  // Based on M-CHAT-R, ADOS, and other validated screening tools
+  /// Retrieves a localized list of clinical questions for the AI Doctor Bot (Age 2-3.5).
+  /// 
+  /// The questions are based on validated screening tools (e.g., M-CHAT-R).
+  /// Dynamically inserts the [childName] into the translated strings.
   static List<Map<String, dynamic>> getAIBotQuestions(
       String childName, BuildContext? context) {
     final questions = <Map<String, dynamic>>[];

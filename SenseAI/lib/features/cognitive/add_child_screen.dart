@@ -6,14 +6,12 @@ import '../../core/services/auth_service.dart';
 import '../../data/models/child.dart';
 import 'age_select_screen.dart';
 
-/// Child Profile Screen for clinical ASD screening
+/// Clinical intake form for creating or editing a child profile.
 /// 
-/// Captures:
-/// - Child code (e.g., LRH-027, PRE-112)
-/// - Age (in months)
-/// - Gender
-/// - Prior diagnosis status (existing ASD diagnosis vs screening)
-/// - Diagnosis source (hospital / clinic or screening context)
+/// Captures key demographic and clinical context parameters needed for 
+/// ASD screening, including precise age calculation, language preference, 
+/// and the responsible clinician's ID. Data is cached seamlessly in the 
+/// local `StorageService` to support offline operation in clinical settings.
 class AddChildScreen extends StatefulWidget {
   final Map<String, dynamic>? child;
 

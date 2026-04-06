@@ -1,5 +1,17 @@
 """
-Feature preprocessing and age normalization
+Feature preprocessing, age normalization, and vectorization.
+
+This module acts as the crucial data transformation layer before features reach 
+the ML model. Data collected directly from children naturally skews heavily 
+based on age.
+
+Key Operations:
+1. Z-Score Normalization: Converts raw cognitive scores into age-relative standard 
+   deviations using norms mapped in `age_norms.json`. This ensures an 18-month-old 
+   and a 5-year-old are judged on age-appropriate baselines.
+2. Feature Sorting/Alignment (`prepare_features`): Scikit-learn requires 2D numpy 
+   arrays where columns exactly match the features seen during `.fit()`. This function 
+   safely extracts dictionary values (filling missing ones with zeros) into a 1xN NumPy array.
 """
 
 from typing import Dict, Any, Optional

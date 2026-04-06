@@ -4,6 +4,11 @@ import '../../data/models/child.dart';
 import 'add_child_screen.dart';
 import 'child_detail_screen.dart';
 
+/// Clinical roster view of all registered children.
+/// 
+/// Allows clinicians to filter patient profiles by their diagnosis context 
+/// (e.g., existing ASD diagnosis vs. screening queue). Serves as a primary 
+/// navigation point to access individual child dossiers or to initiate new profiles.
 class ChildListScreen extends StatefulWidget {
   const ChildListScreen({Key? key}) : super(key: key);
 

@@ -7,6 +7,11 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/api_service.dart';
 
+/// In-depth diagnostic view of a single completed screening session.
+/// 
+/// Retrieves and visualizes granular session data including exact completion 
+/// times, individual trial breakdown charts (e.g., accuracy vs. incorrect ratios), 
+/// questionnaire responses, and clinician reflection scores. 
 class SessionDetailScreen extends StatefulWidget {
   final String sessionId;
   final String childName;

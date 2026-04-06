@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+/// A heavily styled, square-aspect ratio button representing a clinical module or game.
+/// 
+/// Uses a combination of nested shadows, gradients, and a background "ghost" icon 
+/// to create a deep, interactive, and clinically appropriate visual hierarchy. 
+/// Used extensively in the [DashboardScreen] to launch assessments.
 class ComponentTile extends StatelessWidget {
   final IconData icon;
   final String title;

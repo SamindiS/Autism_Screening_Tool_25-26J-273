@@ -2,11 +2,19 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Service for managing user language preferences and persistence.
+/// 
+/// This service handles storing the selected locale, managing the 
+/// auto-detection of system language, and providing human-readable 
+/// language names.
 class LanguagePreferenceService {
   static const String _localeKey = 'selected_locale';
   static const String _autoDetectKey = 'auto_detect_language';
 
-  /// Get saved locale or auto-detect
+  /// Retrieves the saved locale from [SharedPreferences].
+  /// 
+  /// If auto-detect is enabled or no locale is saved, it attempts to 
+  /// detect the device's system locale.
   static Future<Locale> getLocale() async {
     final prefs = await SharedPreferences.getInstance();
     final autoDetect = prefs.getBool(_autoDetectKey) ?? true;
@@ -23,26 +31,29 @@ class LanguagePreferenceService {
     return _getDeviceLocale();
   }
 
-  /// Save selected locale
+  /// Persists the selected [Locale] and disables auto-detection.
   static Future<void> setLocale(Locale locale) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_localeKey, locale.languageCode);
     await prefs.setBool(_autoDetectKey, false);
   }
 
-  /// Enable/disable auto-detect
+  /// Enables or disables the automatic detection of system language.
   static Future<void> setAutoDetect(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_autoDetectKey, enabled);
   }
 
-  /// Get auto-detect setting
+  /// Checks if auto-detection of language is currently enabled.
   static Future<bool> isAutoDetectEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_autoDetectKey) ?? true;
   }
 
-  /// Auto-detect device locale
+  /// Detects the system locale using [ui.window.locale].
+  /// 
+  /// Falls back to English ('en') if the system language is not supported 
+  /// (Sinhala and Tamil are currently supported).
   static Locale _getDeviceLocale() {
     try {
       // Use dart:ui's window.locale (Flutter 2.10.5 compatible)
@@ -64,7 +75,7 @@ class LanguagePreferenceService {
     }
   }
 
-  /// Get language display name
+  /// Returns the localized name of a language given its ISO [code].
   static String getLanguageName(String code) {
     switch (code) {
       case 'en':
@@ -78,7 +89,7 @@ class LanguagePreferenceService {
     }
   }
 
-  /// Get all supported languages
+  /// Returns a list of all languages supported by the application.
   static List<Map<String, String>> getSupportedLanguages() {
     return [
       {'code': 'en', 'name': 'English', 'native': 'English'},

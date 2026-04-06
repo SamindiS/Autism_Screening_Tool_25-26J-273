@@ -7,14 +7,29 @@ import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
-/// Service for generating advanced, professional PDF reports for children
+/// Service for generating advanced, professional clinical PDF reports.
+/// 
+/// This service utilizes the `pdf` and `printing` packages to construct
+/// multi-page, visually distinct reports containing patient demographics,
+/// session analysis, risk gauges, XAI feature contributions, and historical trends.
 class PdfReportService {
-  static const primaryColor = PdfColor.fromInt(0xff6366f1); // Indigo
-  static const secondaryColor = PdfColor.fromInt(0xff10b981); // Emerald
-  static const darkText = PdfColor.fromInt(0xff1f2937); // Gray-800
-  static const lightText = PdfColor.fromInt(0xff6b7280); // Gray-500
+  /// Primary color used for headers and visual emphasis (Indigo).
+  static const primaryColor = PdfColor.fromInt(0xff6366f1);
+  
+  /// Secondary color used for positive accents (Emerald).
+  static const secondaryColor = PdfColor.fromInt(0xff10b981);
+  
+  /// Dark typography color for primary text elements.
+  static const darkText = PdfColor.fromInt(0xff1f2937);
+  
+  /// Light typography color for secondary text and labels.
+  static const lightText = PdfColor.fromInt(0xff6b7280);
 
-  /// Generate a PDF report and return it as raw bytes for previewing
+  /// Generates a complete PDF document entirely in memory.
+  /// 
+  /// Takes the [child] profile and their assessment [sessions]. The sessions
+  /// are automatically sorted chronologically to ensure the latest analysis
+  /// is presented first. Returns the raw [Uint8List] bytes.
   static Future<Uint8List> generatePdfBytes({
     required Map<String, dynamic> child,
     required List<Map<String, dynamic>> sessions,
@@ -58,7 +73,11 @@ class PdfReportService {
     return pdf.save();
   }
 
-  /// Generate and save a PDF report for a child (returning the file path)
+  /// Generates the PDF and saves it securely to the local filesystem.
+  /// 
+  /// Uses [getApplicationDocumentsDirectory] to store the file. The filename
+  /// is uniquely generated using the child's code/name and the current timestamp.
+  /// Returns the absolute filesystem [path] of the generated PDF.
   static Future<String?> generateChildReport({
     required Map<String, dynamic> child,
     required List<Map<String, dynamic>> sessions,
@@ -79,7 +98,10 @@ class PdfReportService {
     }
   }
 
-  /// Generate and share PDF report
+  /// Wraps PDF generation and invokes the native sharing dialog.
+  /// 
+  /// Enables clinicians to export the generated document via email, 
+  /// messaging apps, or save it to cloud storage using [Share.shareXFiles].
   static Future<void> generateAndShareReport({
     required Map<String, dynamic> child,
     required List<Map<String, dynamic>> sessions,
@@ -106,7 +128,9 @@ class PdfReportService {
     }
   }
 
-  /// Generate and print PDF report
+  /// Generates the PDF and queues it directly to the system print spooler.
+  /// 
+  /// Uses [Printing.layoutPdf] to interact with Android/iOS print dialogs.
   static Future<void> generateAndPrintReport({
     required Map<String, dynamic> child,
     required List<Map<String, dynamic>> sessions,

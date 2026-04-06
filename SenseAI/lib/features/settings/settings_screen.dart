@@ -9,6 +9,11 @@ import '../../core/providers/language_provider.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_preference_service.dart';
 
+/// Diagnostics and configuration screen for the application.
+/// 
+/// Provides administrative controls to update the backend API endpoint 
+/// (critical for local network pilot deployments), test connection health, 
+/// manually override the application language, and view current build specs.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 

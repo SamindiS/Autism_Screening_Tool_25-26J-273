@@ -7,3 +7,6 @@ Cognitive_Flexibility/senseai_backend/serviceAccountKey.json
 /Auditory_Checking/backend/__pycache__
 *.pyc
 /Auditory_Checking/backend/data/__pycache__
+/Restrictive_Repititive_Behaviors/backend/node_modules
+/Restrictive_Repititive_Behaviors/backend/node_modules
+/Restrictive_Repititive_Behaviors/backend/node_modules

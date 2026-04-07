@@ -67,11 +67,13 @@ class _CognitiveAnalyticsScreenState extends State<CognitiveAnalyticsScreen> {
     final completedSessions = widget.sessions.where((s) => s['end_time'] != null).length;
     final pendingSessions = widget.sessions.where((s) => s['end_time'] == null).length;
 
+    final l10n = AppLocalizations.of(context);
+
     return Row(
       children: [
         Expanded(
           child: _buildMetricCard(
-            'Total Cohort',
+            l10n?.translate('total_cohort') ?? 'Total Cohort',
             widget.children.length.toString(),
             Icons.people,
             Colors.blue,
@@ -80,7 +82,7 @@ class _CognitiveAnalyticsScreenState extends State<CognitiveAnalyticsScreen> {
         const SizedBox(width: 12),
         Expanded(
           child: _buildMetricCard(
-            'Completed',
+            l10n?.translate('completed') ?? 'Completed',
             completedSessions.toString(),
             Icons.check_circle,
             Colors.green,
@@ -89,7 +91,7 @@ class _CognitiveAnalyticsScreenState extends State<CognitiveAnalyticsScreen> {
         const SizedBox(width: 12),
         Expanded(
           child: _buildMetricCard(
-            'Pending',
+            l10n?.translate('pending') ?? 'Pending',
             pendingSessions.toString(),
             Icons.pending_actions,
             Colors.orange,
@@ -144,10 +146,11 @@ class _CognitiveAnalyticsScreenState extends State<CognitiveAnalyticsScreen> {
   Widget _buildDiagnosticSpreadChart() {
     int asdCount = widget.children.where((c) => c.isAsdGroup).length;
     int controlCount = widget.children.length - asdCount;
+    final l10n = AppLocalizations.of(context);
 
     return _buildChartCard(
-      title: 'Current Diagnostic Spread',
-      subtitle: 'Ratio of children with standing ASD diagnosis vs. control screening',
+      title: l10n?.translate('current_diagnostic_spread') ?? 'Current Diagnostic Spread',
+      subtitle: l10n?.translate('ratio_diagnostic_spread') ?? 'Ratio of children with standing ASD diagnosis vs. control screening',
       height: 300,
       child: Stack(
         alignment: Alignment.center,
@@ -173,7 +176,7 @@ class _CognitiveAnalyticsScreenState extends State<CognitiveAnalyticsScreen> {
                 PieChartSectionData(
                   color: Colors.purple.shade400,
                   value: asdCount.toDouble(),
-                  title: _touchedPieIndex == 0 ? '$asdCount' : 'ASD',
+                  title: _touchedPieIndex == 0 ? '$asdCount' : (l10n?.translate('asd') ?? 'ASD'),
                   radius: _touchedPieIndex == 0 ? 60.0 : 50.0,
                   titleStyle: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
@@ -181,7 +184,7 @@ class _CognitiveAnalyticsScreenState extends State<CognitiveAnalyticsScreen> {
                 PieChartSectionData(
                   color: Colors.teal.shade400,
                   value: controlCount.toDouble(),
-                  title: _touchedPieIndex == 1 ? '$controlCount' : 'Control',
+                  title: _touchedPieIndex == 1 ? '$controlCount' : (l10n?.translate('control') ?? 'Control'),
                   radius: _touchedPieIndex == 1 ? 60.0 : 50.0,
                   titleStyle: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
@@ -197,7 +200,7 @@ class _CognitiveAnalyticsScreenState extends State<CognitiveAnalyticsScreen> {
                 style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
               Text(
-                'Total Users',
+                l10n?.translate('total_users') ?? 'Total Users',
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ],
@@ -222,10 +225,11 @@ class _CognitiveAnalyticsScreenState extends State<CognitiveAnalyticsScreen> {
     }
 
     final maxY = [highRisk, modRisk, lowRisk, 5].reduce((a, b) => a > b ? a : b).toDouble();
+    final l10n = AppLocalizations.of(context);
 
     return _buildChartCard(
-      title: 'Algorithmic Risk Distribution',
-      subtitle: 'Breakdown of completed session predictions',
+      title: l10n?.translate('algorithmic_risk_distribution') ?? 'Algorithmic Risk Distribution',
+      subtitle: l10n?.translate('breakdown_predictions') ?? 'Breakdown of completed session predictions',
       height: 250,
       child: BarChart(
         BarChartData(
@@ -253,13 +257,13 @@ class _CognitiveAnalyticsScreenState extends State<CognitiveAnalyticsScreen> {
                   String text;
                   switch (value.toInt()) {
                     case 0:
-                      text = 'Low';
+                      text = l10n?.translate('low') ?? 'Low';
                       break;
                     case 1:
-                      text = 'Moderate';
+                      text = l10n?.translate('moderate') ?? 'Moderate';
                       break;
                     case 2:
-                      text = 'High';
+                      text = l10n?.translate('high') ?? 'High';
                       break;
                     default:
                       text = '';
@@ -337,10 +341,11 @@ class _CognitiveAnalyticsScreenState extends State<CognitiveAnalyticsScreen> {
     }
 
     final maxY = [v2_3, v3_5, v5_6, 5].reduce((a, b) => a > b ? a : b).toDouble();
+    final l10n = AppLocalizations.of(context);
 
     return _buildChartCard(
-      title: 'Demographic Age Cohorts',
-      subtitle: 'Cohort representation matching the target ML Models',
+      title: l10n?.translate('demographic_age_cohorts') ?? 'Demographic Age Cohorts',
+      subtitle: l10n?.translate('cohort_representation') ?? 'Cohort representation matching the target ML Models',
       height: 250,
       child: LineChart(
         LineChartData(
@@ -362,9 +367,9 @@ class _CognitiveAnalyticsScreenState extends State<CognitiveAnalyticsScreen> {
                 showTitles: true,
                 getTitlesWidget: (value, meta) {
                   const style = TextStyle(fontWeight: FontWeight.bold, fontSize: 12);
-                  if (value.toInt() == 0) return SideTitleWidget(child: Text('2-3.5 yrs', style: style), axisSide: meta.axisSide);
-                  if (value.toInt() == 1) return SideTitleWidget(child: Text('3.5-5.5 yrs', style: style), axisSide: meta.axisSide);
-                  if (value.toInt() == 2) return SideTitleWidget(child: Text('5.5-6.9 yrs', style: style), axisSide: meta.axisSide);
+                  if (value.toInt() == 0) return SideTitleWidget(child: Text(l10n?.translate('age_group_2_3') ?? '2-3.5 yrs', style: style), axisSide: meta.axisSide);
+                  if (value.toInt() == 1) return SideTitleWidget(child: Text(l10n?.translate('age_group_3_5') ?? '3.5-5.5 yrs', style: style), axisSide: meta.axisSide);
+                  if (value.toInt() == 2) return SideTitleWidget(child: Text(l10n?.translate('age_group_5_6') ?? '5.5-6.9 yrs', style: style), axisSide: meta.axisSide);
                   return const SizedBox.shrink();
                 },
                 interval: 1,

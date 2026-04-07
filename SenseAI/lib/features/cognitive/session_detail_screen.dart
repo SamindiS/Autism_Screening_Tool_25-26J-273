@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 
+import '../../core/localization/app_localizations.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/api_service.dart';
 
@@ -67,10 +68,10 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Session Summary'),
+        title: Text(l10n?.translate('session_summary') ?? 'Session Summary'),
         backgroundColor: widget.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -92,13 +93,13 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _loadSessionData,
-                        child: const Text('Retry'),
+                        child: Text(l10n?.translate('retry_text') ?? 'Retry'),
                       ),
                     ],
                   ),
                 )
               : _session == null
-                  ? const Center(child: Text('Session not found'))
+                  ? Center(child: Text(l10n?.translate('session_not_found') ?? 'Session not found'))
                   : _buildContent(),
     );
   }
@@ -147,7 +148,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
               // Game Results (with charts/tables)
               if (gameResults != null && gameResults.isNotEmpty) ...[
                 _buildSectionCard(
-                  'Game Performance',
+                  l10n?.translate('game_performance') ?? 'Game Performance',
                   Icons.games,
                   _buildGameResultsContent(gameResults),
                 ),
@@ -157,7 +158,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
               // Trials List (collapsible)
               if (_trials.isNotEmpty) ...[
                 _buildSectionCard(
-                  'Trial Details',
+                  l10n?.translate('trial_details') ?? 'Trial Details',
                   Icons.list,
                   _buildTrialsContent(),
                   isExpanded: false,
@@ -167,7 +168,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
               // Additional Details (collapsible)
               _buildSectionCard(
-                'Additional Details',
+                l10n?.translate('additional_details') ?? 'Additional Details',
                 Icons.info,
                 _buildAdditionalDetailsContent(session, metrics, questionnaireResults, reflectionResults),
                 isExpanded: false,
@@ -175,7 +176,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
               // Raw Data (for debugging/advanced users - collapsed by default)
               _buildSectionCard(
-                'Raw Data (Advanced)',
+                l10n?.translate('raw_data_advanced') ?? 'Raw Data (Advanced)',
                 Icons.code,
                 _buildRawDataContent(session),
                 isExpanded: false,
@@ -228,7 +229,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Risk Assessment',
+                    AppLocalizations.of(context)?.translate('risk_assessment') ?? 'Risk Assessment',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -315,7 +316,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   if (overallAccuracy > 0)
                     Expanded(
                       child: _buildSummaryMetric(
-                        'Accuracy',
+                        l10n?.translate('accuracy') ?? 'Accuracy',
                         '${overallAccuracy.toStringAsFixed(0)}%',
                         Icons.gps_fixed,
                         Colors.blue,
@@ -325,7 +326,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                     if (overallAccuracy > 0) const SizedBox(width: 12),
                     Expanded(
                       child: _buildSummaryMetric(
-                        'Trials',
+                        l10n?.translate('trials') ?? 'Trials',
                         totalTrials.toInt().toString(),
                         Icons.list_alt,
                         Colors.green,
@@ -336,7 +337,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                     if (overallAccuracy > 0 || totalTrials > 0) const SizedBox(width: 12),
                     Expanded(
                       child: _buildSummaryMetric(
-                        'Duration',
+                        l10n?.translate('duration') ?? 'Duration',
                         _formatTime(completionTime),
                         Icons.timer,
                         Colors.orange,
@@ -486,7 +487,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     }
     
     if (filtered.isEmpty) {
-      return const Text('No additional metrics available.');
+      return Text(AppLocalizations.of(context)?.translate('no_additional_metrics') ?? 'No additional metrics available.');
     }
     
     return Column(
@@ -590,10 +591,15 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
             if (duration != null)
               _buildInfoRow('Duration', _formatDuration(duration)),
             if (session['age_group'] != null)
-              _buildInfoRow('Age Group', session['age_group'] as String),
+              _buildInfoRow(
+                AppLocalizations.of(context)?.translate('age_group_label') ?? 'Age Group', 
+                session['age_group'] as String
+              ),
             _buildInfoRow(
-              'Status',
-              endTime != null ? 'Completed' : 'In Progress',
+              AppLocalizations.of(context)?.translate('status') ?? 'Status',
+              endTime != null 
+                  ? (AppLocalizations.of(context)?.translate('completed_text') ?? 'Completed')
+                  : (AppLocalizations.of(context)?.translate('in_progress') ?? 'In Progress'),
               valueColor: endTime != null ? Colors.green : Colors.orange,
             ),
           ],
@@ -701,7 +707,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
           children: [
             Expanded(
               child: _buildMetricCard(
-                'Accuracy',
+                l10n?.translate('accuracy') ?? 'Accuracy',
                 accuracy > 0 ? '${accuracy.toStringAsFixed(1)}%' : '-',
                 Icons.gps_fixed,
                 Colors.blue,
@@ -710,7 +716,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildMetricCard(
-                'Correct',
+                l10n?.translate('correct') ?? 'Correct',
                 correct.toString(),
                 Icons.check_circle,
                 Colors.green,
@@ -719,7 +725,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildMetricCard(
-                'Incorrect',
+                l10n?.translate('incorrect') ?? 'Incorrect',
                 incorrect.toString(),
                 Icons.cancel,
                 Colors.red,
@@ -738,9 +744,9 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Accuracy Breakdown',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  Text(
+                    l10n?.translate('accuracy_breakdown') ?? 'Accuracy Breakdown',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -748,8 +754,8 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                     child: _buildSafePieChart(
                       correct.toDouble(),
                       incorrect.toDouble(),
-                      'Correct',
-                      'Incorrect',
+                      l10n?.translate('correct') ?? 'Correct',
+                      l10n?.translate('incorrect') ?? 'Incorrect',
                     ),
                   ),
                 ],
@@ -816,7 +822,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
           children: [
             Expanded(
               child: _buildMetricCard(
-                'Success Rate',
+                l10n?.translate('success_rate') ?? 'Success Rate',
                 '${successRate.toStringAsFixed(1)}%',
                 Icons.trending_up,
                 Colors.green,
@@ -825,7 +831,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildMetricCard(
-                'Successful',
+                l10n?.translate('successful') ?? 'Successful',
                 successfulJumps.toString(),
                 Icons.check_circle,
                 Colors.green,
@@ -834,7 +840,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildMetricCard(
-                'Failed',
+                l10n?.translate('failed') ?? 'Failed',
                 failedJumps.toString(),
                 Icons.cancel,
                 Colors.red,
@@ -853,9 +859,9 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Jump Success Rate',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  Text(
+                    l10n?.translate('jump_success_rate') ?? 'Jump Success Rate',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -863,8 +869,8 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                     child: _buildSafePieChart(
                       successfulJumps.toDouble(),
                       failedJumps.toDouble(),
-                      'Success',
-                      'Failed',
+                      l10n?.translate('successful') ?? 'Success',
+                      l10n?.translate('failed') ?? 'Failed',
                     ),
                   ),
                 ],
@@ -948,23 +954,23 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.all(12),
+          Padding(
+            padding: const EdgeInsets.all(12),
             child: Text(
-              'Trial-by-Trial Results',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              l10n?.translate('trial_by_trial_results') ?? 'Trial-by-Trial Results',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
           ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
               headingRowColor: MaterialStateProperty.all(Colors.grey.shade200),
-              columns: const [
-                DataColumn(label: Text('Trial', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('Stimulus', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('Response', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('RT (ms)', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('Result', style: TextStyle(fontWeight: FontWeight.bold))),
+              columns: [
+                DataColumn(label: Text(l10n?.translate('trial_number') ?? 'Trial', style: const TextStyle(fontWeight: FontWeight.bold))),
+                DataColumn(label: Text(l10n?.translate('stimulus') ?? 'Stimulus', style: const TextStyle(fontWeight: FontWeight.bold))),
+                DataColumn(label: Text(l10n?.translate('response') ?? 'Response', style: const TextStyle(fontWeight: FontWeight.bold))),
+                DataColumn(label: Text(l10n?.translate('rt_ms') ?? 'RT (ms)', style: const TextStyle(fontWeight: FontWeight.bold))),
+                DataColumn(label: Text(l10n?.translate('result') ?? 'Result', style: const TextStyle(fontWeight: FontWeight.bold))),
               ],
               rows: trials.asMap().entries.map((entry) {
                 final trial = entry.value is Map ? entry.value as Map : {};
@@ -991,7 +997,9 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            correct == true || correct == 1 ? 'Correct' : 'Incorrect',
+                            correct == true || correct == 1 
+                                ? (l10n?.translate('correct') ?? 'Correct')
+                                : (l10n?.translate('incorrect') ?? 'Incorrect'),
                             style: TextStyle(
                               color: correct == true || correct == 1 ? Colors.green : Colors.red,
                               fontWeight: FontWeight.w600,
@@ -1056,14 +1064,14 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
   Widget _buildTrialsContent() {
     if (_trials.isEmpty) {
-      return const Text('No trials recorded for this session.');
+      return Text(AppLocalizations.of(context)?.translate('no_trials_recorded') ?? 'No trials recorded for this session.');
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Total Trials: ${_trials.length}',
+          '${AppLocalizations.of(context)?.translate('total_trials') ?? 'Total Trials'}: ${_trials.length}',
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
         ),
         const SizedBox(height: 12),
@@ -1075,16 +1083,16 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
             color: Colors.grey.shade50,
             child: ListTile(
               dense: true,
-              title: Text('Trial ${trial['trial_number'] ?? index + 1}'),
+              title: Text('${AppLocalizations.of(context)?.translate('trial_number') ?? 'Trial'} ${trial['trial_number'] ?? index + 1}'),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (trial['stimulus'] != null)
-                    Text('Stimulus: ${trial['stimulus']}'),
+                    Text('${AppLocalizations.of(context)?.translate('stimulus') ?? 'Stimulus'}: ${trial['stimulus']}'),
                   if (trial['response'] != null)
-                    Text('Response: ${trial['response']}'),
+                    Text('${AppLocalizations.of(context)?.translate('response') ?? 'Response'}: ${trial['response']}'),
                   if (trial['reaction_time'] != null)
-                    Text('Reaction Time: ${trial['reaction_time']}ms'),
+                    Text('${AppLocalizations.of(context)?.translate('reaction_time') ?? 'Reaction Time'}: ${trial['reaction_time']}ms'),
                   if (trial['correct'] != null)
                     Row(
                       children: [
@@ -1100,8 +1108,8 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                         const SizedBox(width: 4),
                         Text(
                           (trial['correct'] == 1 || trial['correct'] == true)
-                              ? 'Correct'
-                              : 'Incorrect',
+                              ? (AppLocalizations.of(context)?.translate('correct') ?? 'Correct')
+                              : (AppLocalizations.of(context)?.translate('incorrect') ?? 'Incorrect'),
                           style: TextStyle(
                             color: (trial['correct'] == 1 || trial['correct'] == true)
                                 ? Colors.green

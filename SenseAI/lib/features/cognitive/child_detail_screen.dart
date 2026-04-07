@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/services/storage_service.dart';
 import '../../core/services/pdf_report_service.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../data/models/child.dart';
 import 'add_child_screen.dart';
 import 'age_select_screen.dart';
@@ -123,15 +124,18 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => const AlertDialog(
-            content: Row(
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(width: 20),
-                Text('Generating PDF report...'),
-              ],
-            ),
-          ),
+          builder: (context) {
+            final l10n = AppLocalizations.of(context);
+            return AlertDialog(
+              content: Row(
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(width: 20),
+                  Text(l10n?.translate('generating_pdf_report') ?? 'Generating PDF report...'),
+                ],
+              ),
+            );
+          },
         );
       }
 
@@ -144,9 +148,10 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
       // Close loading dialog
       if (mounted) {
         Navigator.of(context).pop();
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PDF report generated successfully'),
+          SnackBar(
+            content: Text(l10n?.translate('pdf_report_success') ?? 'PDF report generated successfully'),
             backgroundColor: Colors.green,
           ),
         );
@@ -172,21 +177,23 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
+        final l10n = AppLocalizations.of(context);
         return AlertDialog(
-          title: const Text('Delete Child'),
-          content: const Text(
-            'Are you sure you want to delete this child and all associated sessions? This action cannot be undone.',
+          title: Text(l10n?.translate('delete_child') ?? 'Delete Child'),
+          content: Text(
+            l10n?.translate('delete_child_confirm') ??
+                'Are you sure you want to delete this child and all associated sessions? This action cannot be undone.',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: Text(l10n?.cancel ?? 'Cancel'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text(
-                'Delete',
-                style: TextStyle(color: Colors.red),
+              child: Text(
+                l10n?.translate('delete_label') ?? 'Delete',
+                style: const TextStyle(color: Colors.red),
               ),
             ),
           ],
@@ -201,9 +208,10 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
       await StorageService.deleteChild(_child['id'] as String);
       if (mounted) {
         Navigator.pop(context, true);
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Child deleted successfully'),
+          SnackBar(
+            content: Text(l10n?.translate('child_deleted_success') ?? 'Child deleted successfully'),
             backgroundColor: Colors.red,
           ),
         );
@@ -240,9 +248,10 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
     final ageYears = ages[0];
     final ageMonths = ages[1];
 
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Child Profile'),
+        title: Text(l10n?.translate('child_profile') ?? 'Child Profile'),
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -250,17 +259,17 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
             onPressed: _handleDownloadReport,
-            tooltip: 'Download PDF Report',
+            tooltip: l10n?.exportPdf ?? 'Download PDF Report',
           ),
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: _handleEdit,
-            tooltip: 'Edit Child',
+            tooltip: l10n?.translate('edit_label') ?? 'Edit Child',
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: _deleting ? null : _handleDelete,
-            tooltip: 'Delete Child',
+            tooltip: l10n?.translate('delete_child') ?? 'Delete Child',
           ),
         ],
       ),
@@ -368,14 +377,19 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
                       color: _primaryColor.withOpacity(0.3),
                     ),
                   ),
-                  child: Text(
-                    _isAsdGroup ? 'Previously diagnosed' : 'Screening',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: _primaryColor,
-                    ),
-                  ),
+                  child: Builder(builder: (ctx) {
+                    final l10n = AppLocalizations.of(ctx);
+                    return Text(
+                      _isAsdGroup
+                          ? (l10n?.translate('previously_diagnosed') ?? 'Previously diagnosed')
+                          : (l10n?.translate('screening_label') ?? 'Screening'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: _primaryColor,
+                      ),
+                    );
+                  }),
                 ),
               ],
             ),
@@ -386,33 +400,30 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
             // Age Row
             _buildInfoRow(
               icon: Icons.cake_outlined,
-              label: 'Age',
-              value: ageInMonths != null 
-                  ? '$ageInMonths months ($ageYears y $ageMonths m)'
-                  : '$ageYears years $ageMonths months',
+              label: l10n?.age ?? 'Age',
+              value: ageInMonths != null
+                  ? '$ageInMonths ${l10n?.months ?? "months"} ($ageYears${l10n?.translate("years_short") ?? "y"} $ageMonths${l10n?.translate("months_short") ?? "m"})'
+                  : '$ageYears ${l10n?.years ?? "years"} $ageMonths ${l10n?.months ?? "months"}',
             ),
             const SizedBox(height: 12),
-            
             // Date of Birth Row
             _buildInfoRow(
               icon: Icons.calendar_today,
-              label: 'Date of Birth',
+              label: l10n?.dateOfBirth ?? 'Date of Birth',
               value: DateFormat.yMMMd().format(dob),
             ),
             const SizedBox(height: 12),
-            
             // Gender Row
             _buildInfoRow(
               icon: Icons.person_outline,
-              label: 'Gender',
+              label: l10n?.gender ?? 'Gender',
               value: _child['gender']?.toString() ?? 'N/A',
             ),
             const SizedBox(height: 12),
-            
             // Language Row
             _buildInfoRow(
               icon: Icons.language,
-              label: 'Language',
+              label: l10n?.language ?? 'Language',
               value: _getLanguageName(_child['language'] as String? ?? 'en'),
             ),
           ],
@@ -424,8 +435,10 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
   Widget _buildStudyInfoCard() {
     final diagnosisSource = _child['diagnosis_source'] as String? ?? 'Unknown';
     final diagnosisType = (_child['diagnosis_type'] as String?) ?? 'new';
-    final diagnosisTypeLabel =
-        diagnosisType == 'existing' ? 'Diagnosis before' : 'New diagnosis';
+    final l10nStudy = AppLocalizations.of(context);
+    final diagnosisTypeLabel = diagnosisType == 'existing'
+        ? (l10nStudy?.translate('diagnosis_before') ?? 'Diagnosis before')
+        : (l10nStudy?.translate('new_diagnosis') ?? 'New diagnosis');
     
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -440,7 +453,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
                 Icon(Icons.medical_information, color: _primaryColor),
                 const SizedBox(width: 8),
                 Text(
-                  'Clinical Information',
+                  l10nStudy?.translate('clinical_information') ?? 'Clinical Information',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -454,17 +467,16 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
             // Diagnosis status
             _buildInfoRow(
               icon: _isAsdGroup ? Icons.medical_services : Icons.school,
-              label: 'Diagnosis Status',
+              label: l10nStudy?.translate('diagnosis_status') ?? 'Diagnosis Status',
               value: diagnosisTypeLabel,
             ),
             const SizedBox(height: 12),
-            
             // ASD Level (only for ASD group)
             if (_isAsdGroup) ...[
               _buildInfoRow(
                 icon: Icons.assessment,
-                label: 'ASD Level',
-                value: _asdLevel?.displayName ?? 'Not specified',
+                label: l10nStudy?.translate('asd_level') ?? 'ASD Level',
+                value: _asdLevel?.displayName ?? (l10nStudy?.translate('not_specified') ?? 'Not specified'),
                 valueWidget: _asdLevel != null ? Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
@@ -488,7 +500,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
             // Diagnosis Source Row
             _buildInfoRow(
               icon: _isAsdGroup ? Icons.local_hospital : Icons.school,
-              label: 'Diagnosis Source',
+              label: l10nStudy?.translate('diagnosis_source') ?? 'Diagnosis Source',
               value: diagnosisSource,
             ),
           ],
@@ -548,10 +560,13 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
               ),
             ),
             icon: const Icon(Icons.play_circle_fill),
-            label: const Text(
-              'Start DCCS Game',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            label: Builder(builder: (ctx) {
+              final l10n = AppLocalizations.of(ctx);
+              return Text(
+                l10n?.startAssessment ?? 'Start DCCS Game',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              );
+            }),
           ),
         ),
       ],
@@ -580,10 +595,13 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
                   children: [
                     Icon(Icons.history, color: Colors.grey.shade700),
                     const SizedBox(width: 8),
-                    const Text(
-                      'Session History',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
+                    Builder(builder: (ctx) {
+                      final l10n = AppLocalizations.of(ctx);
+                      return Text(
+                        l10n?.translate('session_history') ?? 'Session History',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      );
+                    }),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -598,21 +616,20 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
                     children: [
                       Icon(Icons.games, size: 48, color: Colors.grey.shade400),
                       const SizedBox(height: 12),
-                      Text(
-                        'No sessions recorded yet',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Start the DCCS game to begin collecting data',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
+                      Builder(builder: (ctx) {
+                        final l10n = AppLocalizations.of(ctx);
+                        return Column(children: [
+                          Text(
+                            l10n?.translate('no_sessions_yet') ?? 'No sessions recorded yet',
+                            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            l10n?.translate('no_sessions_desc') ?? 'Start the DCCS game to begin collecting data',
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                          ),
+                        ]);
+                      }),
                     ],
                   ),
                 ),
@@ -628,10 +645,13 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
               children: [
                 Icon(Icons.history, color: Colors.grey.shade700),
                 const SizedBox(width: 8),
-                const Text(
-                  'Session History',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
+                Builder(builder: (ctx) {
+                  final l10n = AppLocalizations.of(ctx);
+                  return Text(
+                    l10n?.translate('session_history') ?? 'Session History',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  );
+                }),
                 const Spacer(),
                 Text(
                   '${sessions.length} session${sessions.length > 1 ? 's' : ''}',
@@ -654,7 +674,10 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
     final start =
         DateTime.fromMillisecondsSinceEpoch(session['start_time'] as int);
     final endTimestamp = session['end_time'] as int?;
-    final status = endTimestamp == null ? 'In Progress' : 'Completed';
+    final l10n = AppLocalizations.of(context);
+    final status = endTimestamp == null
+        ? (l10n?.translate('in_progress') ?? 'In Progress')
+        : (l10n?.translate('completed_text') ?? 'Completed');
     final metrics = session['metrics'] as Map<String, dynamic>?;
     final score = metrics?['score'] ?? metrics?['accuracy'];
 
@@ -712,7 +735,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
                 if (score != null) ...[
                   const SizedBox(width: 8),
                   Text(
-                    'Score: $score',
+                    '${l10n?.score ?? "Score"}: $score',
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.grey.shade600,

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../data/models/child.dart';
 import 'age_select_screen.dart';
 
@@ -248,23 +249,26 @@ class _AddChildScreenState extends State<AddChildScreen> {
     }
 
     if (_selectedDate == null) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select date of birth')),
+        SnackBar(content: Text(l10n?.translate('please_select_dob') ?? 'Please select date of birth')),
       );
       return;
     }
 
     if (_selectedGender == null) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select gender')),
+        SnackBar(content: Text(l10n?.translate('please_select_gender') ?? 'Please select gender')),
       );
       return;
     }
 
     // Clinical system: clinician ID is always required.
     if (_clinicianIdCtrl.text.trim().isEmpty) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter the Clinician Medical ID')),
+        SnackBar(content: Text(l10n?.translate('clinician_medical_id_required') ?? 'Please enter the Clinician Medical ID')),
       );
       return;
     }
@@ -323,9 +327,10 @@ class _AddChildScreenState extends State<AddChildScreen> {
           (await StorageService.getAllChildren()).first['id'] as String;
 
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Child profile added successfully!'),
+        SnackBar(
+          content: Text(l10n?.translate('child_profile_added') ?? 'Child profile added successfully!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -392,9 +397,10 @@ class _AddChildScreenState extends State<AddChildScreen> {
       );
 
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Child profile updated successfully!'),
+        SnackBar(
+          content: Text('${l10n?.translate("child_profile_updated") ?? "Child profile updated successfully!"}'),
           backgroundColor: Colors.green,
         ),
       );
@@ -422,7 +428,12 @@ class _AddChildScreenState extends State<AddChildScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Child Profile' : 'Add Child Profile'),
+        title: Builder(builder: (context) {
+          final l10n = AppLocalizations.of(context);
+          return Text(_isEditing
+              ? (l10n?.translate('edit_child_profile') ?? 'Edit Child Profile')
+              : (l10n?.translate('add_child_profile') ?? 'Add Child Profile'));
+        }),
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -528,36 +539,31 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
   Widget _buildInfoBanner() {
     final isAsd = _selectedGroup == ChildGroup.asd;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _lightColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _primaryColor.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isAsd ? Icons.local_hospital : Icons.school,
-            color: _primaryColor,
-            size: 24,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              isAsd
-                  ? 'For children with a confirmed autism diagnosis from a hospital/clinic'
-                  : 'For children referred for ASD screening (no prior diagnosis)',
-              style: TextStyle(
-                color: _primaryColor.withOpacity(0.9),
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+    return Builder(builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _lightColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _primaryColor.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(isAsd ? Icons.local_hospital : Icons.school, color: _primaryColor, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                isAsd
+                    ? (l10n?.translate('info_banner_asd') ?? 'For children with a confirmed autism diagnosis from a hospital/clinic')
+                    : (l10n?.translate('info_banner_screening') ?? 'For children referred for ASD screening (no prior diagnosis)'),
+                style: TextStyle(color: _primaryColor.withOpacity(0.9), fontSize: 13, fontWeight: FontWeight.w500),
               ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildTextField({
@@ -590,303 +596,229 @@ class _AddChildScreenState extends State<AddChildScreen> {
   }
 
   Widget _buildDateField() {
-    return InkWell(
-      onTap: () => _selectDate(context),
-      borderRadius: BorderRadius.circular(12),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: 'Date of Birth',
-          prefixIcon: Icon(Icons.calendar_today, color: _primaryColor),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+    return Builder(builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      return InkWell(
+        onTap: () => _selectDate(context),
+        borderRadius: BorderRadius.circular(12),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: l10n?.dateOfBirth ?? 'Date of Birth',
+            prefixIcon: Icon(Icons.calendar_today, color: _primaryColor),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.white,
           ),
-          filled: true,
-          fillColor: Colors.white,
-        ),
-        child: Text(
-          _dobCtrl.text.isEmpty ? 'Select Date of Birth' : _dobCtrl.text,
-          style: TextStyle(
-            color:
-                _dobCtrl.text.isEmpty ? Colors.grey.shade400 : Colors.black87,
+          child: Text(
+            _dobCtrl.text.isEmpty ? (l10n?.selectDateOfBirth ?? 'Select Date of Birth') : _dobCtrl.text,
+            style: TextStyle(color: _dobCtrl.text.isEmpty ? Colors.grey.shade400 : Colors.black87),
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildAgeDisplay() {
     final ageYears = _calculatedAge!.floor();
     final ageMonthsRemaining = ((_calculatedAge! - ageYears) * 12).floor();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _lightColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _primaryColor.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.cake, color: _primaryColor),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Age: ${_calculatedAgeInMonths} months',
-                  style: TextStyle(
-                    color: _primaryColor,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  '($ageYears years and $ageMonthsRemaining months)',
-                  style: TextStyle(
-                    color: _primaryColor.withOpacity(0.7),
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGenderSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Gender',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey.shade700,
-          ),
+    return Builder(builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _lightColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _primaryColor.withOpacity(0.3)),
         ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 12,
-          children: _genders.map((gender) {
-            final isSelected = _selectedGender == gender;
-            return ChoiceChip(
-              label: Text(gender),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() => _selectedGender = selected ? gender : null);
-              },
-              selectedColor: _primaryColor,
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : Colors.black87,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDiagnosisSourceField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Hospital (from registered account - read only, auto-filled)
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _primaryColor.withOpacity(0.3)),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.local_hospital, color: _primaryColor),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Hospital / Clinic',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: _primaryColor.withOpacity(0.7),
-                      ),
-                    ),
-                    Text(
-                      _registeredHospital ?? 'Loading...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: _primaryColor,
-                      ),
-                    ),
-                    Text(
-                      'Automatically set from your account',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.verified, color: _primaryColor),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-        
-        // Clinician Medical ID (manual input required)
-        Text(
-          'Clinician Medical ID',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey.shade700,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Enter the clinician ID who diagnosed this child',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: _clinicianIdCtrl,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            hintText: 'e.g., 10552',
-            prefixIcon: Icon(Icons.badge, color: _primaryColor),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-          ),
-          validator: (v) {
-            if (v == null || v.trim().isEmpty) {
-              return 'Please enter Clinician Medical ID';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 20),
-        Text(
-          'Diagnosis / Referral context (optional)',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey.shade700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: _diagnosisSourceCtrl,
-          decoration: InputDecoration(
-            hintText: 'e.g., LRH Neurology Clinic, school referral, parent concern',
-            prefixIcon: Icon(Icons.notes, color: _primaryColor),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Diagnosis type',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey.shade700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
+        child: Row(
           children: [
-            ChoiceChip(
-              label: const Text('Diagnosis before'),
-              selected: _diagnosisType == 'existing',
-              selectedColor: _primaryColor,
-              onSelected: (_) {
-                setState(() {
-                  _diagnosisType = 'existing';
-                });
-              },
-              labelStyle: TextStyle(
-                color: _diagnosisType == 'existing' ? Colors.white : Colors.black87,
-                fontWeight: _diagnosisType == 'existing'
-                    ? FontWeight.bold
-                    : FontWeight.normal,
-              ),
-            ),
+            Icon(Icons.cake, color: _primaryColor),
             const SizedBox(width: 12),
-            ChoiceChip(
-              label: const Text('New diagnosis'),
-              selected: _diagnosisType == 'new',
-              selectedColor: _primaryColor,
-              onSelected: (_) {
-                setState(() {
-                  _diagnosisType = 'new';
-                });
-              },
-              labelStyle: TextStyle(
-                color: _diagnosisType == 'new' ? Colors.white : Colors.black87,
-                fontWeight: _diagnosisType == 'new'
-                    ? FontWeight.bold
-                    : FontWeight.normal,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${l10n?.age ?? "Age"}: ${_calculatedAgeInMonths} ${l10n?.translate("months_unit") ?? "months"}',
+                    style: TextStyle(color: _primaryColor, fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    '($ageYears ${l10n?.years ?? "years"} ${l10n?.translate("and_label") ?? "and"} $ageMonthsRemaining ${l10n?.months ?? "months"})',
+                    style: TextStyle(color: _primaryColor.withOpacity(0.7), fontSize: 13),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-      ],
-    );
+      );
+    });
+  }
+
+  Widget _buildGenderSelector() {
+    return Builder(builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n?.gender ?? 'Gender',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey.shade700),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            children: _genders.map((gender) {
+              final isSelected = _selectedGender == gender;
+              return ChoiceChip(
+                label: Text(gender),
+                selected: isSelected,
+                onSelected: (selected) => setState(() => _selectedGender = selected ? gender : null),
+                selectedColor: _primaryColor,
+                labelStyle: TextStyle(
+                  color: isSelected ? Colors.white : Colors.black87,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget _buildDiagnosisSourceField() {
+    return Builder(builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _primaryColor.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.local_hospital, color: _primaryColor),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n?.translate('hospital_clinic_label') ?? 'Hospital / Clinic',
+                          style: TextStyle(fontSize: 12, color: _primaryColor.withOpacity(0.7))),
+                      Text(_registeredHospital ?? (l10n?.loading ?? 'Loading...'),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _primaryColor)),
+                      Text(l10n?.translate('auto_set_from_account') ?? 'Automatically set from your account',
+                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                    ],
+                  ),
+                ),
+                Icon(Icons.verified, color: _primaryColor),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(l10n?.translate('clinician_medical_id_label') ?? 'Clinician Medical ID',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey.shade700)),
+          const SizedBox(height: 4),
+          Text(l10n?.translate('clinician_id_desc') ?? 'Enter the clinician ID who diagnosed this child',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _clinicianIdCtrl,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              hintText: 'e.g., 10552',
+              prefixIcon: Icon(Icons.badge, color: _primaryColor),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) {
+                return l10n?.translate('clinician_id_required_validator') ?? 'Please enter Clinician Medical ID';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
+          Text(l10n?.translate('diagnosis_referral_context') ?? 'Diagnosis / Referral context (optional)',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey.shade700)),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _diagnosisSourceCtrl,
+            decoration: InputDecoration(
+              hintText: l10n?.translate('diagnosis_referral_hint') ?? 'e.g., LRH Neurology Clinic, school referral, parent concern',
+              prefixIcon: Icon(Icons.notes, color: _primaryColor),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(l10n?.translate('diagnosis_type_label') ?? 'Diagnosis type',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey.shade700)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              ChoiceChip(
+                label: Text(l10n?.translate('diagnosis_before') ?? 'Diagnosis before'),
+                selected: _diagnosisType == 'existing',
+                selectedColor: _primaryColor,
+                onSelected: (_) => setState(() => _diagnosisType = 'existing'),
+                labelStyle: TextStyle(
+                  color: _diagnosisType == 'existing' ? Colors.white : Colors.black87,
+                  fontWeight: _diagnosisType == 'existing' ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              const SizedBox(width: 12),
+              ChoiceChip(
+                label: Text(l10n?.translate('new_diagnosis') ?? 'New diagnosis'),
+                selected: _diagnosisType == 'new',
+                selectedColor: _primaryColor,
+                onSelected: (_) => setState(() => _diagnosisType = 'new'),
+                labelStyle: TextStyle(
+                  color: _diagnosisType == 'new' ? Colors.white : Colors.black87,
+                  fontWeight: _diagnosisType == 'new' ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    });
   }
 
   Widget _buildLanguageSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Preferred Language',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey.shade700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: _selectedLanguage,
-          decoration: InputDecoration(
-            prefixIcon: Icon(Icons.language, color: _primaryColor),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+    return Builder(builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n?.language ?? 'Preferred Language',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey.shade700)),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: _selectedLanguage,
+            decoration: InputDecoration(
+              prefixIcon: Icon(Icons.language, color: _primaryColor),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: Colors.white,
             ),
-            filled: true,
-            fillColor: Colors.white,
+            items: _languages.entries.map((entry) {
+              return DropdownMenuItem(value: entry.key, child: Text(entry.value));
+            }).toList(),
+            onChanged: (value) => setState(() => _selectedLanguage = value),
           ),
-          items: _languages.entries.map((entry) {
-            return DropdownMenuItem(
-              value: entry.key,
-              child: Text(entry.value),
-            );
-          }).toList(),
-          onChanged: (value) {
-            setState(() => _selectedLanguage = value);
-          },
-        ),
-      ],
-    );
+        ],
+      );
+    });
   }
 
   Widget _buildSummaryCard() {
@@ -981,12 +913,17 @@ class _AddChildScreenState extends State<AddChildScreen> {
                 ),
               )
             : const Icon(Icons.save),
-        label: Text(
-          _isSaving 
-              ? 'Saving...' 
-              : (_isEditing ? 'Update & Continue' : 'Save & Start Assessment'),
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
+        label: Builder(builder: (context) {
+          final l10n = AppLocalizations.of(context);
+          return Text(
+            _isSaving
+                ? (l10n?.loading ?? 'Saving...')
+                : (_isEditing
+                    ? (l10n?.translate('update_and_continue') ?? 'Update & Continue')
+                    : (l10n?.translate('save_and_start') ?? 'Save & Start Assessment')),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          );
+        }),
         style: ElevatedButton.styleFrom(
           backgroundColor: _primaryColor,
           foregroundColor: Colors.white,

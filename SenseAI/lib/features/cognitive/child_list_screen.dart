@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/services/storage_service.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../data/models/child.dart';
 import 'add_child_screen.dart';
 import 'child_detail_screen.dart';
@@ -62,16 +63,22 @@ class _ChildListScreenState extends State<ChildListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Child Profiles'),
+        title: Builder(builder: (context) {
+          final l10n = AppLocalizations.of(context);
+          return Text(l10n?.translate('child_profiles') ?? 'Child Profiles');
+        }),
         backgroundColor: const Color(0xFF6366F1),
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadChildren,
-            tooltip: 'Refresh',
-          ),
+          Builder(builder: (context) {
+            final l10n = AppLocalizations.of(context);
+            return IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loadChildren,
+              tooltip: l10n?.refresh ?? 'Refresh',
+            );
+          }),
         ],
       ),
       body: Container(
@@ -101,81 +108,85 @@ class _ChildListScreenState extends State<ChildListScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AddChildScreen()),
-          );
-          _loadChildren();
-        },
-        backgroundColor: const Color(0xFF6366F1),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Child'),
-      ),
+      floatingActionButton: Builder(builder: (context) {
+        final l10n = AppLocalizations.of(context);
+        return FloatingActionButton.extended(
+          onPressed: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddChildScreen()),
+            );
+            _loadChildren();
+          },
+          backgroundColor: const Color(0xFF6366F1),
+          icon: const Icon(Icons.add),
+          label: Text(l10n?.addChild ?? 'Add Child'),
+        );
+      }),
     );
   }
 
   Widget _buildStatsBar() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Stats Row
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  title: 'Total',
-                  count: _children.length,
-                  color: Colors.grey.shade700,
-                  icon: Icons.people,
+    return Builder(builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    title: l10n?.translate('total_label') ?? 'Total',
+                    count: _children.length,
+                    color: Colors.grey.shade700,
+                    icon: Icons.people,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  title: 'Existing ASD diagnosis',
-                  count: _asdCount,
-                  color: const Color(0xFF6366F1),
-                  icon: Icons.medical_services,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCard(
+                    title: l10n?.translate('existing_asd_diagnosis') ?? 'Existing ASD diagnosis',
+                    count: _asdCount,
+                    color: const Color(0xFF6366F1),
+                    icon: Icons.medical_services,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  title: 'New / screening',
-                  count: _tdCount,
-                  color: const Color(0xFF10B981),
-                  icon: Icons.school,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCard(
+                    title: l10n?.translate('new_screening') ?? 'New / screening',
+                    count: _tdCount,
+                    color: const Color(0xFF10B981),
+                    icon: Icons.school,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Filter Chips
-          Row(
-            children: [
-              _buildFilterChip('All', 'all', Colors.grey.shade700),
-              const SizedBox(width: 8),
-              _buildFilterChip('ASD', 'asd', const Color(0xFF6366F1)),
-              const SizedBox(width: 8),
-              _buildFilterChip('Control', 'td', const Color(0xFF10B981)),
-            ],
-          ),
-        ],
-      ),
-    );
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _buildFilterChip(l10n?.translate('all_label') ?? 'All', 'all', Colors.grey.shade700),
+                const SizedBox(width: 8),
+                _buildFilterChip(l10n?.translate('asd_label') ?? 'ASD', 'asd', const Color(0xFF6366F1)),
+                const SizedBox(width: 8),
+                _buildFilterChip(l10n?.translate('control_filter_label') ?? 'Control', 'td', const Color(0xFF10B981)),
+              ],
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildStatCard({
@@ -236,73 +247,50 @@ class _ChildListScreenState extends State<ChildListScreen> {
   }
 
   Widget _buildEmptyState() {
-    String message;
-    String subtitle;
-    
-    if (_filterGroup == 'asd') {
-      message = 'No children with existing ASD diagnosis';
-      subtitle = 'Add children who already have a confirmed diagnosis';
-    } else if (_filterGroup == 'td') {
-      message = 'No new / screening children';
-      subtitle = 'Add children you are screening for ASD';
-    } else {
-      message = 'No Children Added';
-      subtitle = 'Add your first child to start assessments';
-    }
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.child_care_outlined,
-              size: 80,
-              color: Colors.grey.shade400,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              message,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade700,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AddChildScreen()),
-                );
-                _loadChildren();
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Add Child'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+    return Builder(builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      String message;
+      String subtitle;
+      if (_filterGroup == 'asd') {
+        message = l10n?.translate('no_children_asd') ?? 'No children with existing ASD diagnosis';
+        subtitle = l10n?.translate('no_children_asd_desc') ?? 'Add children who already have a confirmed diagnosis';
+      } else if (_filterGroup == 'td') {
+        message = l10n?.translate('no_children_screening') ?? 'No new / screening children';
+        subtitle = l10n?.translate('no_children_screening_desc') ?? 'Add children you are screening for ASD';
+      } else {
+        message = l10n?.translate('no_children_added') ?? 'No Children Added';
+        subtitle = l10n?.translate('no_children_added_desc') ?? 'Add your first child to start assessments';
+      }
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.child_care_outlined, size: 80, color: Colors.grey.shade400),
+              const SizedBox(height: 24),
+              Text(message, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
+              const SizedBox(height: 12),
+              Text(subtitle, style: TextStyle(fontSize: 16, color: Colors.grey.shade600), textAlign: TextAlign.center),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddChildScreen()));
+                  _loadChildren();
+                },
+                icon: const Icon(Icons.add),
+                label: Text(l10n?.addChild ?? 'Add Child'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6366F1),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildChildrenList() {
@@ -331,8 +319,7 @@ class _ChildListScreenState extends State<ChildListScreen> {
     final isAsd = group == ChildGroup.asd;
 
     final diagnosisType = (child['diagnosis_type'] as String?) ?? 'new';
-    final diagnosisTypeLabel =
-        diagnosisType == 'existing' ? 'Diagnosis before' : 'New diagnosis';
+    // diagnosisTypeLabel computed inline in widget tree below
     
     // Get ASD level if applicable
     final asdLevelStr = child['asd_level'] as String?;
@@ -456,14 +443,20 @@ class _ChildListScreenState extends State<ChildListScreen> {
                               color: primaryColor.withOpacity(0.3),
                             ),
                           ),
-                          child: Text(
-                            diagnosisTypeLabel,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: primaryColor,
-                            ),
-                          ),
+                          child: Builder(builder: (context) {
+                            final l10n = AppLocalizations.of(context);
+                            final label = diagnosisType == 'existing'
+                                ? (l10n?.translate('diagnosis_before') ?? 'Diagnosis before')
+                                : (l10n?.translate('new_diagnosis') ?? 'New diagnosis');
+                            return Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: primaryColor,
+                              ),
+                            );
+                          }),
                         ),
                         if (isAsd && asdLevel != null) ...[
                           const SizedBox(width: 6),

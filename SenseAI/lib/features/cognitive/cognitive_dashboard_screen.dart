@@ -565,30 +565,40 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
           },
         ),
         const SizedBox(height: 16),
-        _buildAnalyticsActionCard(
-          icon: Icons.pie_chart_rounded,
-          title: 'View Interactive Cohort Analytics',
-          subtitle: 'Explore statistical breakdowns of your diagnostic groups and ASD risk profiles.',
-          color: Colors.purple.shade600,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CognitiveAnalyticsScreen(
-                  children: _children,
-                  sessions: _sessions,
-                ),
-              ),
+        Builder(
+          builder: (context) {
+            final l10n = AppLocalizations.of(context);
+            return _buildAnalyticsActionCard(
+              icon: Icons.pie_chart_rounded,
+              title: l10n?.translate('view_interactive_cohort') ?? 'View Interactive Cohort Analytics',
+              subtitle: l10n?.translate('explore_statistical') ?? 'Explore statistical breakdowns of your diagnostic groups and ASD risk profiles.',
+              color: Colors.purple.shade600,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CognitiveAnalyticsScreen(
+                      children: _children,
+                      sessions: _sessions,
+                    ),
+                  ),
+                );
+              },
             );
           },
         ),
         const SizedBox(height: 12),
-        _buildAnalyticsActionCard(
-          icon: Icons.science_rounded,
-          title: 'Export Anonymized Research Dataset',
-          subtitle: 'Generate HIPAA-compliant, de-identified datasets for external ML toolchains.',
-          color: Colors.blue.shade700,
-          onTap: () => _showExportDatasetDialog(),
+        Builder(
+          builder: (context) {
+            final l10n = AppLocalizations.of(context);
+            return _buildAnalyticsActionCard(
+              icon: Icons.science_rounded,
+              title: l10n?.translate('export_anonymized_dataset') ?? 'Export Anonymized Research Dataset',
+              subtitle: l10n?.translate('generate_hipaa_compliant') ?? 'Generate HIPAA-compliant, de-identified datasets for external ML toolchains.',
+              color: Colors.blue.shade700,
+              onTap: () => _showExportDatasetDialog(),
+            );
+          },
         ),
       ],
     );
@@ -666,6 +676,8 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
+        final l10n = AppLocalizations.of(dialogContext);
+        
         return StatefulBuilder(
           builder: (context, setState) {
             Widget buildChoiceChip(String label, String? value, String? groupValue, Function(String?) onSelected) {
@@ -689,7 +701,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                 children: [
                   Icon(Icons.privacy_tip, color: Colors.green.shade600),
                   const SizedBox(width: 8),
-                  const Expanded(child: Text('Generate Research Dataset', style: TextStyle(fontSize: 18))),
+                  Expanded(child: Text(l10n?.translate('generate_research_dataset') ?? 'Generate Research Dataset', style: const TextStyle(fontSize: 18))),
                 ],
               ),
               content: SingleChildScrollView(
@@ -710,7 +722,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Strictly for research use. All Primary Identifiable Information (Names, exact DOBs) is automatically stripped to ensure data compliance.',
+                              l10n?.translate('strictly_for_research') ?? 'Strictly for research use. All Primary Identifiable Information (Names, exact DOBs) is automatically stripped to ensure data compliance.',
                               style: TextStyle(fontSize: 12, color: Colors.orange.shade900),
                             ),
                           ),
@@ -718,21 +730,21 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text('Diagnostic Group:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(l10n?.translate('diagnostic_group_label') ?? 'Diagnostic Group:', style: const TextStyle(fontWeight: FontWeight.bold)),
                     Wrap(
                       spacing: 8,
                       children: [
-                        buildChoiceChip('All', null, tempGroup, (v) => setState(() => tempGroup = v)),
+                        buildChoiceChip(l10n?.translate('all_label') ?? 'All', null, tempGroup, (v) => setState(() => tempGroup = v)),
                         buildChoiceChip('ASD', 'asd', tempGroup, (v) => setState(() => tempGroup = v)),
-                        buildChoiceChip('Control', 'typically_developing', tempGroup, (v) => setState(() => tempGroup = v)),
+                        buildChoiceChip(l10n?.translate('control_label') ?? 'Control', 'typically_developing', tempGroup, (v) => setState(() => tempGroup = v)),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    const Text('Age Cohort:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(l10n?.translate('age_cohort_label') ?? 'Age Cohort:', style: const TextStyle(fontWeight: FontWeight.bold)),
                     Wrap(
                       spacing: 8,
                       children: [
-                        buildChoiceChip('All Ages', null, tempAgeGroup, (v) => setState(() => tempAgeGroup = v)),
+                        buildChoiceChip(l10n?.translate('all_ages_label') ?? 'All Ages', null, tempAgeGroup, (v) => setState(() => tempAgeGroup = v)),
                         buildChoiceChip('2-3.5', '2-3.5', tempAgeGroup, (v) => setState(() => tempAgeGroup = v)),
                         buildChoiceChip('3.5-5.5', '3.5-5.5', tempAgeGroup, (v) => setState(() => tempAgeGroup = v)),
                         buildChoiceChip('5.5-6.9', '5.5-6.9', tempAgeGroup, (v) => setState(() => tempAgeGroup = v)),
@@ -744,7 +756,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                  child: Text(l10n?.translate('cancel_button') ?? 'Cancel', style: const TextStyle(color: Colors.grey)),
                 ),
                 ElevatedButton.icon(
                   onPressed: () {
@@ -752,7 +764,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                     _exportCSV(format: 'ml', group: tempGroup, ageGroup: tempAgeGroup);
                   },
                   icon: const Icon(Icons.file_download, size: 18),
-                  label: const Text('Export Securely'),
+                  label: Text(l10n?.translate('export_securely') ?? 'Export Securely'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue.shade700,
                     foregroundColor: Colors.white,
@@ -802,50 +814,80 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'International Standard Alignment',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade800,
-                ),
+              Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context);
+                  return Text(
+                    l10n?.translate('international_standard_alignment') ?? 'International Standard Alignment',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade800,
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 8),
-              Text(
-                'The data and benchmarks are aligned with the following "Gold Standards":',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade700,
-                  height: 1.4,
-                ),
+              Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context);
+                  return Text(
+                    l10n?.translate('gold_standards_desc') ?? 'The data and benchmarks are aligned with the following "Gold Standards":',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade700,
+                      height: 1.4,
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 16),
-              _buildStandardItem(
-                'DSM-5',
-                'Criteria for Social Communication and Restricted/Repetitive Behaviors.',
-                Icons.assignment_turned_in,
-                Colors.orange,
+              Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context);
+                  return _buildStandardItem(
+                    l10n?.translate('dsm5_title') ?? 'DSM-5',
+                    l10n?.translate('dsm5_desc') ?? 'Criteria for Social Communication and Restricted/Repetitive Behaviors.',
+                    Icons.assignment_turned_in,
+                    Colors.orange,
+                  );
+                },
               ),
               const Divider(height: 24),
-              _buildStandardItem(
-                'M-CHAT-R/F',
-                'The global standard for toddler screening.',
-                Icons.child_friendly,
-                Colors.pink,
+              Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context);
+                  return _buildStandardItem(
+                    l10n?.translate('mchat_title') ?? 'M-CHAT-R/F',
+                    l10n?.translate('mchat_desc') ?? 'The global standard for toddler screening.',
+                    Icons.child_friendly,
+                    Colors.pink,
+                  );
+                },
               ),
               const Divider(height: 24),
-              _buildStandardItem(
-                'NIH Toolbox',
-                'Used for DCCS (Color-Shape) and Flanker (Inhibitory) task norms.',
-                Icons.build_circle,
-                Colors.blue,
+              Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context);
+                  return _buildStandardItem(
+                    l10n?.translate('nihtoolbox_title') ?? 'NIH Toolbox',
+                    l10n?.translate('nihtoolbox_desc') ?? 'Used for DCCS (Color-Shape) and Flanker (Inhibitory) task norms.',
+                    Icons.build_circle,
+                    Colors.blue,
+                  );
+                },
               ),
               const Divider(height: 24),
-              _buildStandardItem(
-                'CANTAB',
-                'Standardized neuropsychological assessment profiles.',
-                Icons.psychology,
-                Colors.purple,
+              Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context);
+                  return _buildStandardItem(
+                    l10n?.translate('cantab_title') ?? 'CANTAB',
+                    l10n?.translate('cantab_desc') ?? 'Standardized neuropsychological assessment profiles.',
+                    Icons.psychology,
+                    Colors.purple,
+                  );
+                },
               ),
             ],
           ),
@@ -905,21 +947,24 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(
-          child: Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Loading CSV...'),
-                ],
+        builder: (context) {
+          final l10n = AppLocalizations.of(context);
+          return Center(
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(l10n?.translate('loading_csv') ?? 'Loading CSV...'),
+                  ],
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       );
 
       // Export CSV from backend
@@ -945,9 +990,10 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
       }
       
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error loading CSV: $e'),
+            content: Text('❌ ${l10n?.translate('error_loading_csv') ?? "Error loading CSV"}: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
           ),
@@ -962,17 +1008,18 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
     String? group,
     String? ageGroup,
   ) {
+    final l10n = AppLocalizations.of(context);
     final lines = csvContent.split('\n');
     final previewLines = lines.take(20).toList(); // Show first 20 lines
     final totalLines = lines.length;
     final groupLabel = group == null 
-        ? 'All Groups' 
+        ? (l10n?.translate('all_label') ?? 'All Groups')
         : group == 'asd' 
-            ? 'Existing ASD Diagnosis' 
-            : 'Screening (No Prior Diagnosis)';
+            ? (l10n?.translate('existing_asd_diagnosis') ?? 'Existing ASD Diagnosis')
+            : (l10n?.translate('new_screening') ?? 'Screening (No Prior Diagnosis)');
     final ageLabel = ageGroup == null 
-        ? 'All Ages' 
-        : 'Age $ageGroup';
+        ? (l10n?.translate('all_ages_label') ?? 'All Ages')
+        : '${l10n?.age ?? "Age"} $ageGroup';
     
     showDialog(
       context: context,
@@ -991,7 +1038,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'CSV Preview',
+                        l10n?.translate('csv_preview') ?? 'CSV Preview',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -1000,7 +1047,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '$groupLabel • $ageLabel • $totalLines rows • ${format.toUpperCase()} format',
+                        '$groupLabel • $ageLabel • $totalLines ${l10n?.translate('rows_label') ?? "rows"} • ${format.toUpperCase()} ${l10n?.translate('format_label') ?? "format"}',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade600,
@@ -1040,7 +1087,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    'Showing first 20 of $totalLines rows. Download to see all data.',
+                    (l10n?.translate('showing_preview_desc') ?? 'Showing first 20 of {total} rows. Download to see all data.').replaceAll('{total}', totalLines.toString()),
                     style: TextStyle(
                       fontSize: 12,
                       fontStyle: FontStyle.italic,
@@ -1054,7 +1101,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Close'),
+                    child: Text(l10n?.translate('close_button') ?? 'Close'),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
@@ -1063,7 +1110,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                       _exportCSV(format: format, group: group);
                     },
                     icon: const Icon(Icons.download, size: 18),
-                    label: const Text('Download'),
+                    label: Text(l10n?.translate('download_button') ?? 'Download'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
@@ -1088,21 +1135,24 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(
-          child: Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Exporting CSV...'),
-                ],
+        builder: (context) {
+          final l10n = AppLocalizations.of(context);
+          return Center(
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(l10n?.translate('exporting_csv') ?? 'Exporting CSV...'),
+                  ],
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       );
 
       // Export CSV from backend
@@ -1115,6 +1165,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
       // Get temporary directory for file
       final tempDir = await getTemporaryDirectory();
       
+      final l10n = AppLocalizations.of(context);
       final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
       final groupSuffix = group == null 
           ? 'all' 
@@ -1138,14 +1189,12 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
       }
       
       // Use share functionality to save to Downloads (user can choose location)
-      // This is the most reliable way to save files that users can access
       final xFile = XFile(file.path, mimeType: 'text/csv');
       
-      // Show share dialog - user can save to Downloads or any location
-      // IMPORTANT: User must select "Save to Downloads" or a file manager from the share menu
+      // Show share dialog
       await Share.shareXFiles(
         [xFile],
-        text: 'Assessment Data Export - $fileName\n\n📥 IMPORTANT: Select "Save to Downloads" or a file manager app to save the file!',
+        text: '${l10n?.translate('assessment_data_export') ?? "Assessment Data Export"} - $fileName\n\n${l10n?.translate('save_to_downloads_important') ?? "📥 IMPORTANT: Select \"Save to Downloads\" or a file manager app to save the file!"}',
         subject: fileName,
       );
       
@@ -1153,93 +1202,96 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
       if (mounted) {
         showDialog(
           context: context,
-          builder: (context) => AlertDialog(
-            title: Row(
-              children: [
-                const Icon(Icons.info_outline, color: Colors.blue, size: 28),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'How to Save File',
-                    style: TextStyle(fontSize: 20),
+          builder: (context) {
+            final l10n = AppLocalizations.of(context);
+            return AlertDialog(
+              title: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.blue, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      l10n?.translate('how_to_save_file') ?? 'How to Save File',
+                      style: const TextStyle(fontSize: 20),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'To save the CSV file to your device:',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey.shade700,
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n?.translate('how_to_save_desc') ?? 'To save the CSV file to your device:',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                _buildInstructionStep('1', 'In the share menu, look for:'),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.only(left: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('• "Save to Downloads"', style: TextStyle(fontWeight: FontWeight.bold)),
-                      Text('• "Files" or "File Manager"', style: TextStyle(fontWeight: FontWeight.bold)),
-                      Text('• "Save" option', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ],
+                  const SizedBox(height: 16),
+                  _buildInstructionStep('1', l10n?.translate('share_menu_instruction') ?? 'In the share menu, look for:'),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('• "${l10n?.translate('save_to_downloads_label') ?? "Save to Downloads"}"', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text('• "${l10n?.translate('files_label') ?? "Files / File Manager"}"', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text('• "${l10n?.translate('save_option_label') ?? "Save option"}"', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                _buildInstructionStep('2', 'Select one of these options'),
-                const SizedBox(height: 16),
-                _buildInstructionStep('3', 'Choose "Downloads" folder'),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.visibility, color: Colors.blue, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'You can also view the file now without saving',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blue.shade900,
+                  const SizedBox(height: 16),
+                  _buildInstructionStep('2', l10n?.translate('select_option_instruction') ?? 'Select one of these options'),
+                  const SizedBox(height: 16),
+                  _buildInstructionStep('3', l10n?.translate('choose_downloads_instruction') ?? 'Choose "Downloads" folder'),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.visibility, color: Colors.blue, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l10n?.translate('view_without_saving_desc') ?? 'You can also view the file now without saving',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue.shade900,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(l10n?.translate('got_it') ?? 'Got it'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _viewCSVFromFile(csvContent, fileName);
+                  },
+                  icon: const Icon(Icons.visibility, size: 18),
+                  label: Text(l10n?.translate('view_now') ?? 'View Now'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
                   ),
                 ),
               ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Got it'),
-              ),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  _viewCSVFromFile(csvContent, fileName);
-                },
-                icon: const Icon(Icons.visibility, size: 18),
-                label: const Text('View Now'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       }
     } catch (e) {
@@ -1249,9 +1301,10 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
       }
       
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error exporting CSV: $e'),
+            content: Text('❌ ${l10n?.translate('error_exporting_csv') ?? "Error exporting CSV"}: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
           ),
@@ -1540,7 +1593,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                 final l10n = AppLocalizations.of(context);
                 final ageResult = AgeCalculator.calculate(child.dateOfBirth);
                 return Text(
-                  '${l10n?.age ?? "Age"}: ${ageResult.years}${l10n?.years ?? "y"} ${ageResult.months}${l10n?.months ?? "m"} | ${child.gender}',
+                  '${l10n?.age ?? "Age"}: ${ageResult.years}${l10n?.translate('years_short') ?? "y"} ${ageResult.months}${l10n?.translate('months_short') ?? "m"} | ${child.gender}',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade600,
@@ -1722,7 +1775,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '$totalLines rows',
+                        '$totalLines ${l10n?.translate('rows_label') ?? "rows"}',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade600,
@@ -1762,7 +1815,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    'Showing first 20 of $totalLines rows.',
+                    (l10n?.translate('showing_preview_desc') ?? 'Showing first 20 of {total} rows.').replaceAll('{total}', totalLines.toString()),
                     style: TextStyle(
                       fontSize: 12,
                       fontStyle: FontStyle.italic,
@@ -1776,7 +1829,7 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Close'),
+                    child: Text(l10n?.translate('close_button') ?? 'Close'),
                   ),
                 ],
               ),

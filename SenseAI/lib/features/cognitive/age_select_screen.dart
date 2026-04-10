@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../data/models/child.dart';
 import '../assessment/game_screen.dart';
 import '../assessment/ai_doctor_bot_screen.dart';
@@ -55,9 +56,10 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
     final age = double.tryParse(_ageController.text) ?? 0.0;
 
     if (age < 2.0 || age >= 6.9) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Age must be between 2.0 and 6.9 years'),
+        SnackBar(
+          content: Text(l10n?.translate('age_range_69') ?? 'Age must be between 2.0 and 6.9 years'),
           backgroundColor: Colors.red,
         ),
       );
@@ -92,9 +94,10 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
     }
 
     if (childData == null) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Child data not found. Please add the child again.'),
+        SnackBar(
+          content: Text(l10n?.translate('child_not_found_error') ?? 'Child data not found. Please add the child again.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -138,10 +141,11 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
         ),
       );
     } else {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content:
-              Text('Invalid age range. Please enter age between 2.0 and 6.9'),
+              Text(l10n?.translate('invalid_age_error') ?? 'Invalid age range. Please enter age between 2.0 and 6.9'),
           backgroundColor: Colors.red,
         ),
       );
@@ -158,7 +162,10 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Age Selection'),
+        title: Builder(builder: (ctx) {
+          final l10n = AppLocalizations.of(ctx);
+          return Text(l10n?.translate('age_selection') ?? 'Age Selection');
+        }),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
       ),
@@ -226,13 +233,16 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Gender: ${_childData!['gender'] ?? 'N/A'}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.orange.shade700,
-                  ),
-                ),
+                Builder(builder: (ctx) {
+                  final l10n = AppLocalizations.of(ctx);
+                  return Text(
+                    '${l10n?.translate('gender_label') ?? 'Gender:'} ${_childData!['gender'] ?? 'N/A'}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.orange.shade700,
+                    ),
+                  );
+                }),
               ],
             ),
           ),
@@ -257,22 +267,28 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
       ),
       child: Column(
         children: [
-          const Text(
-            'Enter Child Age',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.orange,
-            ),
-          ),
+          Builder(builder: (ctx) {
+            final l10n = AppLocalizations.of(ctx);
+            return Text(
+              l10n?.translate('enter_child_age') ?? 'Enter Child Age',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange,
+              ),
+            );
+          }),
           const SizedBox(height: 8),
-          Text(
-            'Age must be between 2.0 and 6.9 years',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
-          ),
+          Builder(builder: (ctx) {
+            final l10n = AppLocalizations.of(ctx);
+            return Text(
+              l10n?.translate('age_range_69') ?? 'Age must be between 2.0 and 6.9 years',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            );
+          }),
           const SizedBox(height: 32),
           TextField(
             controller: _ageController,
@@ -309,14 +325,17 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            'years',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          Builder(builder: (ctx) {
+            final l10n = AppLocalizations.of(ctx);
+            return Text(
+              l10n?.years ?? 'years',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -337,25 +356,44 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
             children: [
               Icon(Icons.info_outline, color: Colors.orange.shade700),
               const SizedBox(width: 8),
-              const Text(
-                'Age Groups',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.orange,
-                ),
-              ),
+              Builder(builder: (ctx) {
+                final l10n = AppLocalizations.of(ctx);
+                return Text(
+                  l10n?.ageGroups ?? 'Age Groups',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange,
+                  ),
+                );
+              }),
             ],
           ),
           const SizedBox(height: 16),
-          _buildAgeGroupItem('2.0 - 3.4 years',
-              'Parent Questionnaire + Clinician Reflection', Colors.blue),
-          const SizedBox(height: 12),
-          _buildAgeGroupItem('3.5 - 5.4 years',
-              'Frog Jump Game + Clinician Reflection', Colors.green),
-          const SizedBox(height: 12),
-          _buildAgeGroupItem('5.5 - 6.8 years',
-              'Color-Shape Game + Clinician Reflection', Colors.purple),
+          Builder(builder: (ctx) {
+            final l10n = AppLocalizations.of(ctx);
+            return Column(
+              children: [
+                _buildAgeGroupItem(
+                    l10n?.ageGroup23 ?? '2.0 - 3.4 years',
+                    l10n?.translate('age_group_23_desc') ??
+                        'Parent Questionnaire + Clinician Reflection',
+                    Colors.blue),
+                const SizedBox(height: 12),
+                _buildAgeGroupItem(
+                    l10n?.ageGroup35 ?? '3.5 - 5.4 years',
+                    l10n?.translate('age_group_35_desc') ??
+                        'Frog Jump Game + Clinician Reflection',
+                    Colors.green),
+                const SizedBox(height: 12),
+                _buildAgeGroupItem(
+                    l10n?.ageGroup56 ?? '5.5 - 6.8 years',
+                    l10n?.translate('age_group_56_desc') ??
+                        'Color-Shape Game + Clinician Reflection',
+                    Colors.purple),
+              ],
+            );
+          }),
         ],
       ),
     );
@@ -412,14 +450,17 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
           ),
           elevation: 5,
         ),
-        child: const Text(
-          'START ASSESSMENT',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-        ),
+        child: Builder(builder: (ctx) {
+          final l10n = AppLocalizations.of(ctx);
+          return Text(
+            l10n?.startAssessment ?? 'START ASSESSMENT',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          );
+        }),
       ),
     );
   }

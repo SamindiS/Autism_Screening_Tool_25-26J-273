@@ -92,9 +92,10 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
         _frustrationTolerance == null ||
         _instructionFollowing == null ||
         _overallBehavior == null) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please answer all questions'),
+        SnackBar(
+          content: Text(l10n?.translate('please_answer_all_questions') ?? 'Please answer all questions'),
           backgroundColor: Colors.red,
         ),
       );
@@ -307,7 +308,15 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
                   _buildInstructionsCard(),
                   const SizedBox(height: 24),
                   // Questions
-                  ..._questions.map((q) => _buildQuestionCard(q)),
+                  ..._questions.map((q) {
+                    final l10n = AppLocalizations.of(context);
+                    final translatedQuestion = {
+                      ...q,
+                      'question': l10n?.translate('reflectionQuestion${q['id'].toString().substring(0, 1).toUpperCase()}${q['id'].toString().substring(1)}') ?? q['question'],
+                      'label': l10n?.translate('reflectionLabel${q['id'].toString().substring(0, 1).toUpperCase()}${q['id'].toString().substring(1)}') ?? q['label'],
+                    };
+                    return _buildQuestionCard(translatedQuestion);
+                  }),
                   const SizedBox(height: 32),
                   // Submit Button
                   _buildSubmitButton(),
@@ -358,14 +367,17 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Behavioral Observation',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    Builder(builder: (ctx) {
+                      final l10n = AppLocalizations.of(ctx);
+                      return Text(
+                        l10n?.translate('behavioral_observation_header') ?? 'Behavioral Observation',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      );
+                    }),
                     const SizedBox(height: 4),
                     Text(
                       widget.child.name,
@@ -397,14 +409,17 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
           Icon(Icons.info_outline, color: Colors.blue.shade700),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              'Please observe and rate the child\'s behavior during the game assessment. Your observations will help determine the child\'s autism risk level.',
-              style: TextStyle(
-                color: Colors.blue.shade900,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            child: Builder(builder: (ctx) {
+              final l10n = AppLocalizations.of(ctx);
+              return Text(
+                l10n?.translate('game_reflection_instructions') ?? 'Please observe and rate the child\'s behavior during the game assessment. Your observations will help determine the child\'s autism risk level.',
+                style: TextStyle(
+                  color: Colors.blue.shade900,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              );
+            }),
           ),
         ],
       ),
@@ -415,6 +430,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
     final questionId = question['id'] as String;
     final labels = _scaleLabels[questionId] ?? [];
     int? selectedValue;
+    final l10n = AppLocalizations.of(context);
 
     switch (questionId) {
       case 'attention':
@@ -535,7 +551,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          labels[index],
+                          l10n?.translate('scale${questionId.substring(0, 1).toUpperCase()}${questionId.substring(1)}${value}') ?? labels[index],
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 10,
@@ -580,14 +596,17 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : const Text(
-                'COMPLETE ASSESSMENT',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-              ),
+            : Builder(builder: (ctx) {
+                final l10n = AppLocalizations.of(ctx);
+                return Text(
+                  l10n?.translate('complete_assessment') ?? 'COMPLETE ASSESSMENT',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                );
+              }),
       ),
     );
   }

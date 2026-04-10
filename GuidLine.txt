@@ -7,21 +7,21 @@
 
 2. Visual attention & preferences Backend Starting
     cd Visual attention & preferences/SenseAI/backend
-    python -m venv venv
+    python -m venv venv (py -3.11 -m venv venv)
     venv\Scripts\activate
     pip install -r requirements.txt
      uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 3. Auditory_Checking Backend Starting
     cd Auditory_Checking/backend
-    python -m venv venv
+    python -m venv venv (py -3.11 -m venv venv)
     venv\Scripts\activate
     pip install -r requirements.txt
     python app.py
 
 4. Cognitive_Flexibility ml_engine Starting
     cd SenseAI/senseai_backend/ml_engine
-    python -m venv venv
+    python -m venv venv (py -3.11 -m venv venv)
     venv\Scripts\activate
     pip install -r requirements.txt
     python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8001

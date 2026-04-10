@@ -155,9 +155,10 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
         _frustrationTolerance == null ||
         _perseverationBehavior == null ||
         _overallBehavior == null) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please complete all observations'),
+        SnackBar(
+          content: Text(l10n?.translate('please_complete_observations') ?? 'Please complete all observations'),
           backgroundColor: Colors.red,
         ),
       );
@@ -327,7 +328,10 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)?.clinicianReflection2_3 ?? 'Clinician Reflection'),
+        title: Builder(builder: (ctx) {
+          final l10n = AppLocalizations.of(ctx);
+          return Text(l10n?.clinicianReflection2_3 ?? 'Clinician Reflection');
+        }),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         actions: [
@@ -389,14 +393,34 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
                   _buildImportantNoteCard(),
                   const SizedBox(height: 24),
                   // Manual Tasks Section
-                  _buildSectionTitle('Manual Cognitive Flexibility Tasks', Icons.task),
+                  _buildSectionTitle(AppLocalizations.of(context)?.translate('manual_tasks_section') ?? 'Manual Cognitive Flexibility Tasks', Icons.task),
                   const SizedBox(height: 16),
-                  ..._manualTasks.map((task) => _buildTaskCard(task)),
+                  ..._manualTasks.map((task) {
+                    final l10n = AppLocalizations.of(context);
+                    final translatedTask = {
+                      ...task,
+                      'title': l10n?.translate('manualTask${task['id'].toString().substring(4)}Title') ?? task['title'],
+                      'description': l10n?.translate('manualTask${task['id'].toString().substring(4)}Description') ?? task['description'],
+                      'label': l10n?.translate('manualTask${task['id'].toString().substring(4)}Label') ?? task['label'],
+                      'task': l10n?.translate('manualTask${task['id'].toString().substring(4)}Task') ?? task['task'],
+                      'category': l10n?.translate('manualTask${task['id'].toString().substring(4)}Category') ?? task['category'],
+                    };
+                    return _buildTaskCard(translatedTask);
+                  }),
                   const SizedBox(height: 24),
                   // Behavioral Observations Section
-                  _buildSectionTitle('Behavioral Observations', Icons.psychology),
+                  _buildSectionTitle(AppLocalizations.of(context)?.behavioralObservations ?? 'Behavioral Observations', Icons.psychology),
                   const SizedBox(height: 16),
-                  ..._behavioralObservations.map((obs) => _buildBehavioralCard(obs)),
+                  ..._behavioralObservations.map((obs) {
+                    final l10n = AppLocalizations.of(context);
+                    final translatedObs = {
+                      ...obs,
+                      'question': l10n?.translate('behavioralQuestion${obs['id'].toString().split('_').map((s) => s.substring(0, 1).toUpperCase() + s.substring(1)).join('')}') ?? obs['question'],
+                      'label': l10n?.translate('behavioralLabel${obs['id'].toString().split('_').map((s) => s.substring(0, 1).toUpperCase() + s.substring(1)).join('')}') ?? obs['label'],
+                      'category': l10n?.translate('behavioralCategory${obs['id'].toString().split('_').map((s) => s.substring(0, 1).toUpperCase() + s.substring(1)).join('')}') ?? obs['category'],
+                    };
+                    return _buildBehavioralCard(translatedObs);
+                  }),
                   const SizedBox(height: 32),
                   // Submit Button
                   _buildSubmitButton(),
@@ -444,14 +468,17 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Manual Task Assessment',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                Builder(builder: (ctx) {
+                  final l10n = AppLocalizations.of(ctx);
+                  return Text(
+                    l10n?.translate('manual_task_assessment') ?? 'Manual Task Assessment',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  );
+                }),
                 const SizedBox(height: 4),
                 Text(
                   widget.child.name,
@@ -485,23 +512,29 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Manual Task Instructions',
-                  style: TextStyle(
-                    color: Colors.orange.shade900,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Builder(builder: (ctx) {
+                  final l10n = AppLocalizations.of(ctx);
+                  return Text(
+                    l10n?.translate('manual_task_instructions_header') ?? 'Manual Task Instructions',
+                    style: TextStyle(
+                      color: Colors.orange.shade900,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                }),
                 const SizedBox(height: 8),
-                Text(
-                  'The parent has completed the questionnaire. Now, please perform these manual cognitive flexibility tasks with the child (WITHOUT tablet) and observe their behavior. Focus on rule-switching and cognitive flexibility abilities.',
-                  style: TextStyle(
-                    color: Colors.orange.shade900,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Builder(builder: (ctx) {
+                  final l10n = AppLocalizations.of(ctx);
+                  return Text(
+                    l10n?.translate('manual_task_instructions_body') ?? 'The parent has completed the questionnaire. Now, please perform these manual cognitive flexibility tasks with the child (WITHOUT tablet) and observe their behavior. Focus on rule-switching and cognitive flexibility abilities.',
+                    style: TextStyle(
+                      color: Colors.orange.shade900,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                }),
               ],
             ),
           ),
@@ -527,23 +560,29 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Important: Manual Assessment Only',
-                  style: TextStyle(
-                    color: Colors.red.shade900,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Builder(builder: (ctx) {
+                  final l10n = AppLocalizations.of(ctx);
+                  return Text(
+                    l10n?.translate('manual_only_important_header') ?? 'Important: Manual Assessment Only',
+                    style: TextStyle(
+                      color: Colors.red.shade900,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                }),
                 const SizedBox(height: 8),
-                Text(
-                  'This child (ages 2-3.5) did NOT play tablet games. Please use physical objects (blocks, toys, etc.) to assess cognitive flexibility and rule-switching. Observe how the child adapts when rules change.',
-                  style: TextStyle(
-                    color: Colors.red.shade900,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Builder(builder: (ctx) {
+                  final l10n = AppLocalizations.of(ctx);
+                  return Text(
+                    l10n?.translate('manual_only_important_body') ?? 'This child (ages 2-3.5) did NOT play tablet games. Please use physical objects (blocks, toys, etc.) to assess cognitive flexibility and rule-switching. Observe how the child adapts when rules change.',
+                    style: TextStyle(
+                      color: Colors.red.shade900,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                }),
               ],
             ),
           ),
@@ -640,14 +679,17 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
                   children: [
                     Icon(Icons.play_circle_outline, size: 18, color: Colors.blue.shade700),
                     const SizedBox(width: 8),
-                    Text(
-                      'Task to Perform:',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.blue.shade900,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Builder(builder: (ctx) {
+                      final l10n = AppLocalizations.of(ctx);
+                      return Text(
+                        l10n?.translate('task_to_perform_label') ?? 'Task to Perform:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.blue.shade900,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    }),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -668,14 +710,17 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
                       color: Colors.blue.shade100,
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text(
-                      'Category: ${task['category']}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.blue.shade900,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: Builder(builder: (ctx) {
+                      final l10n = AppLocalizations.of(ctx);
+                      return Text(
+                        '${l10n?.translate('category_label') ?? 'Category:'} ${task['category']}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue.shade900,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      );
+                    }),
                   ),
                 ],
               ],
@@ -769,6 +814,7 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
 
   Widget _buildLikertScale(String id, int? selectedValue, String type) {
     final labels = type == 'task' ? _scaleLabels['task']! : _scaleLabels['behavior']!;
+    final l10n = AppLocalizations.of(context);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -842,7 +888,7 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    labels[index],
+                    l10n?.translate('scale${type.substring(0, 1).toUpperCase()}${type.substring(1)}${value}') ?? labels[index],
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 10,
@@ -884,14 +930,17 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : const Text(
-                'COMPLETE ASSESSMENT',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-              ),
+            : Builder(builder: (ctx) {
+                final l10n = AppLocalizations.of(ctx);
+                return Text(
+                  l10n?.translate('complete_assessment') ?? 'COMPLETE ASSESSMENT',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                );
+              }),
       ),
     );
   }

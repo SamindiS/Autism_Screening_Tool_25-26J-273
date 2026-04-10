@@ -40,7 +40,7 @@ class _CognitiveAnalyticsScreenState extends State<CognitiveAnalyticsScreen> {
       body: widget.children.isEmpty
           ? Center(
               child: Text(
-                'No data available for analytics.',
+                l10n?.translate('no_data_analytics') ?? 'No data available for analytics.',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
               ),
             )

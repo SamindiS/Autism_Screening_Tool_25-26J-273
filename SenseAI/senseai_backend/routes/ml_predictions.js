@@ -2,8 +2,6 @@
  * ML Predictions Route - FastAPI Integration
  * 
  * This version uses the FastAPI ML Engine instead of spawning Python script
- * 
- * To use: Replace ml_predictions.js with this file, or update the existing file
  */
 
 const express = require('express');
@@ -11,8 +9,8 @@ const axios = require('axios');
 const router = express.Router();
 
 // FastAPI ML Engine URL
-// NOTE: start script `start_python_engine.ps1` runs on port 8001 by default.
-const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:8001';
+// NOTE: config.py uses port 8002 to avoid conflicts.
+const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:8002';
 
 // Check if ML engine is available
 let ML_AVAILABLE = false;
@@ -28,27 +26,19 @@ async function checkMLEngine() {
     const ageModels = response.data.age_specific_models || {};
     const ageModelsReady = Object.values(ageModels).some(status => status.ready === true);
     const legacyReady = response.data.legacy_model?.loaded === true;
+    const v3Ready = response.data.v3_cogflex?.loaded === true;
     const statusOK = response.data.status === 'OK';
     
-    ML_AVAILABLE = ageModelsReady || legacyReady || statusOK;
+    ML_AVAILABLE = ageModelsReady || legacyReady || statusOK || v3Ready;
     
     if (ML_AVAILABLE) {
-      const readyModels = Object.entries(ageModels)
-        .filter(([_, status]) => status.ready)
-        .map(([age, _]) => age);
-      console.log(`✅ FastAPI ML Engine is available and models are loaded`);
-      if (readyModels.length > 0) {
-        console.log(`   Ready models: ${readyModels.join(', ')}`);
-      }
+      console.log(`✅ FastAPI ML Engine is available and models are loaded at ${ML_ENGINE_URL}`);
     } else {
       console.log('⚠️  FastAPI ML Engine is running but models not loaded');
-      console.log(`   Status: ${response.data.status}`);
-      console.log(`   Age-specific models:`, ageModels);
     }
   } catch (err) {
     console.log('⚠️  FastAPI ML Engine not available, using fallback predictions');
     console.log(`   URL: ${ML_ENGINE_URL}`);
-    console.log(`   Error: ${err.message}`);
     ML_AVAILABLE = false;
   }
 }
@@ -56,19 +46,12 @@ async function checkMLEngine() {
 // Check on startup
 checkMLEngine();
 
-// Recheck every 30 seconds
-setInterval(checkMLEngine, 30000);
+// Recheck every 60 seconds
+setInterval(checkMLEngine, 60000);
 
 /**
  * POST /api/ml/predict
  * Predict ASD risk using FastAPI ML Engine
- * 
- * Body:
- * {
- *   "mlFeatures": { ... },  // Feature dictionary
- *   "ageGroup": "5-6",      // Age group
- *   "sessionType": "color_shape"  // Session type
- * }
  */
 router.post('/predict', async (req, res) => {
   try {
@@ -118,16 +101,18 @@ router.post('/predict', async (req, res) => {
         risk_score: result.risk_score,
         asd_probability: result.asd_probability,
         model_age_group: result.model_age_group,
+        
+        // v3 specific fields
+        result_summary: result.result_summary,
+        severity: result.severity,
+        hybrid_score: result.hybrid_score,
         explanations: result.explanations,
-        method: 'ml', // Indicates ML was used
+        
+        method: 'ml',
       });
 
     } catch (apiError) {
       console.error('❌ FastAPI ML Engine error:', apiError.message);
-      if (apiError.response) {
-        console.error('   Response:', apiError.response.data);
-      }
-      console.log('⚠️  Falling back to rule-based prediction');
       return res.json(fallbackPrediction(mlFeatures));
     }
 
@@ -142,72 +127,42 @@ router.post('/predict', async (req, res) => {
 });
 
 /**
- * Fallback rule-based prediction when ML engine is not available
+ * Fallback rule-based prediction
  */
 function fallbackPrediction(mlFeatures) {
-  // Extract key features
-  const accuracy = mlFeatures.accuracy_overall || mlFeatures.overall_accuracy || 0;
-  const perseverativeErrors = mlFeatures.primary_asd_marker_1 || mlFeatures.perseverative_errors || 0;
-  const switchCost = mlFeatures.primary_asd_marker_3 || mlFeatures.switch_cost_ms || 0;
-  const riskScore = mlFeatures.enhanced_risk_score || 50;
-
-  // Simple rule-based logic
-  let asdProbability = 0.5;
-  
-  if (accuracy < 60) asdProbability += 0.2;
-  if (perseverativeErrors > 3) asdProbability += 0.15;
-  if (switchCost > 300) asdProbability += 0.15;
-  if (riskScore < 40) asdProbability += 0.1;
-
-  asdProbability = Math.min(0.95, Math.max(0.05, asdProbability));
+  const asdProbability = 0.5;
   const prediction = asdProbability > 0.5 ? 1 : 0;
   
-  let riskLevel = 'moderate';
-  if (asdProbability > 0.7) riskLevel = 'high';
-  else if (asdProbability < 0.3) riskLevel = 'low';
-
   return {
     success: true,
     prediction: prediction,
     probability: [1 - asdProbability, asdProbability],
-    confidence: Math.max(asdProbability, 1 - asdProbability),
-    risk_level: riskLevel,
-    risk_score: asdProbability * 100,
+    confidence: 0.5,
+    risk_level: 'moderate',
+    risk_score: 50.0,
     asd_probability: asdProbability,
-    method: 'fallback', // Indicates fallback was used
+    method: 'fallback',
   };
 }
 
 /**
  * GET /api/ml/health
- * Check if ML service is available
  */
 router.get('/health', async (req, res) => {
   try {
-    // Check FastAPI ML Engine
-    const response = await axios.get(`${ML_ENGINE_URL}/health`, {
-      timeout: 5000
-    });
-    
+    const response = await axios.get(`${ML_ENGINE_URL}/health`, { timeout: 5000 });
     res.json({
-      available: response.data.models_loaded === true,
+      available: true,
       engine: 'fastapi',
-      engine_url: ML_ENGINE_URL,
       engine_status: response.data,
-      message: response.data.models_loaded 
-        ? 'FastAPI ML Engine loaded and ready' 
-        : 'FastAPI ML Engine running but models not loaded',
     });
   } catch (err) {
     res.json({
       available: false,
       engine: 'fastapi',
-      engine_url: ML_ENGINE_URL,
       error: err.message,
-      message: 'FastAPI ML Engine not available - using fallback predictions',
     });
   }
 });
 
 module.exports = router;
-

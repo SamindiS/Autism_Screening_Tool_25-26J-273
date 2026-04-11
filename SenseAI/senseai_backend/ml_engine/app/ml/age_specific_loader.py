@@ -17,7 +17,6 @@ import json
 from pathlib import Path
 from typing import Optional, Dict, Any, Tuple
 from app.core.config import (
-    AGE_2_3_5_MODEL_PATH, AGE_2_3_5_SCALER_PATH, AGE_2_3_5_FEATURES_PATH, AGE_2_3_5_METADATA_PATH,
     AGE_3_5_5_5_MODEL_PATH, AGE_3_5_5_5_SCALER_PATH, AGE_3_5_5_5_FEATURES_PATH, AGE_3_5_5_5_METADATA_PATH,
     AGE_5_5_6_9_MODEL_PATH, AGE_5_5_6_9_SCALER_PATH, AGE_5_5_6_9_FEATURES_PATH, AGE_5_5_6_9_METADATA_PATH,
     get_age_group
@@ -57,10 +56,11 @@ def load_age_specific_model(age_months: int) -> Tuple[Any, Any, list, Optional[D
     logger.info(f"Loading model for age group: {age_group} (age: {age_months} months)")
     
     if age_group == "2-3.5":
-        model_path = AGE_2_3_5_MODEL_PATH
-        scaler_path = AGE_2_3_5_SCALER_PATH
-        features_path = AGE_2_3_5_FEATURES_PATH
-        metadata_path = AGE_2_3_5_METADATA_PATH
+        # Note: 2-3.5 is now handled exclusively by the v3 Hybrid Engine in predictor.py
+        raise ValueError(
+            "Age group 2-3.5 is now managed by the SenseAI v3 Hybrid Inference Engine. "
+            "Please call predict_asd_v3_hybrid() or use the routed predict_asd() instead."
+        )
     elif age_group == "3.5-5.5":
         model_path = AGE_3_5_5_5_MODEL_PATH
         scaler_path = AGE_3_5_5_5_SCALER_PATH
@@ -148,10 +148,18 @@ def check_age_specific_models() -> Dict[str, Any]:
     
     for age_group in ["2-3.5", "3.5-5.5", "5.5-6.9"]:
         if age_group == "2-3.5":
-            model_path = AGE_2_3_5_MODEL_PATH
-            scaler_path = AGE_2_3_5_SCALER_PATH
-            features_path = AGE_2_3_5_FEATURES_PATH
-        elif age_group == "3.5-5.5":
+            # Status check for v3 handled separately in check_models_loaded()
+            from app.ml.model_loader import check_models_loaded
+            v3_status = check_models_loaded().get("v3_cogflex", {})
+            status[age_group] = {
+                "engine": "v3_hybrid",
+                "ready": v3_status.get("ready", False),
+                "loaded": v3_status.get("loaded", False),
+                "description": "Age 2-3.5 Cognitive Flexibility Model (v3)"
+            }
+            continue
+
+        if age_group == "3.5-5.5":
             model_path = AGE_3_5_5_5_MODEL_PATH
             scaler_path = AGE_3_5_5_5_SCALER_PATH
             features_path = AGE_3_5_5_5_FEATURES_PATH

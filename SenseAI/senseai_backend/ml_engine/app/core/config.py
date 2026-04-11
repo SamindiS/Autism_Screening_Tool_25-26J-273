@@ -22,10 +22,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 MODEL_DIR = BASE_DIR / "models"
 
 # Age-specific model paths
-AGE_2_3_5_MODEL_PATH = MODEL_DIR / "model_age_2_3_5_questionnaire.pkl"
-AGE_2_3_5_SCALER_PATH = MODEL_DIR / "scaler_age_2_3_5_questionnaire.pkl"
-AGE_2_3_5_FEATURES_PATH = MODEL_DIR / "features_age_2_3_5_questionnaire.json"
-AGE_2_3_5_METADATA_PATH = MODEL_DIR / "model_metadata_age_2_3_5.json"
+# (Age 2-3.5 moved to age_2_v3 folder system)
+
+# Age 2-3.5 V3 Model Paths (New Hybrid System)
+AGE_2_V3_DIR = MODEL_DIR / "age_2_v3"
+AGE_2_V3_BINARY_MODEL_PATH = AGE_2_V3_DIR / "binary_classifier.pkl"
+AGE_2_V3_SEVERITY_MODEL_PATH = AGE_2_V3_DIR / "severity_classifier.pkl"
+AGE_2_V3_SCALER_PATH = AGE_2_V3_DIR / "robust_scaler.pkl"
+AGE_2_V3_LE_GENDER_PATH = AGE_2_V3_DIR / "le_gender.pkl"
+AGE_2_V3_LE_LANG_PATH = AGE_2_V3_DIR / "le_language.pkl"
+AGE_2_V3_CONFIG_PATH = AGE_2_V3_DIR / "config.json"
 
 AGE_3_5_5_5_MODEL_PATH = MODEL_DIR / "model_age_3_5_5_5_frog_jump.pkl"
 AGE_3_5_5_5_SCALER_PATH = MODEL_DIR / "scaler_age_3_5_5_5_frog_jump.pkl"

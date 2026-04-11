@@ -19,7 +19,11 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from app.core.config import (
     MODEL_DIR, MODEL_PATH, MODEL_PATH_ALT, SCALER_PATH,
-    FEATURES_PATH, AGE_NORMS_PATH, MODEL_METADATA_PATH
+    FEATURES_PATH, AGE_NORMS_PATH, MODEL_METADATA_PATH,
+    # v3 Hybrid Model Paths
+    AGE_2_V3_BINARY_MODEL_PATH, AGE_2_V3_SEVERITY_MODEL_PATH,
+    AGE_2_V3_SCALER_PATH, AGE_2_V3_LE_GENDER_PATH,
+    AGE_2_V3_LE_LANG_PATH, AGE_2_V3_CONFIG_PATH
 )
 from app.core.logger import logger
 
@@ -28,6 +32,14 @@ _model = None
 _scaler = None
 _feature_names = None
 _age_norms = None
+
+# v3 Hybrid Model Cache
+_v3_binary_model = None
+_v3_severity_model = None
+_v3_scaler = None
+_v3_le_gender = None
+_v3_le_lang = None
+_v3_config = None
 
 def load_models():
     """Load all model files (called once at startup)"""
@@ -87,6 +99,53 @@ def load_models():
         logger.error(f"[ERROR] Error loading models: {str(e)}")
         raise FileNotFoundError(f"Error loading models: {str(e)}")
 
+def load_v3_models():
+    """
+    Load all v3 hybrid model components for the 2-3.5 age group.
+    Uses singleton pattern to cache models in memory.
+    """
+    global _v3_binary_model, _v3_severity_model, _v3_scaler, _v3_le_gender, _v3_le_lang, _v3_config
+    
+    if _v3_binary_model is not None:
+        return _v3_binary_model, _v3_severity_model, _v3_scaler, _v3_le_gender, _v3_le_lang, _v3_config
+        
+    logger.info("Loading SenseAI Cognitive Flexibility v3 Model Ensemble...")
+    
+    try:
+        # Load specific pkl files
+        if not AGE_2_V3_BINARY_MODEL_PATH.exists():
+            raise FileNotFoundError(f"v3 Binary model not found: {AGE_2_V3_BINARY_MODEL_PATH}")
+        _v3_binary_model = joblib.load(AGE_2_V3_BINARY_MODEL_PATH)
+        
+        if not AGE_2_V3_SEVERITY_MODEL_PATH.exists():
+            raise FileNotFoundError(f"v3 Severity model not found: {AGE_2_V3_SEVERITY_MODEL_PATH}")
+        _v3_severity_model = joblib.load(AGE_2_V3_SEVERITY_MODEL_PATH)
+        
+        if not AGE_2_V3_SCALER_PATH.exists():
+            raise FileNotFoundError(f"v3 Scaler not found: {AGE_2_V3_SCALER_PATH}")
+        _v3_scaler = joblib.load(AGE_2_V3_SCALER_PATH)
+        
+        if not AGE_2_V3_LE_GENDER_PATH.exists():
+            raise FileNotFoundError(f"v3 Gender Encoder not found: {AGE_2_V3_LE_GENDER_PATH}")
+        _v3_le_gender = joblib.load(AGE_2_V3_LE_GENDER_PATH)
+        
+        if not AGE_2_V3_LE_LANG_PATH.exists():
+            raise FileNotFoundError(f"v3 Language Encoder not found: {AGE_2_V3_LE_LANG_PATH}")
+        _v3_le_lang = joblib.load(AGE_2_V3_LE_LANG_PATH)
+        
+        # Load config if available
+        if AGE_2_V3_CONFIG_PATH.exists():
+            with open(AGE_2_V3_CONFIG_PATH, 'r') as f:
+                _v3_config = json.load(f)
+        
+        logger.info("[OK] v3 Model Ensemble loaded successfully")
+        return _v3_binary_model, _v3_severity_model, _v3_scaler, _v3_le_gender, _v3_le_lang, _v3_config
+        
+    except Exception as e:
+        logger.error(f"[ERROR] Failed to load v3 models: {str(e)}")
+        # Don't raise here, allow the app to boot even if v3 fails (it will error on use)
+        return None, None, None, None, None, None
+
 def load_model_metadata() -> Optional[Dict[str, Any]]:
     """Load model metadata if available"""
     if MODEL_METADATA_PATH.exists():
@@ -100,21 +159,24 @@ def load_model_metadata() -> Optional[Dict[str, Any]]:
 def check_models_loaded() -> Dict[str, Any]:
     """Check if models are loaded and return status"""
     try:
-        model, scaler, feature_names, age_norms = load_models()
-        metadata = load_model_metadata()
+        # Check legacy models
+        model_loaded = _model is not None
+        
+        # Check v3 models
+        v3_loaded = _v3_binary_model is not None
         
         status = {
-            "loaded": True,
-            "model_path": str(MODEL_PATH) if MODEL_PATH.exists() else str(MODEL_PATH_ALT),
-            "scaler_path": str(SCALER_PATH),
-            "features_path": str(FEATURES_PATH) if FEATURES_PATH.exists() else None,
-            "age_norms_available": age_norms is not None,
-            "expected_features": scaler.n_features_in_ if scaler else None,
-            "feature_names_count": len(feature_names) if feature_names else None
+            "legacy": {
+                "loaded": model_loaded,
+                "model_path": str(MODEL_PATH) if MODEL_PATH.exists() else str(MODEL_PATH_ALT),
+                "scaler_path": str(SCALER_PATH),
+            },
+            "v3_cogflex": {
+                "loaded": v3_loaded,
+                "age_group": "2-3.5",
+                "ready": v3_loaded and _v3_scaler is not None
+            }
         }
-        
-        if metadata:
-            status["metadata"] = metadata
         
         return status
     except Exception as e:
@@ -126,7 +188,7 @@ def check_models_loaded() -> Dict[str, Any]:
 # Load models at module import
 try:
     load_models()
-except FileNotFoundError:
-    # Models not available yet - will fail on first prediction
+    load_v3_models()
+except Exception:
     pass
 

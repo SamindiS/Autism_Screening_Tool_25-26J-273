@@ -62,9 +62,30 @@ class PredictionResponse(BaseModel):
         description="Age group model used: '2-3.5', '3.5-5.5', '5.5-6.9', or null if legacy"
     )
 
-    explanations: Optional[List[ExplanationItem]] = Field(
+    result_summary: Optional[str] = Field(
         default=None,
-        description="Optional simple explanation of top factors affecting the prediction"
+        description="Human-readable summary of the screening result"
+    )
+
+    severity: Optional[str] = Field(
+        default=None,
+        description="ASD Severity level (Low, Moderate, High)"
+    )
+
+    hybrid_score: Optional[float] = Field(
+        default=None,
+        description="The combined score (ML + Clinical Rules)"
+    )
+
+    explanations: Optional[List[str]] = Field(
+        default=None,
+        description="List of localized explanations (XAI)"
+    )
+
+    explanations_legacy: Optional[List[ExplanationItem]] = Field(
+        default=None,
+        alias="explanations",
+        description="Optional simple explanation of top factors affecting the prediction (Legacy SHAP-based)"
     )
     
     class Config:

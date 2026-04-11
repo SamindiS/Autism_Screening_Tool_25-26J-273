@@ -30,6 +30,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
   late Map<String, dynamic> _child;
   late Future<List<Map<String, dynamic>>> _sessionsFuture;
   bool _deleting = false;
+  AppLocalizations? get l10n => AppLocalizations.of(context);
 
   @override
   void initState() {
@@ -297,7 +298,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildProfileCard(ageYears, ageMonths, dob),
+                _buildProfileCard(ageYears, ageMonths, dob, l10n),
                 const SizedBox(height: 16),
                 _buildStudyInfoCard(),
                 const SizedBox(height: 16),
@@ -312,7 +313,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
     );
   }
 
-  Widget _buildProfileCard(int ageYears, int ageMonths, DateTime dob) {
+  Widget _buildProfileCard(int ageYears, int ageMonths, DateTime dob, AppLocalizations? l10n) {
     final childCode = _child['child_code'] as String? ?? _child['name'] as String? ?? 'Unknown';
     final childName = _child['name'] as String?;
     final ageInMonths = _child['age_in_months'] as int?;

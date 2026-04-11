@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 /// - Android emulator: http://10.0.2.2:8000
 /// - Same machine: http://127.0.0.1:8000
 /// Backend must run with: uvicorn main:app --host 0.0.0.0 --port 8000
-const String API_BASE = 'http://172.28.5.240:8000';
+const String API_BASE = 'https://visualattention.vercel.app';
 
 // =============================================================================
 // SENSEAI BRAND COLORS (extracted from logo)

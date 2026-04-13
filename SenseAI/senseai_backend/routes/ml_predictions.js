@@ -10,7 +10,8 @@ const router = express.Router();
 
 // FastAPI ML Engine URL
 // NOTE: config.py uses port 8002 to avoid conflicts.
-const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:8001';
+const ML_ENGINE_URL = 'https://autism-screening-tool-25-26j-273-iwqa.onrender.com';
+//const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:8001';
 
 // Check if ML engine is available
 let ML_AVAILABLE = false;

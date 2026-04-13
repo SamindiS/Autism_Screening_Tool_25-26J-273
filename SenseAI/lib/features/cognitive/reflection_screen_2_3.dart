@@ -213,7 +213,10 @@ class _ClinicianReflectionScreen23State extends State<ClinicianReflectionScreen2
       String finalRiskLevel;
       Map<String, dynamic> finalPredictionMetadata = {};
 
-      if (mlResult != null) {
+      final bool hasReliableMlResult =
+          mlResult != null && mlResult.method.toLowerCase() != 'fallback';
+
+      if (hasReliableMlResult) {
         finalRiskScore = mlResult.riskScore;
         finalRiskLevel = mlResult.riskLevel;
         finalPredictionMetadata = {
@@ -244,6 +247,7 @@ class _ClinicianReflectionScreen23State extends State<ClinicianReflectionScreen2
         
         finalPredictionMetadata = {
           'ml_method': 'rule_based_fallback',
+          if (mlResult != null) 'backend_method': mlResult.method,
           'avg_performance_score': avgTotalScore,
         };
       }

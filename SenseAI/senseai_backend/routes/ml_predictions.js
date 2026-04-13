@@ -148,16 +148,44 @@ router.post('/predict', async (req, res) => {
  * Fallback rule-based prediction
  */
 function fallbackPrediction(mlFeatures) {
-  const asdProbability = 0.5;
+  const accuracy = Number(mlFeatures.accuracy_overall ?? mlFeatures.overall_accuracy ?? 0);
+  const perseverativeErrors = Number(
+    mlFeatures.primary_asd_marker_1 ?? mlFeatures.perseverative_errors ?? 0
+  );
+  const switchCost = Number(mlFeatures.primary_asd_marker_3 ?? mlFeatures.switch_cost_ms ?? 0);
+  const riskSignal = Number(mlFeatures.enhanced_risk_score ?? 50);
+  const totalQScore = Number(mlFeatures.total_q_score ?? 25);
+
+  let asdProbability = 0.5;
+  // Questionnaire path (age 2-3.5): lower scores increase risk.
+  if (Number.isFinite(totalQScore) && totalQScore > 0) {
+    if (totalQScore <= 20) asdProbability += 0.30;
+    else if (totalQScore <= 30) asdProbability += 0.15;
+    else if (totalQScore >= 45) asdProbability -= 0.20;
+    else if (totalQScore >= 38) asdProbability -= 0.10;
+  }
+  // Game feature path (older ages): use simple heuristic markers.
+  if (Number.isFinite(accuracy) && accuracy > 0) {
+    if (accuracy < 60) asdProbability += 0.20;
+    else if (accuracy > 85) asdProbability -= 0.10;
+  }
+  if (Number.isFinite(perseverativeErrors) && perseverativeErrors > 3) asdProbability += 0.15;
+  if (Number.isFinite(switchCost) && switchCost > 300) asdProbability += 0.15;
+  if (Number.isFinite(riskSignal) && riskSignal < 40) asdProbability += 0.10;
+
+  asdProbability = Math.min(0.95, Math.max(0.05, asdProbability));
   const prediction = asdProbability > 0.5 ? 1 : 0;
+  let riskLevel = 'moderate';
+  if (asdProbability > 0.7) riskLevel = 'high';
+  else if (asdProbability < 0.3) riskLevel = 'low';
   
   return {
     success: true,
     prediction: prediction,
     probability: [1 - asdProbability, asdProbability],
-    confidence: 0.5,
-    risk_level: 'moderate',
-    risk_score: 50.0,
+    confidence: Math.max(asdProbability, 1 - asdProbability),
+    risk_level: riskLevel,
+    risk_score: asdProbability * 100,
     asd_probability: asdProbability,
     method: 'fallback',
   };

@@ -383,7 +383,6 @@ class ApiService {
         'diagnosis_source': diagnosisSource,
         'clinician_id': clinicianId,
         'clinician_name': clinicianName,
-        'diagnosis_type': diagnosisType,
         'external_diagnosis': externalDiagnosis,
         'previous_diagnosis': previousDiagnosis,
         'data_source': dataSource,

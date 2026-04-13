@@ -27,6 +27,12 @@ const childSchema = Joi.object({
   clinician_name: Joi.string().max(200).allow(null, '').optional(),
   // Who created this child (for dashboard filtering per clinician)
   created_by_clinician_id: Joi.string().max(50).allow(null, '').optional(),
+  // NEW: Ground truth for v3+ training
+  external_diagnosis: Joi.string().valid('asd', 'typically_developing', 'suspected', 'other', 'unknown', null).optional().allow(null),
+  previous_diagnosis: Joi.string().max(200).allow(null, '').optional(),
+  data_source: Joi.string().valid('pilot', 'app_live', 'unknown').default('app_live').optional(),
+  // Legacy field sent by Flutter - accept but ignore
+  diagnosis_type: Joi.string().allow(null, '').optional(),
 });
 
 const calculateAge = (dobMs) => {
@@ -114,6 +120,10 @@ router.post('/', async (req, res) => {
       clinician_id: value.clinician_id || null,
       clinician_name: value.clinician_name || null,
       created_by_clinician_id: value.created_by_clinician_id || null,
+      // v3 Data Architecture fields
+      external_diagnosis: value.external_diagnosis || 'unknown',
+      previous_diagnosis: value.previous_diagnosis || null,
+      data_source: value.data_source || 'unknown',
       created_at: now,
       updated_at: now,
     };
@@ -208,6 +218,9 @@ router.put('/:id', async (req, res) => {
       // Clinician info for ASD group
       clinician_id: value.clinician_id || existing.data().clinician_id || null,
       clinician_name: value.clinician_name || existing.data().clinician_name || null,
+      external_diagnosis: value.external_diagnosis !== undefined ? value.external_diagnosis : (existing.data().external_diagnosis || 'unknown'),
+      previous_diagnosis: value.previous_diagnosis !== undefined ? value.previous_diagnosis : existing.data().previous_diagnosis,
+      data_source: value.data_source !== undefined ? value.data_source : (existing.data().data_source || 'unknown'),
       updated_at: Date.now(),
     };
 

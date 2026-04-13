@@ -440,7 +440,7 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => ClinicianReflectionScreen2_3(
+            builder: (_) => ClinicianReflectionScreen23(
               child: widget.child,
               sessionId: _sessionId!,
               questionnaireResults: results,

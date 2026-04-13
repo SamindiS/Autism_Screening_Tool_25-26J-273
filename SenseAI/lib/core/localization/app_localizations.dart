@@ -142,6 +142,9 @@ class AppLocalizations {
   String get viewReportsComingSoon => translate('view_reports_coming_soon');
   String get retry => translate('retry');
   String get logoutConfirmation => translate('logout_confirmation');
+  String get selectDateOfBirth => translate('select_date_of_birth');
+  String get loading => translate('loading');
+  String get score => translate('score');
 
   // ===========================================================================
   // Game UI Strings (Used by Assessment Games)

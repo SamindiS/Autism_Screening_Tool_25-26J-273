@@ -31,16 +31,29 @@ class AuthService {
   // Session expiry configuration (Default: 7 days)
   static const Duration _sessionExpiry = Duration(days: 7);
 
+  static bool? _wasBackendAvailable;
+  static DateTime? _lastHealthCheck;
+  static const Duration _healthCacheDuration = Duration(minutes: 5);
+
+  /// Internal helper to get cached health status.
+  static Future<bool> _getHealthStatus() async {
+    if (_wasBackendAvailable != null && 
+        _lastHealthCheck != null && 
+        DateTime.now().difference(_lastHealthCheck!) < _healthCacheDuration) {
+      return _wasBackendAvailable!;
+    }
+    final isAvailable = await ApiService.healthCheck();
+    _wasBackendAvailable = isAvailable;
+    _lastHealthCheck = DateTime.now();
+    return isAvailable;
+  }
+
   /// Checks if a clinician is already registered in the system.
-  /// 
-  /// Performs a health check on the backend before attempting to 
-  /// retrieve clinician information.
   static Future<bool> isRegistered() async {
     try {
-      // First check if backend is available
-      final isBackendAvailable = await ApiService.healthCheck();
+      final isBackendAvailable = await _getHealthStatus();
       if (!isBackendAvailable) {
-        debugPrint('Backend not available, assuming not registered');
+        debugPrint('Backend not available (cached), assuming not registered');
         return false;
       }
       
@@ -129,7 +142,7 @@ class AuthService {
     required String pin,
   }) async {
     try {
-      final isBackendAvailable = await ApiService.healthCheck();
+      final isBackendAvailable = await _getHealthStatus();
       if (!isBackendAvailable) {
         final msg = await ApiService.backendUnavailableMessage();
         return {
@@ -201,7 +214,7 @@ class AuthService {
   /// Verifies credentials with the backend and stores the result locally.
   static Future<Map<String, dynamic>> login(String pin) async {
     try {
-      final isBackendAvailable = await ApiService.healthCheck();
+      final isBackendAvailable = await _getHealthStatus();
       if (!isBackendAvailable) {
         final msg = await ApiService.backendUnavailableMessage();
         return {

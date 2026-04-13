@@ -37,7 +37,7 @@ class StorageService {
     return await openDatabase(
       path,
       version:
-          6, // v6: session status, clinician_note, expanded local session columns
+          7, // v7: external_diagnosis, data_source, ml_prediction
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -61,6 +61,9 @@ class StorageService {
         clinician_id TEXT,
         clinician_name TEXT,
         diagnosis_type TEXT NOT NULL DEFAULT 'new',
+        external_diagnosis TEXT,
+        previous_diagnosis TEXT,
+        data_source TEXT NOT NULL DEFAULT 'app_live',
         created_at INTEGER NOT NULL
       )
     ''');
@@ -81,6 +84,9 @@ class StorageService {
         reflection_results TEXT,
         risk_score REAL,
         risk_level TEXT,
+        external_diagnosis TEXT,
+        data_source TEXT NOT NULL DEFAULT 'app_live',
+        ml_prediction TEXT,
         created_at INTEGER NOT NULL
       )
     ''');
@@ -158,6 +164,16 @@ class StorageService {
       await db.execute(
           "UPDATE sessions SET status = 'completed' WHERE end_time IS NOT NULL");
     }
+    if (oldVersion < 7) {
+      // Add clinical ground truth and data source fields
+      await db.execute('ALTER TABLE children ADD COLUMN external_diagnosis TEXT');
+      await db.execute('ALTER TABLE children ADD COLUMN previous_diagnosis TEXT');
+      await db.execute("ALTER TABLE children ADD COLUMN data_source TEXT NOT NULL DEFAULT 'app_live'");
+      
+      await db.execute('ALTER TABLE sessions ADD COLUMN external_diagnosis TEXT');
+      await db.execute("ALTER TABLE sessions ADD COLUMN data_source TEXT NOT NULL DEFAULT 'app_live'");
+      await db.execute('ALTER TABLE sessions ADD COLUMN ml_prediction TEXT');
+    }
   }
 
   static int _calculateAgeInMonthsFromDate(DateTime dob) {
@@ -194,6 +210,9 @@ class StorageService {
     String? clinicianId,
     String? clinicianName,
     String diagnosisType = 'new',
+    String? externalDiagnosis,
+    String? previousDiagnosis,
+    String dataSource = 'app_live',
   }) async {
     final payload = {
       'child_code': childCode,
@@ -229,6 +248,9 @@ class StorageService {
         clinicianName: clinicianName,
         diagnosisType: diagnosisType,
         createdByClinicianId: createdByClinicianId,
+        externalDiagnosis: externalDiagnosis,
+        previousDiagnosis: previousDiagnosis,
+        dataSource: dataSource,
       );
       await _upsertChildLocal({
         'id': child['id'],
@@ -246,6 +268,9 @@ class StorageService {
         'clinician_id': child['clinician_id'] ?? clinicianId,
         'clinician_name': child['clinician_name'] ?? clinicianName,
         'diagnosis_type': child['diagnosis_type'] ?? diagnosisType,
+        'external_diagnosis': child['external_diagnosis'] ?? externalDiagnosis,
+        'previous_diagnosis': child['previous_diagnosis'] ?? previousDiagnosis,
+        'data_source': child['data_source'] ?? dataSource,
         'created_at':
             child['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
       });
@@ -299,6 +324,8 @@ class StorageService {
     String? clinicianId,
     String? clinicianName,
     String diagnosisType = 'new',
+    String? externalDiagnosis,
+    String? previousDiagnosis,
   }) async {
     final payload = {
       'child_code': childCode,
@@ -331,6 +358,8 @@ class StorageService {
         diagnosisSource: diagnosisSource,
         clinicianId: clinicianId,
         clinicianName: clinicianName,
+        externalDiagnosis: externalDiagnosis,
+        previousDiagnosis: previousDiagnosis,
       );
       await _upsertChildLocal({
         'id': updated['id'],
@@ -348,6 +377,8 @@ class StorageService {
         'clinician_id': updated['clinician_id'] ?? clinicianId,
         'clinician_name': updated['clinician_name'] ?? clinicianName,
         'diagnosis_type': updated['diagnosis_type'] ?? diagnosisType,
+        'external_diagnosis': updated['external_diagnosis'] ?? externalDiagnosis,
+        'previous_diagnosis': updated['previous_diagnosis'] ?? previousDiagnosis,
         'created_at':
             updated['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
       });
@@ -602,6 +633,8 @@ class StorageService {
     Map<String, dynamic>? reflectionResults,
     double? riskScore,
     String? riskLevel,
+    String? externalDiagnosis,
+    String dataSource = 'app_live',
   }) async {
     // Normalize session type to match backend expectations
     String normalizedSessionType = sessionType
@@ -638,6 +671,8 @@ class StorageService {
       'reflection_results': reflectionResults,
       'risk_score': riskScore,
       'risk_level': riskLevel,
+      'external_diagnosis': externalDiagnosis,
+      'data_source': dataSource,
     };
 
     final status = endTime != null ? 'completed' : 'in_progress';
@@ -659,6 +694,8 @@ class StorageService {
         riskScore: riskScore,
         riskLevel: riskLevel,
         createdByClinicianId: createdByClinicianId,
+        externalDiagnosis: externalDiagnosis,
+        dataSource: dataSource,
       );
       await _upsertSessionLocal({
         'id': session['id'],
@@ -677,6 +714,8 @@ class StorageService {
             reflectionResults != null ? jsonEncode(reflectionResults) : null,
         'risk_score': riskScore,
         'risk_level': riskLevel,
+        'external_diagnosis': externalDiagnosis,
+        'data_source': dataSource,
         'created_at': session['created_at'],
       });
       debugPrint('✅ Session saved to backend: ${session['id']}');
@@ -702,6 +741,8 @@ class StorageService {
             reflectionResults != null ? jsonEncode(reflectionResults) : null,
         'risk_score': riskScore,
         'risk_level': riskLevel,
+        'external_diagnosis': externalDiagnosis,
+        'data_source': dataSource,
         'created_at': DateTime.now().millisecondsSinceEpoch,
       };
       await _upsertSessionLocal(localSession);

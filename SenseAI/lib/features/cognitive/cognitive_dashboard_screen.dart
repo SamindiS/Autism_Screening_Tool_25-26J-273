@@ -28,6 +28,7 @@ class CognitiveDashboardScreen extends StatefulWidget {
 
 class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
   bool _loading = true;
+  AppLocalizations? get l10n => AppLocalizations.of(context);
   List<Child> _children = [];
   List<Map<String, dynamic>> _sessions = [];
   

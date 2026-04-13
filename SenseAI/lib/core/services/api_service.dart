@@ -19,7 +19,6 @@ class ApiService {
       'http://localhost:3000'; // iOS simulator
   static const String _defaultRealDeviceUrl =
       'https://autism-screening-tool-25-26-j-273.vercel.app';
-  //'http://192.168.48.180:3000'; // Real device (updated to user IP)
 
   // SharedPreferences key for storing backend URL
   static const String _backendUrlKey = 'backend_url';
@@ -361,6 +360,9 @@ class ApiService {
     String? clinicianName,
     String diagnosisType = 'new',
     String? createdByClinicianId,
+    String? externalDiagnosis,
+    String? previousDiagnosis,
+    String dataSource = 'app_live',
   }) async {
     try {
       // Convert gender to lowercase to match backend validation
@@ -382,6 +384,9 @@ class ApiService {
         'clinician_id': clinicianId,
         'clinician_name': clinicianName,
         'diagnosis_type': diagnosisType,
+        'external_diagnosis': externalDiagnosis,
+        'previous_diagnosis': previousDiagnosis,
+        'data_source': dataSource,
         if (createdByClinicianId != null && createdByClinicianId.isNotEmpty)
           'created_by_clinician_id': createdByClinicianId,
       };
@@ -487,6 +492,9 @@ class ApiService {
     String? clinicianId,
     String? clinicianName,
     String diagnosisType = 'new',
+    String? externalDiagnosis,
+    String? previousDiagnosis,
+    String dataSource = 'app_live',
   }) async {
     try {
       // Convert gender to lowercase to match backend validation
@@ -510,6 +518,9 @@ class ApiService {
           'clinician_id': clinicianId,
           'clinician_name': clinicianName,
           'diagnosis_type': diagnosisType,
+          'external_diagnosis': externalDiagnosis,
+          'previous_diagnosis': previousDiagnosis,
+          'data_source': dataSource,
         }),
       );
 
@@ -559,6 +570,8 @@ class ApiService {
     double? riskScore,
     String? riskLevel,
     String? createdByClinicianId,
+    String? externalDiagnosis,
+    String dataSource = 'app_live',
   }) async {
     try {
       final url = await baseUrl;
@@ -575,6 +588,8 @@ class ApiService {
         'reflection_results': reflectionResults,
         'risk_score': riskScore,
         'risk_level': riskLevel,
+        'external_diagnosis': externalDiagnosis,
+        'data_source': dataSource,
         if (createdByClinicianId != null && createdByClinicianId.isNotEmpty)
           'created_by_clinician_id': createdByClinicianId,
       };
@@ -933,56 +948,22 @@ class ApiService {
   // ==================== HEALTH CHECK ====================
 
   /// Check if backend is available.
-  /// For Vercel (and similar) deployments, tries /api/health then /health.
   static Future<bool> healthCheck() async {
-    final url = await baseUrl;
-    final isVercel = url.contains('vercel.app');
-    final paths = isVercel ? ['/api/health', '/health'] : ['/health'];
-    lastHealthCheckFailureHint = null;
+    try {
+      final url = await baseUrl;
+      final fullUrl = '$url/health';
+      debugPrint('🔍 Health check: Testing connection to $fullUrl');
+      final response = await http
+          .get(
+        Uri.parse(fullUrl),
+        headers: headers,
+      )
+          .timeout(const Duration(seconds: 5));
 
-    for (final path in paths) {
-      try {
-        final fullUrl = '$url$path';
-        debugPrint('🔍 Health check: Testing connection to $fullUrl');
-        final response = await http
-            .get(
-          Uri.parse(fullUrl),
-          headers: headers,
-        )
-            .timeout(
-          const Duration(seconds: 10),
-          onTimeout: () {
-            debugPrint('⏱️ Health check timeout after 10 seconds');
-            throw TimeoutException('Health check timed out');
-          },
-        );
-
-        final isHealthy = response.statusCode == 200;
-        if (response.statusCode == 401 &&
-            (response.body.contains('Authentication Required') ||
-                response.body.contains('Vercel Authentication') ||
-                response.body.contains('vercel.com/sso-api'))) {
-          lastHealthCheckFailureHint = 'vercel_protection';
-          debugPrint('   → Vercel Deployment Protection is enabled (401). Disable it in Vercel project Settings.');
-        }
-        debugPrint(
-            '${isHealthy ? "✅" : "❌"} Health check response: ${response.statusCode} - ${response.body.length > 200 ? response.body.substring(0, 200) + "..." : response.body}');
-        if (isHealthy) return true;
-      } on TimeoutException {
-        debugPrint('❌ Health check timeout for $url$path');
-      } catch (e) {
-        debugPrint('❌ Health check failed for $url$path: $e');
-        if (e.toString().contains('Failed host lookup')) {
-          debugPrint('   → Cannot resolve host - check URL and internet');
-        } else if (e.toString().contains('Connection refused')) {
-          debugPrint('   → Connection refused - check if backend is running');
-        } else if (e.toString().contains('Network is unreachable')) {
-          debugPrint('   → Network unreachable - check Wi-Fi/internet');
-        }
-      }
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('❌ Health check failed: $e');
+      return false;
     }
-
-    debugPrint('   URL attempted: $url (tried: ${paths.join(", ")})');
-    return false;
   }
 }

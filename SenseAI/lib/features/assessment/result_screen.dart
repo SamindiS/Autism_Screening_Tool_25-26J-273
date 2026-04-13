@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import '../../data/models/child.dart';
 import '../../data/models/game_results.dart';
-import '../../core/services/pdf_report_service.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'pdf_preview_screen.dart';
 
 class ResultScreen extends StatefulWidget {
@@ -51,9 +51,11 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   Color _getRiskColor() {
-    switch (_effectiveRiskLevel) {
-      case 'low':
+    switch (_effectiveRiskLevel.toLowerCase()) {
+      case 'no_risk':
         return Colors.green;
+      case 'low':
+        return Colors.lime.shade700; // Distinct yellow-green
       case 'moderate':
         return Colors.orange;
       case 'high':
@@ -64,7 +66,9 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   String _getRiskLabel() {
-    switch (_effectiveRiskLevel) {
+    switch (_effectiveRiskLevel.toLowerCase()) {
+      case 'no_risk':
+        return 'No Risk';
       case 'low':
         return 'Low Risk';
       case 'moderate':
@@ -77,13 +81,15 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   IconData _getRiskIcon() {
-    switch (_effectiveRiskLevel) {
+    switch (_effectiveRiskLevel.toLowerCase()) {
+      case 'no_risk':
+        return Icons.verified_user;
       case 'low':
-        return Icons.check_circle;
+        return Icons.info_outline;
       case 'moderate':
-        return Icons.warning;
+        return Icons.warning_amber_rounded;
       case 'high':
-        return Icons.error;
+        return Icons.error_outline;
       default:
         return Icons.help_outline;
     }
@@ -97,10 +103,11 @@ class _ResultScreenState extends State<ResultScreen> {
   Widget build(BuildContext context) {
     final mlPrediction = widget.gameResults?.mlPrediction;
     final questionnaireMlPrediction = widget.questionnaireResults?['ml_prediction'] as Map<String, dynamic>?;
-    final effectiveMlPrediction = mlPrediction ?? questionnaireMlPrediction;
-    final explanations = (effectiveMlPrediction?['explanations'] as List<dynamic>? ?? const [])
-        .whereType<Map<String, dynamic>>()
-        .toList();
+    final reflectionMlPrediction = widget.reflectionData?['prediction_metadata'] as Map<String, dynamic>?;
+    
+    final effectiveMlPrediction = mlPrediction ?? questionnaireMlPrediction ?? reflectionMlPrediction;
+    
+    final explanations = effectiveMlPrediction?['explanations'] as List<dynamic>? ?? const [];
 
     return Scaffold(
       appBar: AppBar(
@@ -136,9 +143,20 @@ class _ResultScreenState extends State<ResultScreen> {
                     // Risk Level Card
                     _buildRiskCard(),
                     const SizedBox(height: 24),
-                    // Explainable AI (optional)
+                    // NEW: Clinical Override Alert Banner
+                    if (effectiveMlPrediction?['clinical_override'] == true) ...[
+                      _buildOverrideAlert(),
+                      const SizedBox(height: 24),
+                    ],
+                    // NEW: ML Probability Dashboard
+                    if (effectiveMlPrediction != null && 
+                        effectiveMlPrediction['asd_probability'] != null) ...[
+                      _buildProbabilityDashboard(effectiveMlPrediction),
+                      const SizedBox(height: 24),
+                    ],
+                    // Explainable AI (v3 Simplified)
                     if (explanations.isNotEmpty) ...[
-                      _buildExplainableCard(explanations),
+                      _buildSimplifiedReasoningCard(explanations.cast<String>()),
                       const SizedBox(height: 24),
                     ],
                     // Questionnaire Results (for ages 2-3.5)
@@ -245,7 +263,49 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  Widget _buildExplainableCard(List<Map<String, dynamic>> explanations) {
+  Widget _buildOverrideAlert() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade900,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 28),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Clinical Override Applied',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  'Severe performance deficits detected. High-priority clinical safety rule triggered.',
+                  style: TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSimplifiedReasoningCard(List<String> reasons) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -265,77 +325,41 @@ class _ResultScreenState extends State<ResultScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.lightbulb_outline, color: _primaryColor),
+              Icon(Icons.psychology_alt, color: _primaryColor),
               const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Why this result?',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-              TextButton(
-                onPressed: () => setState(() => _showExplanation = !_showExplanation),
-                child: Text(_showExplanation ? 'Hide' : 'Show'),
+              const Text(
+                'Why this result?',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            'These are the strongest factors the model used for this screening result.',
-            style: TextStyle(color: Colors.grey.shade700),
-          ),
-          if (_showExplanation) ...[
-            const SizedBox(height: 16),
-            ...explanations.take(6).map((e) {
-              final feature = (e['feature'] as String?) ?? '';
-              final direction = (e['direction'] as String?) ?? 'increases_risk';
-              final contribution = (e['contribution'] as num?)?.toDouble() ?? 0.0;
-              final value = (e['value'] as num?)?.toDouble() ?? 0.0;
-              final isUp = direction == 'increases_risk';
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: (isUp ? Colors.red : Colors.green).withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: (isUp ? Colors.red : Colors.green).withOpacity(0.2),
-                  ),
-                ),
+          const SizedBox(height: 16),
+          ...reasons.map((reason) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      isUp ? Icons.trending_up : Icons.trending_down,
-                      color: isUp ? Colors.red : Colors.green,
-                    ),
-                    const SizedBox(width: 10),
+                    Icon(Icons.check_circle_outline, color: _primaryColor, size: 18),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            feature.replaceAll('_', ' '),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Value: ${value.toStringAsFixed(2)}  •  Impact: ${contribution.toStringAsFixed(4)}',
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                          ),
-                        ],
+                      child: Text(
+                        reason,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade800,
+                          height: 1.4,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              );
-            }),
-            const SizedBox(height: 8),
-            Text(
-              'Note: This is a screening explanation (not a diagnosis).',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-          ],
+              )),
+          const Divider(),
+          const SizedBox(height: 8),
+          Text(
+            'This reasoning is based on clinical risk factors identified during the assessment.',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+          ),
         ],
       ),
     );
@@ -811,6 +835,150 @@ class _ResultScreenState extends State<ResultScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildProbabilityDashboard(Map<String, dynamic> prediction) {
+    final asdProb = (prediction['asd_probability'] as num?)?.toDouble() ?? 0.0;
+    final ctrlProb = (prediction['control_probability'] as num?)?.toDouble() ?? 0.0;
+    final confidence = (prediction['confidence'] as num?)?.toDouble() ?? 0.0;
+    final method = (prediction['ml_method'] as String?) ?? 'Hybrid ML';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _primaryColor.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.analytics, color: _primaryColor),
+              const SizedBox(width: 12),
+              const Text(
+                'Machine Learning Insights',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  method.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: _primaryColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              // Pie Chart
+              SizedBox(
+                width: 120,
+                height: 120,
+                child: PieChart(
+                  PieChartData(
+                    sectionsSpace: 2,
+                    centerSpaceRadius: 30,
+                    sections: [
+                      PieChartSectionData(
+                        value: asdProb,
+                        title: '${(asdProb * 100).toStringAsFixed(0)}%',
+                        color: Colors.red,
+                        radius: 40,
+                        titleStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      PieChartSectionData(
+                        value: ctrlProb,
+                        title: '${(ctrlProb * 100).toStringAsFixed(0)}%',
+                        color: Colors.green,
+                        radius: 40,
+                        titleStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              // Legend & Confidence
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLegendItem('ASD Risk', Colors.red, asdProb),
+                    const SizedBox(height: 8),
+                    _buildLegendItem('Normal/Control', Colors.green, ctrlProb),
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Model Confidence', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                        Text('${(confidence * 100).toStringAsFixed(1)}%', 
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: _primaryColor)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    LinearProgressIndicator(
+                      value: confidence,
+                      backgroundColor: _primaryColor.withOpacity(0.1),
+                      color: _primaryColor,
+                      minHeight: 6,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color, double probability) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 8),
+        Text(label, style: const TextStyle(fontSize: 13)),
+        const Spacer(),
+        Text(
+          '${(probability * 100).toStringAsFixed(1)}%',
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+        ),
+      ],
     );
   }
 

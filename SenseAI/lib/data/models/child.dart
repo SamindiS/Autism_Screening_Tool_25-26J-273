@@ -51,6 +51,15 @@ class Child {
   
   /// Tracks if the child is a 'new' screening or 'existing' diagnosis.
   final String diagnosisType;
+  
+  /// NEW v3+: Final clinician diagnosis (Ground truth for future models).
+  final String? externalDiagnosis;
+  
+  /// NEW v3+: Details about any previous official diagnosis.
+  final String? previousDiagnosis;
+  
+  /// NEW v3+: Source of data ('pilot' vs 'app_live').
+  final String dataSource;
 
   Child({
     required this.id,
@@ -69,6 +78,9 @@ class Child {
     this.clinicianId,
     this.clinicianName,
     this.diagnosisType = 'new',
+    this.externalDiagnosis,
+    this.previousDiagnosis,
+    this.dataSource = 'app_live',
   });
 
   /// Converts the profile to a JSON map for API payload or SQLite storage.
@@ -90,6 +102,9 @@ class Child {
       'clinician_id': clinicianId,
       'clinician_name': clinicianName,
       'diagnosis_type': diagnosisType,
+      'external_diagnosis': externalDiagnosis,
+      'previous_diagnosis': previousDiagnosis,
+      'data_source': dataSource,
     };
   }
 
@@ -116,6 +131,9 @@ class Child {
       clinicianId: json['clinician_id'] as String?,
       clinicianName: json['clinician_name'] as String?,
       diagnosisType: json['diagnosis_type'] as String? ?? 'new',
+      externalDiagnosis: json['external_diagnosis'] as String?,
+      previousDiagnosis: json['previous_diagnosis'] as String?,
+      dataSource: json['data_source'] as String? ?? 'unknown',
     );
   }
 

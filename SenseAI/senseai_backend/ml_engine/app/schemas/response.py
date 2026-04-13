@@ -43,13 +43,6 @@ class PredictionResponse(BaseModel):
         description="Risk level: 'low', 'moderate', or 'high'"
     )
     
-    risk_score: float = Field(
-        ...,
-        description="Risk score (0-100), where higher = higher ASD risk",
-        ge=0.0,
-        le=100.0
-    )
-    
     asd_probability: float = Field(
         ...,
         description="Probability of ASD (0-1)",
@@ -70,6 +63,16 @@ class PredictionResponse(BaseModel):
     severity: Optional[str] = Field(
         default=None,
         description="ASD Severity level (Low, Moderate, High)"
+    )
+
+    clinical_override: Optional[bool] = Field(
+        default=False,
+        description="Whether a clinical safety override was applied"
+    )
+
+    avg_score: Optional[float] = Field(
+        default=None,
+        description="Average performance score (1.0-5.0)"
     )
 
     hybrid_score: Optional[float] = Field(
@@ -95,7 +98,6 @@ class PredictionResponse(BaseModel):
                 "probability": [0.21, 0.79],
                 "confidence": 0.79,
                 "risk_level": "high",
-                "risk_score": 78.9,
                 "asd_probability": 0.789
             }
         }

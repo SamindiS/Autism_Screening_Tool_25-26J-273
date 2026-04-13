@@ -35,17 +35,19 @@ EXPLANATION_TEXT = {
         "low_name_response": "Reduced responsiveness to their name being called.",
         "sensory_sensitivity": "Signs of sensory sensitivity or unusual reactions were noted.",
         "peer_play_delay": "Social interaction and peer play skills are still developing.",
-        "low_risk_positive": "Good social interaction and rule switching skills were observed."
+        "low_risk_positive": "Good social interaction and rule switching skills were observed.",
+        "low_attention": "Reduced attention and focus during clinical observation."
     },
     "si": {
         "low_eye_contact": "පරීක්ෂණයේදී ඇස් සම්බන්ධතාවය (eye contact) අඩු බව නිරීක්ෂණය විය.",
-        "poor_imitation": "සමාජීය අනුකරණ හැකියාව බලාපොරොත්තු වන මට්ටමට වඩා අඩුය.",
+        "poor_imitation": "සමාජීය අනුකරණ හැකියාව බලාපොරොත්තතු වන මට්ටමට වඩා අඩුය.",
         "difficulty_with_change": "දෛනික රටාවේ හෝ කාර්යයන්හි වෙනස්වීම් වලට අනුගත වීමට දරුවා අපහසුවක් පෙන්වීය.",
         "low_joint_attention": "අන් අය සමඟ අවධානය බෙදාගැනීමේ (joint attention) හැකියාව අඩු බව පෙනේ.",
         "low_name_response": "නම කතා කළ විට දක්වන ප්‍රතිචාරය අඩු මට්ටමක පවතී.",
         "sensory_sensitivity": "ඉන්ද්‍රිය සංවේදීතාවයේ හෝ අසාමාන්‍ය ප්‍රතික්‍රියාවල ලක්ෂණ දක්නට ලැබුණි.",
         "peer_play_delay": "සමාජීය අන්තර්ක්‍රියා සහ සම වයසේ දරුවන් සමඟ සෙල්ලම් කිරීමේ හැකියාව තවමත් වර්ධනය වෙමින් පවතී.",
-        "low_risk_positive": "හොඳ සමාජීය අන්තර්ක්‍රියා සහ නීති වෙනස් කිරීමට අනුගත වීමේ හැකියාව නිරීක්ෂණය විය."
+        "low_risk_positive": "හොඳ සමාජීය අන්තර්ක්‍රියා සහ නීති වෙනස් කිරීමට අනුගත වීමේ හැකියාව නිරීක්ෂණය විය.",
+        "low_attention": "සායනික නිරීක්ෂණයේදී අවධානය යොමු කිරීමේ හැකියාව අඩු බව පෙනී යයි."
     },
     "ta": {
         "low_eye_contact": "மதிப்பீட்டின் போது கண் தொடர்பு குறைவாக இருப்பது அவதானிக்கப்பட்டது.",
@@ -55,7 +57,8 @@ EXPLANATION_TEXT = {
         "low_name_response": "பெயர் சொல்லி அழைக்கும்போது எதிர்வினை குறைவாக உள்ளது.",
         "sensory_sensitivity": "புலன் உணர்வு உணர்திறன் அல்லது அசாதாரண எதிர்வினைகளின் அறிகுறிகள் காணப்பட்டன.",
         "peer_play_delay": "சமூக தொடர்பு மற்றும் சக நண்பர்களுடன் விளையாடும் திறன்கள் இன்னும் வளர்ச்சியடைந்து வருகின்றன.",
-        "low_risk_positive": "நல்ல சமூக தொடர்பு மற்றும் விதிமுறை மாற்றங்களுக்கு ஏற்ப மாறும் திறன்கள் அவதானிக்கப்பட்டன."
+        "low_risk_positive": "நல்ல சமூக தொடர்பு மற்றும் விதிமுறை மாற்றங்களுக்கு ஏற்ப மாறும் திறன்கள் அவதானிக்கப்பட்டன.",
+        "low_attention": "மருத்துவ அவதானிப்பின் போது குறைக்கப்பட்ட கவனம் மற்றும் கவனம்."
     }
 }
 
@@ -204,27 +207,55 @@ def _get_clinical_rule_score(d):
 def generate_v3_explanations(d, hybrid_score, lang="en"):
     """
     Generate human-readable explanations based on model findings.
+    Ensures 3-5 bullet points and language fallback safety.
     """
     keys = []
     
-    if hybrid_score < 0.3:
+    # Identify top concerns for the "Why this result?" section
+    if d.get('q4_eye_contact', 5) <= 2:
+        keys.append("low_eye_contact")
+    if d.get('q7_imitation', 5) <= 2:
+        keys.append("poor_imitation")
+    if d.get('q1_name_response', 5) <= 2:
+        keys.append("low_name_response")
+    if d.get('q2_routine_change', 5) <= 2:
+        keys.append("difficulty_with_change")
+    if d.get('q9_joint_attention', 5) <= 2:
+        keys.append("low_joint_attention")
+    if d.get('q6_sensory_reaction', 5) <= 2:
+        keys.append("sensory_sensitivity")
+    
+    # Behavioral signals from clinician reflection
+    if d.get('attention_level', 5) <= 2:
+        keys.append("low_attention") # Need to add text for this
+    
+    # Positive note for low risk
+    if hybrid_score < 0.3 or not keys:
         keys.append("low_risk_positive")
-    else:
-        # Identify top concerns for the "Why this result?" section
-        if d.get('q4_eye_contact', 5) <= 2:
-            keys.append("low_eye_contact")
-        if d.get('q7_imitation', 5) <= 2:
-            keys.append("poor_imitation")
-        if d.get('q2_routine_change', 5) <= 2:
-            keys.append("difficulty_with_change")
-        if d.get('q9_joint_attention', 5) <= 2:
-            keys.append("low_joint_attention")
-        if d.get('q6_sensory_reaction', 5) <= 2:
-            keys.append("sensory_sensitivity")
 
-    # Map keys to localized text
+    # Map keys to localized text with English fallback
     lang_dict = EXPLANATION_TEXT.get(lang, EXPLANATION_TEXT["en"])
-    return [lang_dict.get(k, k) for k in keys[:3]] # Return top 3 explanations
+    en_dict = EXPLANATION_TEXT["en"]
+    
+    explanations = []
+    for k in keys:
+        text = lang_dict.get(k, en_dict.get(k, k))
+        if text not in explanations:
+            explanations.append(text)
+
+    # Pad if less than 3
+    if len(explanations) < 3:
+        padding_text = "Additional behavioral concerns observed"
+        if lang == "si":
+            padding_text = "අමතර චර්යාත්මක ගැටළු නිරීක්ෂණය විය"
+        elif lang == "ta":
+            padding_text = "கூடுதல் நடத்தை கவலைகள் அவதானிக்கப்பட்டன"
+        
+        while len(explanations) < 3:
+            explanations.append(padding_text)
+            
+    # Trim to 5
+    return explanations[:5]
 
 def predict_asd_v3_hybrid(request: PredictionRequest) -> PredictionResponse:
     """
@@ -266,23 +297,107 @@ def predict_asd_v3_hybrid(request: PredictionRequest) -> PredictionResponse:
     # 7. Severity & Multi-class
     sev_probs = sev_model.predict_proba(X_scaled)[0]
     
-    # Thresholding & Result Mapping
-    if hybrid_score < 0.25:
-        severity = "No ASD Risk (Typically Developing)"
-        risk_level = "low"
-        prediction = 0
-    elif hybrid_score < 0.45:
-        severity = "Low ASD Risk"
-        risk_level = "low"
-        prediction = 1
-    elif hybrid_score < 0.70:
-        severity = "Moderate ASD Risk"
-        risk_level = "moderate"
-        prediction = 1
-    else:
-        severity = "High ASD Risk"
+    # Calculate average score based on exactly 10 Q items
+    Q_ITEMS = [
+        'q1_name_response', 'q2_routine_change', 'q3_toy_switching',
+        'q4_eye_contact', 'q5_pointing', 'q6_sensory_reaction',
+        'q7_imitation', 'q8_peer_play', 'q9_joint_attention',
+        'q10_communication'
+    ]
+    
+    clean_q_values = []
+    for k in Q_ITEMS:
+        v = raw_features.get(k, None)
+        if v is None:
+            v = 3.0  # neutral fallback
+        try:
+            v = float(v)
+        except Exception:
+            v = 3.0
+        clean_q_values.append(v)
+        
+    total_q_score = sum(clean_q_values)
+    avg_q_score = total_q_score / 10.0
+    
+    # Reflection avg (safe)
+    reflection_values = [
+        raw_features.get('attention_level', 3),
+        raw_features.get('engagement_level', 3),
+        raw_features.get('frustration_tolerance', 3),
+        raw_features.get('instruction_following', 3)
+    ]
+    
+    # Optional field: Only include if explicitly sent from UI
+    if 'cognitive_flexibility_obs' in raw_features:
+        reflection_values.append(raw_features.get('cognitive_flexibility_obs', 3))
+    
+    clean_reflection = []
+    for v in reflection_values:
+        try:
+            val = float(v) if v is not None else 3.0
+            clean_reflection.append(val)
+        except Exception:
+            clean_reflection.append(3.0)
+            
+    avg_reflection_score = sum(clean_reflection) / len(clean_reflection)
+
+    # FINAL combined score
+    avg_score = (avg_q_score + avg_reflection_score) / 2.0
+    
+    logger.warning(f"DEBUG Q VALUES: {clean_q_values}")
+    logger.warning(f"DEBUG REFLECTION VALUES: {clean_reflection}")
+    logger.error(f"INPUT FEATURES: {raw_features}")
+    logger.error(f"AVG Q SCORE: {avg_q_score}, AVG REFLECTION SCORE: {avg_reflection_score}")
+    logger.error(f"FINAL AVG SCORE: {avg_score}")
+    logger.error(f"HYBRID SCORE: {hybrid_score}")
+
+    # Thresholding & Overrides (Prioritize Safety)
+    clinical_override = False
+
+    logger.debug(f"DEBUG - AVG: {avg_score}, HYBRID: {hybrid_score}")
+    
+    # HARD safety rule (ANY critical failure)
+    if min(clean_q_values) <= 1.0 or clean_reflection.count(1.0) >= 2:
+        severity = "High ASD Risk (Critical Item Failure)"
         risk_level = "high"
         prediction = 1
+        clinical_override = True
+        logger.info("Clinical Override Applied (Critical Symptom): 1 Critical Q or 2 Behavioral failures")
+
+    elif avg_score <= 2.0:
+        severity = "High ASD Risk (Severe Deficit)"
+        risk_level = "high"
+        prediction = 1
+        clinical_override = True
+        logger.info(f"Clinical Override 1 Applied (Severe): avg_score={avg_score}")
+
+    elif avg_score <= 2.5 and hybrid_score >= 0.45:
+        severity = "Moderate ASD Risk (Borderline Safety)"
+        risk_level = "moderate"
+        prediction = 1
+        clinical_override = True
+        logger.info(f"Clinical Override 2 Applied (Safety): avg_score={avg_score}, hybrid={hybrid_score}")
+
+    else:
+        # ML Hybrid Score Thresholding
+        if hybrid_score >= 0.70:
+            severity = "High ASD Risk"
+            risk_level = "high"
+            prediction = 1
+        elif hybrid_score >= 0.45:
+            severity = "Moderate ASD Risk"
+            risk_level = "moderate"
+            prediction = 1
+        elif hybrid_score >= 0.25:
+            severity = "Low ASD Risk"
+            risk_level = "low"
+            prediction = 1
+        else:
+            severity = "No ASD Risk (Typically Developing)"
+            risk_level = "no_risk"
+            prediction = 0
+
+    logger.info(f"DEBUG FINAL - LEVEL: {risk_level}")
 
     # 8. Localized Explanations (XAI)
     lang = raw_features.get('language', 'en')
@@ -290,11 +405,12 @@ def predict_asd_v3_hybrid(request: PredictionRequest) -> PredictionResponse:
     
     return PredictionResponse(
         prediction=prediction,
-        probability=[1-hybrid_score, hybrid_score],
+        probability=[1-ml_prob_asd, ml_prob_asd],
         confidence=float(max(sev_probs)),
         risk_level=risk_level,
-        risk_score=round(hybrid_score * 100, 1),
         asd_probability=round(ml_prob_asd, 3),
+        avg_score=round(avg_score, 2),
+        clinical_override=clinical_override,
         model_age_group="2-3.5 (v3 Hybrid)",
         result_summary=f"Cognitive flexibility assessment: {severity}",
         severity=severity,
@@ -429,7 +545,6 @@ def predict_asd(request: PredictionRequest) -> PredictionResponse:
         probability=[control_probability, asd_probability],
         confidence=confidence,
         risk_level=risk_level,
-        risk_score=round(risk_score, 1),
         asd_probability=round(asd_probability, 3),
         model_age_group=age_group,
         explanations=explanations,

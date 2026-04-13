@@ -25,6 +25,11 @@ const sessionSchema = Joi.object({
   risk_level: Joi.string().valid('low', 'moderate', 'high').allow(null).optional(),
   // who created this session (used for clinician-scoped dashboards)
   created_by_clinician_id: Joi.string().max(50).allow(null, '').optional(),
+  // Ground truth for v4 training
+  external_diagnosis: Joi.string().valid('asd', 'typically_developing', 'suspected', 'other', 'unknown', null).optional().allow(null),
+  data_source: Joi.string().valid('pilot', 'app_live', 'unknown').default('app_live').optional(),
+  ml_prediction: Joi.object().optional().allow(null),
+  is_labeled: Joi.boolean().optional(),
 });
 
 const updateSchema = Joi.object({
@@ -37,6 +42,9 @@ const updateSchema = Joi.object({
   risk_level: Joi.string().valid('low', 'moderate', 'high').allow(null).optional(),
   // allow backfilling created_by_clinician_id if needed
   created_by_clinician_id: Joi.string().max(50).allow(null, '').optional(),
+  external_diagnosis: Joi.string().valid('asd', 'typically_developing', 'suspected', 'other', 'unknown', null).optional().allow(null),
+  ml_prediction: Joi.object().optional().allow(null),
+  is_labeled: Joi.boolean().optional(),
 }).min(1);
 
 const toSession = (doc) => ({
@@ -90,8 +98,9 @@ router.post('/', async (req, res) => {
     }
 
     // Try to verify child exists in Firebase, but don't block if Firebase is unavailable
+    let childDoc = null;
     try {
-      const childDoc = await childrenCollection.doc(value.child_id).get();
+      childDoc = await childrenCollection.doc(value.child_id).get();
       if (!childDoc.exists) {
         console.warn(`⚠️  Child ID ${value.child_id} not found in Firebase (may exist locally - allowing session creation)`);
         // Don't block - child might exist locally but not synced to Firebase yet
@@ -105,8 +114,22 @@ router.post('/', async (req, res) => {
       }
     }
 
+    let childDiagnosis = 'unknown';
+    if (childDoc && childDoc.exists) {
+      childDiagnosis = childDoc.data().external_diagnosis || 'unknown';
+    }
+
+    const finalExternalDiagnosis = value.external_diagnosis || childDiagnosis || 'unknown';
+
+    const is_labeled = ["asd", "td", "typically_developing", "suspected"].includes(
+      (finalExternalDiagnosis || "").toLowerCase()
+    );
+
     const session = {
       ...value,
+      external_diagnosis: finalExternalDiagnosis,
+      is_labeled: is_labeled,
+      data_source: value.data_source || 'app_live',
       created_at: Date.now(),
       updated_at: Date.now(),
     };

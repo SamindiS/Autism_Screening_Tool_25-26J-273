@@ -297,7 +297,8 @@ class PdfReportService {
     final mlPrediction = session['ml_prediction'] as Map<String, dynamic>? ??
         session['questionnaire_results']?['ml_prediction']
             as Map<String, dynamic>? ??
-        session['game_results']?['ml_prediction'] as Map<String, dynamic>?;
+        session['game_results']?['ml_prediction'] as Map<String, dynamic>? ??
+        session['reflection_results']?['prediction_metadata'] as Map<String, dynamic>?;
 
     return pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -316,10 +317,16 @@ class PdfReportService {
           pw.SizedBox(height: 16),
 
           // Explainable AI Insights (If provided)
-          if (mlPrediction != null && mlPrediction['explanations'] != null) ...[
-            _buildXAICharts(
-                List<Map<String, dynamic>>.from(mlPrediction['explanations'])),
-            pw.SizedBox(height: 16),
+          if (mlPrediction != null) ...[
+            if (mlPrediction['asd_probability'] != null) ...[
+               _buildMLProbabilitySummary(mlPrediction),
+               pw.SizedBox(height: 12),
+            ],
+            if (mlPrediction['explanations'] != null) ...[
+              _buildXAICharts(
+                  List<Map<String, dynamic>>.from(mlPrediction['explanations'])),
+              pw.SizedBox(height: 16),
+            ],
           ],
 
           // Metrics Split Data
@@ -357,10 +364,14 @@ class PdfReportService {
     PdfColor bgColor;
     PdfColor borderColor;
 
-    if (level == 'low') {
+    if (level == 'no_risk' || level == 'low_risk') {
       color = PdfColors.green500;
       bgColor = PdfColor.fromInt(0xfff0fdf4);
       borderColor = PdfColor.fromInt(0xffbbf7d0);
+    } else if (level == 'low') {
+      color = PdfColors.lime700;
+      bgColor = PdfColor.fromInt(0xfffefce8);
+      borderColor = PdfColor.fromInt(0xfffef08a);
     } else if (level == 'moderate') {
       color = PdfColors.orange500;
       bgColor = PdfColor.fromInt(0xfffff7ed);
@@ -427,14 +438,60 @@ class PdfReportService {
           pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Text('Low Risk',
+                pw.Text('No Risk',
                     style: const pw.TextStyle(color: lightText, fontSize: 8)),
-                pw.Text('Moderate Risk',
+                pw.Text('Low',
+                    style: const pw.TextStyle(color: lightText, fontSize: 8)),
+                pw.Text('Moderate',
                     style: const pw.TextStyle(color: lightText, fontSize: 8)),
                 pw.Text('High Risk',
                     style: const pw.TextStyle(color: lightText, fontSize: 8)),
               ])
         ]));
+  }
+
+  static pw.Widget _buildMLProbabilitySummary(Map<String, dynamic> prediction) {
+    final asdProb = (prediction['asd_probability'] as num?)?.toDouble() ?? 0.0;
+    final ctrlProb = (prediction['control_probability'] as num?)?.toDouble() ?? 0.0;
+    final confidence = (prediction['confidence'] as num?)?.toDouble() ?? 0.0;
+    
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(12),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.grey100,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: PdfColors.grey300),
+      ),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text('HYBRID ML INFERENCE ENGINE', 
+                style: pw.TextStyle(color: primaryColor, fontSize: 8, fontWeight: pw.FontWeight.bold)),
+              pw.SizedBox(height: 4),
+              pw.Row(children: [
+                pw.Text('ASD RISK: ${(asdProb * 100).toStringAsFixed(1)}%', 
+                  style: pw.TextStyle(color: PdfColors.red700, fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(width: 12),
+                pw.Text('NORMAL: ${(ctrlProb * 100).toStringAsFixed(1)}%', 
+                  style: pw.TextStyle(color: PdfColors.green700, fontSize: 10, fontWeight: pw.FontWeight.bold)),
+              ]),
+            ]
+          ),
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.end,
+            children: [
+              pw.Text('CONFIDENCE', 
+                style: pw.TextStyle(color: lightText, fontSize: 8)),
+              pw.Text('${(confidence * 100).toStringAsFixed(1)}%', 
+                style: pw.TextStyle(color: darkText, fontSize: 11, fontWeight: pw.FontWeight.bold)),
+            ]
+          ),
+        ]
+      )
+    );
   }
 
   static pw.Widget _buildXAICharts(List<Map<String, dynamic>> explanations) {
@@ -522,7 +579,8 @@ class PdfReportService {
       'trials',
       'ml_prediction',
       'additional_metrics',
-      'ml_features'
+      'ml_features',
+      'prediction_metadata'
     ];
     final validEntries = data.entries
         .where((e) =>

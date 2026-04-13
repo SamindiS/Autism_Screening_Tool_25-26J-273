@@ -38,6 +38,10 @@ class _AddChildScreenState extends State<AddChildScreen> {
   // Diagnosis type: existing diagnosis vs new (suspected) case
   String _diagnosisType = 'new'; // 'existing' or 'new'
   
+  // NEW v3+: Final clinician diagnosis (Ground truth)
+  String? _selectedExternalDiagnosis;
+  final _previousDiagnosisCtrl = TextEditingController();
+  
   // Clinical fields
   // ChildGroup is kept for backward compatibility and analytics,
   // but the form itself does not branch by group.
@@ -66,6 +70,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
     _dobCtrl.dispose();
     _diagnosisSourceCtrl.dispose();
     _clinicianIdCtrl.dispose();
+    _previousDiagnosisCtrl.dispose();
     super.dispose();
   }
 
@@ -187,6 +192,10 @@ class _AddChildScreenState extends State<AddChildScreen> {
     
     // Prefill clinician ID for ASD children
     _clinicianIdCtrl.text = child['clinician_id'] as String? ?? '';
+    
+    // NEW v3 prefill
+    _selectedExternalDiagnosis = child['external_diagnosis'] as String?;
+    _previousDiagnosisCtrl.text = child['previous_diagnosis'] as String? ?? '';
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -321,6 +330,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
         clinicianId: clinicianId, // Manual entry (Clinician Medical ID)
         clinicianName: null, // Not needed
         diagnosisType: _diagnosisType,
+        externalDiagnosis: _selectedExternalDiagnosis,
+        previousDiagnosis: _previousDiagnosisCtrl.text,
       );
 
       final childId = (childData?['id'] as String?) ??
@@ -394,6 +405,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
         clinicianId: clinicianId, // Manual entry (Clinician Medical ID)
         clinicianName: null, // Not needed
         diagnosisType: _diagnosisType,
+        externalDiagnosis: _selectedExternalDiagnosis,
+        previousDiagnosis: _previousDiagnosisCtrl.text,
       );
 
       if (!mounted) return;
@@ -789,6 +802,55 @@ class _AddChildScreenState extends State<AddChildScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 16),
+          // NEW v3+: Final Clinician Diagnosis (Ground Truth)
+          Text(
+            'Final Clinician Diagnosis (Ground Truth)',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _primaryColor),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'This field is critical for validating the ML model.',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _selectedExternalDiagnosis,
+            decoration: InputDecoration(
+              hintText: 'Select Final Diagnosis',
+              prefixIcon: Icon(Icons.fact_check, color: _primaryColor),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+            items: [
+              DropdownMenuItem(value: 'typically_developing', child: Text('Typically Developing (TD)')),
+              DropdownMenuItem(value: 'asd', child: Text('Autism Spectrum Disorder (ASD)')),
+              DropdownMenuItem(value: 'suspected', child: Text('Suspected ASD / Further Assessment')),
+              DropdownMenuItem(value: 'other', child: Text('Other Developmental Delay')),
+            ],
+            onChanged: (val) => setState(() => _selectedExternalDiagnosis = val),
+            validator: (v) {
+              if (v == null || v.isEmpty) {
+                return 'Please provide a clinical diagnosis label';
+              }
+              return null;
+            },
+          ),
+          if (_diagnosisType == 'existing') ...[
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _previousDiagnosisCtrl,
+              decoration: InputDecoration(
+                labelText: 'Details of Previous Diagnosis',
+                hintText: 'e.g., Diagnosed at LRH in 2023',
+                prefixIcon: Icon(Icons.history, color: _primaryColor),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
         ],
       );
     });

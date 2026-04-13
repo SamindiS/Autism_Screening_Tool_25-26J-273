@@ -10,7 +10,7 @@ const router = express.Router();
 
 // FastAPI ML Engine URL
 // NOTE: config.py uses port 8002 to avoid conflicts.
-const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:8002';
+const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:8001';
 
 // Check if ML engine is available
 let ML_AVAILABLE = false;
@@ -87,9 +87,17 @@ router.post('/predict', async (req, res) => {
       );
 
       const result = response.data;
+      console.log('📋 FULL ML RESPONSE:', JSON.stringify(result, null, 2));
+      
+      const riskScore = Number(
+        result.risk_score ??
+        (result.hybrid_score !== undefined ? result.hybrid_score * 100 : 50)
+      );
       console.log(
         `✅ ML Prediction: ${result.prediction === 1 ? 'ASD Risk' : 'Control'}, ` +
-        `Score: ${result.risk_score.toFixed(1)}`
+        `Risk Level: ${result.risk_level}, Severity: ${result.severity || 'N/A'}, ` +
+        `Override: ${result.clinical_override || false}, ` +
+        `Score: ${Number.isFinite(riskScore) ? riskScore.toFixed(1) : 'N/A'}`
       );
 
       return res.json({
@@ -98,13 +106,15 @@ router.post('/predict', async (req, res) => {
         probability: result.probability,
         confidence: result.confidence,
         risk_level: result.risk_level,
-        risk_score: result.risk_score,
+        risk_score: riskScore,
         asd_probability: result.asd_probability,
         model_age_group: result.model_age_group,
         
         // v3 specific fields
         result_summary: result.result_summary,
         severity: result.severity,
+        clinical_override: result.clinical_override,
+        avg_score: result.avg_score,
         hybrid_score: result.hybrid_score,
         explanations: result.explanations,
         
@@ -113,7 +123,15 @@ router.post('/predict', async (req, res) => {
 
     } catch (apiError) {
       console.error('❌ FastAPI ML Engine error:', apiError.message);
-      return res.json(fallbackPrediction(mlFeatures));
+      if (apiError.response) {
+        console.error('❌ FastAPI response data:', JSON.stringify(apiError.response.data));
+      }
+      console.error('⚠️ FALLBACK TRIGGERED - ML FAILED');
+      
+      return res.status(500).json({
+        error: 'ML Engine failed',
+        fallback: fallbackPrediction(mlFeatures)
+      });
     }
 
   } catch (err) {

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import '../../data/models/child.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/logger_service.dart';
@@ -7,19 +6,15 @@ import '../../core/localization/app_localizations.dart';
 import '../../widgets/language_selector.dart';
 import '../settings/settings_screen.dart';
 import '../assessment/result_screen.dart';
+import '../../core/services/ml_service.dart';
 
 /// Specialized post-assessment reflection form for the 2-3.5 age bracket.
-/// 
-/// Because children in this age group do not perform tablet-based games, 
-/// this screen provides a structured rubric for clinicians to rate manual, physical 
-/// cognitive flexibility tasks (e.g., block sorting, imitation). It calculates an 
-/// aggregated risk score combining the parent questionnaire and these manual task ratings.
-class ClinicianReflectionScreen2_3 extends StatefulWidget {
+class ClinicianReflectionScreen23 extends StatefulWidget {
   final Child child;
   final String sessionId;
   final Map<String, dynamic> questionnaireResults;
 
-  const ClinicianReflectionScreen2_3({
+  const ClinicianReflectionScreen23({
     Key? key,
     required this.child,
     required this.sessionId,
@@ -27,19 +22,19 @@ class ClinicianReflectionScreen2_3 extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<ClinicianReflectionScreen2_3> createState() => _ClinicianReflectionScreen2_3State();
+  State<ClinicianReflectionScreen23> createState() => _ClinicianReflectionScreen23State();
 }
 
-class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen2_3> {
+class _ClinicianReflectionScreen23State extends State<ClinicianReflectionScreen23> {
   final _formKey = GlobalKey<FormState>();
   bool _loading = false;
 
   // Manual Task Observations
-  int? _task1Attention; // "Point to object" task
-  int? _task2Flexibility; // "Follow simple instruction" task
-  int? _task3Social; // "Imitate action" task
-  int? _task4Communication; // "Respond to name" task
-  int? _task5Engagement; // "Play with toy" task
+  int? _task1Attention; 
+  int? _task2Flexibility;
+  int? _task3Social;
+  int? _task4Communication;
+  int? _task5Engagement;
 
   // Overall Behavioral Observations
   int? _cognitiveFlexibility;
@@ -140,27 +135,14 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
   };
 
   Future<void> _submitReflection() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    // Validate all fields
-    if (_task1Attention == null ||
-        _task2Flexibility == null ||
-        _task3Social == null ||
-        _task4Communication == null ||
-        _task5Engagement == null ||
-        _cognitiveFlexibility == null ||
-        _attentionLevel == null ||
-        _frustrationTolerance == null ||
-        _perseverationBehavior == null ||
-        _overallBehavior == null) {
-      final l10n = AppLocalizations.of(context);
+    if (_task1Attention == null || _task2Flexibility == null || _task3Social == null ||
+        _task4Communication == null || _task5Engagement == null || _cognitiveFlexibility == null ||
+        _attentionLevel == null || _frustrationTolerance == null || 
+        _perseverationBehavior == null || _overallBehavior == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n?.translate('please_complete_observations') ?? 'Please complete all observations'),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Please complete all observations'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -168,7 +150,6 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
     setState(() => _loading = true);
 
     try {
-      // Calculate task scores
       final taskScores = {
         'rule_switching_ability': _task1Attention!,
         'instruction_flexibility': _task2Flexibility!,
@@ -185,115 +166,112 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
         'overall_cognitive_flexibility': _overallBehavior!,
       };
 
-      final avgTaskScore = taskScores.values.reduce((a, b) => a + b) / taskScores.length;
-      final avgBehavioralScore = behavioralScores.values.reduce((a, b) => a + b) / behavioralScores.length;
-      final avgReflectionScore = (avgTaskScore + avgBehavioralScore) / 2;
+      final double avgReflectionScore = (taskScores.values.reduce((a, b) => a + b) / 5 + 
+                                  behavioralScores.values.reduce((a, b) => a + b) / 5) / 2;
 
-      // --- 1) Clinical reflection risk (1.00–5.00 scale) ---
-      // Higher reflection score = better performance (lower ASD risk).
-      // Map the average reflection score to a clinical risk band:
-      // 1.00–2.50  → HIGH risk
-      // 2.51–3.90  → MODERATE risk
-      // 4.00–5.00  → LOW risk
-      String reflectionRiskLevel;
-      if (avgReflectionScore <= 2.50) {
-        reflectionRiskLevel = 'high';
-      } else if (avgReflectionScore <= 3.90) {
-        reflectionRiskLevel = 'moderate';
+      // Prepare ML Features
+      String mlLang = 'en';
+      final currentLocale = Localizations.localeOf(context).languageCode;
+      if (currentLocale == 'si') mlLang = 'si';
+      if (currentLocale == 'ta') mlLang = 'ta';
+
+      final Map<String, dynamic> qResponses = widget.questionnaireResults['responses'] ?? {};
+      
+      final Map<String, dynamic> mlFeatures = {
+        'age_months': widget.child.ageInMonths,
+        'gender': widget.child.gender.toLowerCase() == 'male' ? 1 : 0,
+        'language': mlLang == 'en' ? 0 : mlLang == 'si' ? 1 : 2,
+        'q1_name_response': qResponses['1'] ?? widget.questionnaireResults['q1_name_response'] ?? 3,
+        'q2_routine_change': qResponses['2'] ?? widget.questionnaireResults['q2_routine_change'] ?? 3,
+        'q3_toy_switching': qResponses['3'] ?? widget.questionnaireResults['q3_toy_switching'] ?? 3,
+        'q4_eye_contact': qResponses['4'] ?? widget.questionnaireResults['q4_eye_contact'] ?? 1,
+        'q5_pointing': qResponses['5'] ?? widget.questionnaireResults['q5_pointing'] ?? 1,
+        'q6_sensory_reaction': qResponses['6'] ?? widget.questionnaireResults['q6_sensory_reaction'] ?? 1,
+        'q7_imitation': qResponses['7'] ?? widget.questionnaireResults['q7_imitation'] ?? 1,
+        'q8_peer_play': qResponses['8'] ?? widget.questionnaireResults['q8_peer_play'] ?? 1,
+        'q9_joint_attention': qResponses['9'] ?? widget.questionnaireResults['q9_joint_attention'] ?? 1,
+        'q10_communication': qResponses['10'] ?? widget.questionnaireResults['q10_communication'] ?? 1,
+        'total_q_score': widget.questionnaireResults['total_score'] ?? 10,
+        'attention_level': _attentionLevel ?? 3,
+        'engagement_level': _task5Engagement ?? 3,
+        'frustration_tolerance': _frustrationTolerance ?? 3,
+        'instruction_following': _task2Flexibility ?? 3,
+        'cognitive_flexibility_obs': _cognitiveFlexibility ?? 3,
+        'perseveration_behavior': _perseverationBehavior ?? 3,
+        'rule_switching_ability': _task1Attention ?? 3,
+        'response_inhibition': _task3Social ?? 3,
+        'activity_switching': _task5Engagement ?? 3,
+      };
+
+      final mlResult = await MLService.predict(
+        mlFeatures: mlFeatures,
+        ageGroup: '2-3.5',
+        sessionType: 'clinician_reflection',
+      );
+
+      double finalRiskScore;
+      String finalRiskLevel;
+      Map<String, dynamic> finalPredictionMetadata = {};
+
+      if (mlResult != null) {
+        finalRiskScore = mlResult.riskScore;
+        finalRiskLevel = mlResult.riskLevel;
+        finalPredictionMetadata = {
+          'ml_method': mlResult.method,
+          'asd_probability': mlResult.asdProbability,
+          'control_probability': mlResult.controlProbability,
+          'confidence': mlResult.confidence,
+        };
       } else {
-        reflectionRiskLevel = 'low';
+        // Fallback Logic (Mandatory Clinical Realignment)
+        // Corrected Interpretation: Lower points = Higher Risk
+        // avgTotalScore maps to the 1.0-5.0 Scale suggested by clinicians
+        final qScore = (widget.questionnaireResults['total_score'] as num?)?.toDouble() ?? 50.0;
+        final avgQuestionnaire = qScore / 10.0;
+        final avgTotalScore = (avgQuestionnaire + avgReflectionScore) / 2.0;
+
+        finalRiskScore = (1.0 - (avgTotalScore - 1.0) / 4.0) * 100.0; // Normalized 0-100 Risk Score
+        
+        if (avgTotalScore <= 2.0) {
+          finalRiskLevel = 'high';
+        } else if (avgTotalScore <= 3.0) {
+          finalRiskLevel = 'moderate';
+        } else if (avgTotalScore <= 4.0) {
+          finalRiskLevel = 'low';
+        } else {
+          finalRiskLevel = 'no_risk';
+        }
+        
+        finalPredictionMetadata = {
+          'ml_method': 'rule_based_fallback',
+          'avg_performance_score': avgTotalScore,
+        };
       }
 
-      // Convert reflection performance to a 0–5 "risk points" score
-      // where higher = higher cognitive risk (for combining with assessment).
-      double reflectionRiskPoints = 6.0 - avgReflectionScore; // 1 → 5 (high), 5 → 1 (low)
-      if (reflectionRiskPoints < 0) reflectionRiskPoints = 0;
-      if (reflectionRiskPoints > 5) reflectionRiskPoints = 5;
-
-      // --- 2) Parent questionnaire risk (assessment) on 0–5 scale ---
-      // percentage_score: higher percentage = LOWER risk.
-      // Convert to 0–5 risk points where higher = higher cognitive risk.
-      final rawQuestionnairePercent =
-          (widget.questionnaireResults['percentage_score'] as num).toDouble().clamp(0.0, 100.0);
-      final assessmentRiskPoints = ((100.0 - rawQuestionnairePercent) / 100.0) * 5.0;
-
-      // --- 3) Overall cognitive risk score on 0–10 scale ---
-      // Overall score = assessment risk (0–5) + clinician reflection risk (0–5)
-      // 0.00–4.00  → LOW cognitive risk
-      // 4.10–6.99  → MODERATE cognitive risk
-      // 7.00–10.00 → HIGH cognitive risk
-      final overallCognitiveRiskScore = (assessmentRiskPoints + reflectionRiskPoints).clamp(0.0, 10.0);
-
-      String riskLevel;
-      if (overallCognitiveRiskScore < 4.10) {
-        riskLevel = 'low';
-      } else if (overallCognitiveRiskScore < 7.00) {
-        riskLevel = 'moderate';
-      } else {
-        riskLevel = 'high';
-      }
-
-      // Save reflection data
       final reflectionData = {
         'session_id': widget.sessionId,
         'child_id': widget.child.id,
         'manual_task_scores': taskScores,
         'behavioral_observation_scores': behavioralScores,
-        'average_task_score': avgTaskScore,
-        'average_behavioral_score': avgBehavioralScore,
         'average_reflection_score': avgReflectionScore,
-        'reflection_risk_level': reflectionRiskLevel,
-        'assessment_risk_points': assessmentRiskPoints,
-        'reflection_risk_points': reflectionRiskPoints,
-        'overall_cognitive_risk_score': overallCognitiveRiskScore,
-        'risk_level': riskLevel,
+        'overall_cognitive_risk_score': finalRiskScore,
+        'risk_level': finalRiskLevel,
+        'prediction_metadata': finalPredictionMetadata,
         'timestamp': DateTime.now().toIso8601String(),
       };
 
-      // Update session with reflection data
-      try {
-        await StorageService.updateSession(
-          id: widget.sessionId,
-          reflectionResults: reflectionData,
-          riskScore: overallCognitiveRiskScore,
-          riskLevel: riskLevel.toLowerCase(),
-        );
-      } catch (e) {
-        debugPrint('Error updating session: $e');
-        // Try to create session if it doesn't exist
-        try {
-          final sessionData = await StorageService.saveSession(
-            childId: widget.child.id,
-            sessionType: 'ai_doctor_bot',
-            ageGroup: '2-3.5',
-            startTime: DateTime.now().subtract(const Duration(minutes: 10)),
-            endTime: DateTime.now(),
-            questionnaireResults: widget.questionnaireResults,
-            reflectionResults: reflectionData,
-            riskScore: overallCognitiveRiskScore,
-            riskLevel: riskLevel.toLowerCase(),
-          );
-          
-          if (sessionData != null && sessionData['id'] != null) {
-            // Use the new session ID
-            final newSessionId = sessionData['id'] as String;
-            debugPrint('Created new session: $newSessionId');
-          }
-        } catch (createError) {
-          debugPrint('Error creating session: $createError');
-          throw Exception('Failed to save reflection data: $createError');
-        }
-      }
+      await StorageService.updateSession(
+        id: widget.sessionId,
+        reflectionResults: reflectionData,
+        riskScore: finalRiskScore,
+        riskLevel: finalRiskLevel.toLowerCase(),
+      );
 
-      // Log to console
       LoggerService.logSession({
         'event': 'CLINICAL_REFLECTION_2_3_COMPLETED',
         'child_id': widget.child.id,
         'session_id': widget.sessionId,
-        'questionnaire_results': widget.questionnaireResults,
-        'reflection_data': reflectionData,
-        'enhanced_risk_score': overallCognitiveRiskScore,
-        'risk_level': riskLevel,
+        'risk_level': finalRiskLevel,
       });
 
       if (mounted) {
@@ -305,8 +283,8 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
               sessionId: widget.sessionId,
               questionnaireResults: widget.questionnaireResults,
               reflectionData: reflectionData,
-              riskScore: overallCognitiveRiskScore,
-              riskLevel: riskLevel,
+              riskScore: finalRiskScore,
+              riskLevel: finalRiskLevel,
             ),
           ),
         );
@@ -314,67 +292,29 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Builder(builder: (ctx) {
-          final l10n = AppLocalizations.of(ctx);
-          return Text(l10n?.clinicianReflection2_3 ?? 'Clinician Reflection');
-        }),
+        title: Text(l10n?.clinicianReflection2_3 ?? 'Clinician Reflection'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.settings, color: Colors.white),
-              tooltip: 'Settings',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const SettingsScreen(),
-                  ),
-                );
-              },
-            ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
           ),
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const LanguageSelector(),
-          ),
+          const LanguageSelector(),
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.blue.shade50,
-              Colors.white,
-            ],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.blue.shade50, Colors.white])),
         child: SafeArea(
           child: Form(
             key: _formKey,
@@ -383,46 +323,20 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header Card
                   _buildHeaderCard(),
                   const SizedBox(height: 24),
-                  // Instructions
                   _buildInstructionsCard(),
                   const SizedBox(height: 24),
-                  // Important Note
                   _buildImportantNoteCard(),
                   const SizedBox(height: 24),
-                  // Manual Tasks Section
-                  _buildSectionTitle(AppLocalizations.of(context)?.translate('manual_tasks_section') ?? 'Manual Cognitive Flexibility Tasks', Icons.task),
+                  _buildSectionTitle(l10n?.translate('manual_tasks_section') ?? 'Manual Tasks', Icons.task),
                   const SizedBox(height: 16),
-                  ..._manualTasks.map((task) {
-                    final l10n = AppLocalizations.of(context);
-                    final translatedTask = {
-                      ...task,
-                      'title': l10n?.translate('manualTask${task['id'].toString().substring(4)}Title') ?? task['title'],
-                      'description': l10n?.translate('manualTask${task['id'].toString().substring(4)}Description') ?? task['description'],
-                      'label': l10n?.translate('manualTask${task['id'].toString().substring(4)}Label') ?? task['label'],
-                      'task': l10n?.translate('manualTask${task['id'].toString().substring(4)}Task') ?? task['task'],
-                      'category': l10n?.translate('manualTask${task['id'].toString().substring(4)}Category') ?? task['category'],
-                    };
-                    return _buildTaskCard(translatedTask);
-                  }),
+                  ..._manualTasks.map((task) => _buildTaskCard(task)),
                   const SizedBox(height: 24),
-                  // Behavioral Observations Section
-                  _buildSectionTitle(AppLocalizations.of(context)?.behavioralObservations ?? 'Behavioral Observations', Icons.psychology),
+                  _buildSectionTitle(l10n?.behavioralObservations ?? 'Observations', Icons.psychology),
                   const SizedBox(height: 16),
-                  ..._behavioralObservations.map((obs) {
-                    final l10n = AppLocalizations.of(context);
-                    final translatedObs = {
-                      ...obs,
-                      'question': l10n?.translate('behavioralQuestion${obs['id'].toString().split('_').map((s) => s.substring(0, 1).toUpperCase() + s.substring(1)).join('')}') ?? obs['question'],
-                      'label': l10n?.translate('behavioralLabel${obs['id'].toString().split('_').map((s) => s.substring(0, 1).toUpperCase() + s.substring(1)).join('')}') ?? obs['label'],
-                      'category': l10n?.translate('behavioralCategory${obs['id'].toString().split('_').map((s) => s.substring(0, 1).toUpperCase() + s.substring(1)).join('')}') ?? obs['category'],
-                    };
-                    return _buildBehavioralCard(translatedObs);
-                  }),
+                  ..._behavioralObservations.map((obs) => _buildBehavioralCard(obs)),
                   const SizedBox(height: 32),
-                  // Submit Button
                   _buildSubmitButton(),
                 ],
               ),
@@ -437,56 +351,20 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue.shade600, Colors.blue.shade400],
-        ),
+        gradient: LinearGradient(colors: [Colors.blue.shade600, Colors.blue.shade400]),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 5))],
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.assignment,
-              color: Colors.white,
-              size: 32,
-            ),
-          ),
+          const Icon(Icons.assignment, color: Colors.white, size: 32),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Builder(builder: (ctx) {
-                  final l10n = AppLocalizations.of(ctx);
-                  return Text(
-                    l10n?.translate('manual_task_assessment') ?? 'Manual Task Assessment',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  );
-                }),
-                const SizedBox(height: 4),
-                Text(
-                  widget.child.name,
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
+                Text(widget.child.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                Text('Age: ${widget.child.ageInMonths} months', style: TextStyle(fontSize: 16, color: Colors.white.withOpacity(0.9))),
               ],
             ),
           ),
@@ -498,46 +376,12 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
   Widget _buildInstructionsCard() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
-      ),
+      decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.orange.withOpacity(0.3))),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.info_outline, color: Colors.orange.shade700),
           const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Builder(builder: (ctx) {
-                  final l10n = AppLocalizations.of(ctx);
-                  return Text(
-                    l10n?.translate('manual_task_instructions_header') ?? 'Manual Task Instructions',
-                    style: TextStyle(
-                      color: Colors.orange.shade900,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  );
-                }),
-                const SizedBox(height: 8),
-                Builder(builder: (ctx) {
-                  final l10n = AppLocalizations.of(ctx);
-                  return Text(
-                    l10n?.translate('manual_task_instructions_body') ?? 'The parent has completed the questionnaire. Now, please perform these manual cognitive flexibility tasks with the child (WITHOUT tablet) and observe their behavior. Focus on rule-switching and cognitive flexibility abilities.',
-                    style: TextStyle(
-                      color: Colors.orange.shade900,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ),
+          const Expanded(child: Text('Please perform manual cognitive tasks and observe the child\'s behavior.')),
         ],
       ),
     );
@@ -546,46 +390,12 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
   Widget _buildImportantNoteCard() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.red.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.withOpacity(0.3), width: 2),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.red.withOpacity(0.3))),
+      child: const Row(
         children: [
-          Icon(Icons.warning_amber_rounded, color: Colors.red.shade700, size: 28),
+          Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
           const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Builder(builder: (ctx) {
-                  final l10n = AppLocalizations.of(ctx);
-                  return Text(
-                    l10n?.translate('manual_only_important_header') ?? 'Important: Manual Assessment Only',
-                    style: TextStyle(
-                      color: Colors.red.shade900,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  );
-                }),
-                const SizedBox(height: 8),
-                Builder(builder: (ctx) {
-                  final l10n = AppLocalizations.of(ctx);
-                  return Text(
-                    l10n?.translate('manual_only_important_body') ?? 'This child (ages 2-3.5) did NOT play tablet games. Please use physical objects (blocks, toys, etc.) to assess cognitive flexibility and rule-switching. Observe how the child adapts when rules change.',
-                    style: TextStyle(
-                      color: Colors.red.shade900,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ),
+          Expanded(child: Text('Important: This age group (2-3.5) uses manual tasks for assessment.')),
         ],
       ),
     );
@@ -596,226 +406,69 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
       children: [
         Icon(icon, color: Colors.blue.shade700, size: 28),
         const SizedBox(width: 12),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.blue.shade900,
-          ),
-        ),
+        Text(title, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
       ],
     );
   }
 
   Widget _buildTaskCard(Map<String, dynamic> task) {
-    final taskId = task['id'] as String;
-    int? selectedValue;
+    final id = task['id'] as String;
+    int? val;
+    if (id == 'task1') val = _task1Attention;
+    if (id == 'task2') val = _task2Flexibility;
+    if (id == 'task3') val = _task3Social;
+    if (id == 'task4') val = _task4Communication;
+    if (id == 'task5') val = _task5Engagement;
 
-    switch (taskId) {
-      case 'task1':
-        selectedValue = _task1Attention;
-        break;
-      case 'task2':
-        selectedValue = _task2Flexibility;
-        break;
-      case 'task3':
-        selectedValue = _task3Social;
-        break;
-      case 'task4':
-        selectedValue = _task4Communication;
-        break;
-      case 'task5':
-        selectedValue = _task5Engagement;
-        break;
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(task['icon'] as IconData, color: Colors.blue.shade700),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  task['title'] as String,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade900,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.withOpacity(0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.play_circle_outline, size: 18, color: Colors.blue.shade700),
-                    const SizedBox(width: 8),
-                    Builder(builder: (ctx) {
-                      final l10n = AppLocalizations.of(ctx);
-                      return Text(
-                        l10n?.translate('task_to_perform_label') ?? 'Task to Perform:',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.blue.shade900,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  task['task'] as String,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.blue.shade900,
-                    fontWeight: FontWeight.w500,
-                    height: 1.4,
-                  ),
-                ),
-                if (task['category'] != null) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade100,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Builder(builder: (ctx) {
-                      final l10n = AppLocalizations.of(ctx);
-                      return Text(
-                        '${l10n?.translate('category_label') ?? 'Category:'} ${task['category']}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue.shade900,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      );
-                    }),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            task['description'] as String,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey.shade700,
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildLikertScale(taskId, selectedValue, 'task'),
-        ],
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(task['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(height: 8),
+            Text(task['task'], style: TextStyle(color: Colors.grey.shade600)),
+            const SizedBox(height: 16),
+            _buildLikertScale(id, val, 'task'),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildBehavioralCard(Map<String, dynamic> observation) {
-    final obsId = observation['id'] as String;
-    int? selectedValue;
+    final id = observation['id'] as String;
+    int? val;
+    if (id == 'rule_switching') val = _cognitiveFlexibility;
+    if (id == 'attention') val = _attentionLevel;
+    if (id == 'frustration') val = _frustrationTolerance;
+    if (id == 'perseveration') val = _perseverationBehavior;
+    if (id == 'overall') val = _overallBehavior;
 
-    switch (obsId) {
-      case 'rule_switching':
-        selectedValue = _cognitiveFlexibility;
-        break;
-      case 'attention':
-        selectedValue = _attentionLevel;
-        break;
-      case 'frustration':
-        selectedValue = _frustrationTolerance;
-        break;
-      case 'perseveration':
-        selectedValue = _perseverationBehavior;
-        break;
-      case 'overall':
-        selectedValue = _overallBehavior;
-        break;
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.purple.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(observation['icon'] as IconData, color: Colors.purple.shade700),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  observation['label'] as String,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.purple.shade900,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            observation['question'] as String,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey.shade700,
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildLikertScale(obsId, selectedValue, 'behavior'),
-        ],
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(observation['label'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(height: 8),
+            Text(observation['question'], style: TextStyle(color: Colors.grey.shade600)),
+            const SizedBox(height: 16),
+            _buildLikertScale(id, val, 'behavior'),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildLikertScale(String id, int? selectedValue, String type) {
-    final labels = type == 'task' ? _scaleLabels['task']! : _scaleLabels['behavior']!;
     final l10n = AppLocalizations.of(context);
-
+    final labels = _scaleLabels[type] ?? ['1', '2', '3', '4', '5'];
+    
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: List.generate(5, (index) {
@@ -823,80 +476,34 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
         final isSelected = selectedValue == value;
         return Expanded(
           child: GestureDetector(
-            onTap: () {
-              setState(() {
-                switch (id) {
-                  case 'task1':
-                    _task1Attention = value;
-                    break;
-                  case 'task2':
-                    _task2Flexibility = value;
-                    break;
-                  case 'task3':
-                    _task3Social = value;
-                    break;
-                  case 'task4':
-                    _task4Communication = value;
-                    break;
-                  case 'task5':
-                    _task5Engagement = value;
-                    break;
-                  case 'rule_switching':
-                    _cognitiveFlexibility = value;
-                    break;
-                  case 'attention':
-                    _attentionLevel = value;
-                    break;
-                  case 'frustration':
-                    _frustrationTolerance = value;
-                    break;
-                  case 'perseveration':
-                    _perseverationBehavior = value;
-                    break;
-                  case 'overall':
-                    _overallBehavior = value;
-                    break;
-                }
-              });
-            },
+            onTap: () => setState(() {
+              if (id == 'task1') _task1Attention = value;
+              else if (id == 'task2') _task2Flexibility = value;
+              else if (id == 'task3') _task3Social = value;
+              else if (id == 'task4') _task4Communication = value;
+              else if (id == 'task5') _task5Engagement = value;
+              else if (id == 'rule_switching') _cognitiveFlexibility = value;
+              else if (id == 'attention') _attentionLevel = value;
+              else if (id == 'frustration') _frustrationTolerance = value;
+              else if (id == 'perseveration') _perseverationBehavior = value;
+              else if (id == 'overall') _overallBehavior = value;
+            }),
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? (type == 'task' ? Colors.blue.shade100 : Colors.purple.shade100)
-                    : Colors.grey.shade100,
+                color: isSelected ? Colors.blue : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isSelected
-                      ? (type == 'task' ? Colors.blue : Colors.purple)
-                      : Colors.grey.shade300,
-                  width: isSelected ? 3 : 1,
-                ),
+                border: Border.all(color: isSelected ? Colors.blue : Colors.grey.shade300, width: isSelected ? 2 : 1),
               ),
               child: Column(
                 children: [
-                  Text(
-                    value.toString(),
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected
-                          ? (type == 'task' ? Colors.blue.shade900 : Colors.purple.shade900)
-                          : Colors.grey.shade600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
+                  Text('$value', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : Colors.blue.shade900)),
+                  const SizedBox(height: 2),
                   Text(
                     l10n?.translate('scale${type.substring(0, 1).toUpperCase()}${type.substring(1)}${value}') ?? labels[index],
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isSelected
-                          ? (type == 'task' ? Colors.blue.shade900 : Colors.purple.shade900)
-                          : Colors.grey.shade600,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    ),
+                    style: TextStyle(fontSize: 8, color: isSelected ? Colors.white : Colors.grey.shade600),
                   ),
                 ],
               ),
@@ -910,39 +517,11 @@ class _ClinicianReflectionScreen2_3State extends State<ClinicianReflectionScreen
   Widget _buildSubmitButton() {
     return SizedBox(
       width: double.infinity,
-      height: 60,
+      height: 55,
       child: ElevatedButton(
         onPressed: _loading ? null : _submitReflection,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          elevation: 5,
-        ),
-        child: _loading
-            ? const SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Builder(builder: (ctx) {
-                final l10n = AppLocalizations.of(ctx);
-                return Text(
-                  l10n?.translate('complete_assessment') ?? 'COMPLETE ASSESSMENT',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                );
-              }),
+        child: _loading ? const CircularProgressIndicator(color: Colors.white) : const Text('COMPLETE ASSESSMENT'),
       ),
     );
   }
 }
-

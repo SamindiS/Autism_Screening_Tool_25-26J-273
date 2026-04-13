@@ -32,6 +32,7 @@ class SessionDetailScreen extends StatefulWidget {
 class _SessionDetailScreenState extends State<SessionDetailScreen> {
   Map<String, dynamic>? _session;
   List<Map<String, dynamic>> _trials = [];
+  AppLocalizations? get l10n => AppLocalizations.of(context);
   bool _loading = true;
   String? _error;
 

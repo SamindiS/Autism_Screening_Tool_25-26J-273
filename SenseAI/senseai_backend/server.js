@@ -36,6 +36,10 @@ app.use('/api/integrity', require('./routes/dataValidation'));
 app.use('/api/backup', require('./routes/dataValidation'));
 
 // Health check (required for tablet sync)
+app.get('/api/health', (req, res) => {
+  res.redirect('/health');
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });

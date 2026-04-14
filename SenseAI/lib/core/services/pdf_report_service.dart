@@ -13,6 +13,19 @@ import 'package:share_plus/share_plus.dart';
 /// multi-page, visually distinct reports containing patient demographics,
 /// session analysis, risk gauges, XAI feature contributions, and historical trends.
 class PdfReportService {
+  static Map<String, dynamic>? _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is String && value.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(value);
+        if (decoded is Map<String, dynamic>) return decoded;
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
+  }
+
   /// Primary color used for headers and visual emphasis (Indigo).
   static const primaryColor = PdfColor.fromInt(0xff6366f1);
   
@@ -294,11 +307,14 @@ class PdfReportService {
   static pw.Widget _buildSessionAnalysis(Map<String, dynamic> session) {
     final riskScore = session['risk_score'] as num?;
     final riskLevel = session['risk_level'] as String?;
-    final mlPrediction = session['ml_prediction'] as Map<String, dynamic>? ??
-        session['questionnaire_results']?['ml_prediction']
-            as Map<String, dynamic>? ??
-        session['game_results']?['ml_prediction'] as Map<String, dynamic>? ??
-        session['reflection_results']?['prediction_metadata'] as Map<String, dynamic>?;
+    final questionnaireResults = _asMap(session['questionnaire_results']);
+    final gameResults = _asMap(session['game_results']);
+    final reflectionResults = _asMap(session['reflection_results']);
+    final metrics = _asMap(session['metrics']);
+    final mlPrediction = _asMap(session['ml_prediction']) ??
+        _asMap(questionnaireResults?['ml_prediction']) ??
+        _asMap(gameResults?['ml_prediction']) ??
+        _asMap(reflectionResults?['prediction_metadata']);
 
     return pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -331,25 +347,22 @@ class PdfReportService {
 
           // Metrics Split Data
           pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-            if (session['game_results'] != null)
+            if (gameResults != null)
               pw.Expanded(
                   child: _buildMetricsBox('Cognitive DCCS Game Metrics',
-                      session['game_results'] as Map<String, dynamic>)),
-            if (session['game_results'] != null &&
-                (session['metrics'] != null ||
-                    session['questionnaire_results'] != null))
+                      gameResults)),
+            if (gameResults != null &&
+                (metrics != null || questionnaireResults != null))
               pw.SizedBox(width: 16),
-            if (session['metrics'] != null)
+            if (metrics != null)
               pw.Expanded(
                   child: _buildMetricsBox('Behavioral Observations',
-                      session['metrics'] as Map<String, dynamic>)),
-            if (session['questionnaire_results'] != null &&
-                session['metrics'] == null)
+                      metrics)),
+            if (questionnaireResults != null && metrics == null)
               pw.Expanded(
                   child: _buildMetricsBox(
                       'Questionnaire Scoring',
-                      session['questionnaire_results']
-                          as Map<String, dynamic>)),
+                      questionnaireResults)),
           ])
         ]);
   }

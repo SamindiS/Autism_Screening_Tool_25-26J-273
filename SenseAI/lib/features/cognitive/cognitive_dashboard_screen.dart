@@ -12,6 +12,7 @@ import 'add_child_screen.dart';
 import 'child_list_screen.dart';
 import 'age_select_screen.dart';
 import 'cognitive_analytics_screen.dart';
+import 'child_detail_screen.dart';
 
 /// Primary hub for the Cognitive Flexibility & Rule Switching module.
 /// 
@@ -42,6 +43,13 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _filterStatus = 'all'; // 'all', 'completed', 'pending'
+
+  bool _isSessionCompleted(Map<String, dynamic> session) {
+    final status = (session['status'] as String?)?.toLowerCase();
+    return session['end_time'] != null ||
+        status == 'completed' ||
+        status == 'complete';
+  }
 
   @override
   void initState() {
@@ -104,8 +112,10 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
       final today = DateTime.now();
       final todayStart = DateTime(today.year, today.month, today.day);
 
-      _completedAssessments = _sessions.where((s) => s['end_time'] != null).length;
-      _pendingAssessments = _sessions.where((s) => s['end_time'] == null).length;
+      _completedAssessments =
+          _sessions.where((s) => _isSessionCompleted(s)).length;
+      _pendingAssessments =
+          _sessions.where((s) => !_isSessionCompleted(s)).length;
       _todayAssessments = _sessions.where((s) {
         final sessionDate = DateTime.fromMillisecondsSinceEpoch(s['created_at'] as int);
         return sessionDate.isAfter(todayStart);
@@ -158,8 +168,12 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
       if (aSessions.isEmpty) return 1;
       if (bSessions.isEmpty) return -1;
       
-      final aLatest = aSessions.first['created_at'] as int;
-      final bLatest = bSessions.first['created_at'] as int;
+      final aLatest = aSessions
+          .map((s) => (s['created_at'] as int?) ?? (s['start_time'] as int?) ?? 0)
+          .fold<int>(0, (maxVal, v) => v > maxVal ? v : maxVal);
+      final bLatest = bSessions
+          .map((s) => (s['created_at'] as int?) ?? (s['start_time'] as int?) ?? 0)
+          .fold<int>(0, (maxVal, v) => v > maxVal ? v : maxVal);
       return bLatest.compareTo(aLatest);
     });
 
@@ -1535,11 +1549,21 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
 
   Widget _buildChildCard(Child child) {
     final childSessions = _sessions.where((s) => s['child_id'] == child.id).toList();
-    final completedSessions = childSessions.where((s) => s['end_time'] != null).length;
-    final hasPendingSession = childSessions.any((s) => s['end_time'] == null);
+    final completedSessions =
+        childSessions.where((s) => _isSessionCompleted(s)).length;
+    final hasPendingSession =
+        childSessions.any((s) => !_isSessionCompleted(s));
     
     final latestSession = childSessions.isNotEmpty
-        ? childSessions.first
+        ? (List<Map<String, dynamic>>.from(childSessions)
+          ..sort((a, b) {
+            final aTime =
+                (a['created_at'] as int?) ?? (a['start_time'] as int?) ?? 0;
+            final bTime =
+                (b['created_at'] as int?) ?? (b['start_time'] as int?) ?? 0;
+            return bTime.compareTo(aTime);
+          }))
+            .first
         : null;
     
     final lastAssessmentDate = latestSession != null
@@ -1676,10 +1700,10 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => AgeSelectScreen(childId: child.id),
+              builder: (_) => ChildDetailScreen(child: child.toJson()),
             ),
           );
-          _loadData(); // Refresh after assessment
+          _loadData(); // Refresh after returning
         },
       ),
     );

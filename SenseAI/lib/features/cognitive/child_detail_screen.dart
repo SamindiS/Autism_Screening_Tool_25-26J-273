@@ -63,12 +63,23 @@ class _ChildDetailScreenState extends State<ChildDetailScreen> {
   Future<List<Map<String, dynamic>>> _loadSessions() async {
     final sessions =
         await StorageService.getSessionsByChild(_child['id'] as String);
-    return sessions
+    final normalized = sessions
         .map((session) => {
               ...session,
               'metrics': _decodeMetrics(session['metrics']),
+              'game_results': _decodeMetrics(session['game_results']),
+              'questionnaire_results':
+                  _decodeMetrics(session['questionnaire_results']),
+              'reflection_results':
+                  _decodeMetrics(session['reflection_results']),
             })
         .toList();
+    normalized.sort((a, b) {
+      final aTime = (a['created_at'] as int?) ?? (a['start_time'] as int?) ?? 0;
+      final bTime = (b['created_at'] as int?) ?? (b['start_time'] as int?) ?? 0;
+      return bTime.compareTo(aTime);
+    });
+    return normalized;
   }
 
   Map<String, dynamic>? _decodeMetrics(dynamic value) {

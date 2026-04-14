@@ -23,7 +23,11 @@ from app.core.config import (
     # v3 Hybrid Model Paths
     AGE_2_V3_BINARY_MODEL_PATH, AGE_2_V3_SEVERITY_MODEL_PATH,
     AGE_2_V3_SCALER_PATH, AGE_2_V3_LE_GENDER_PATH,
-    AGE_2_V3_LE_LANG_PATH, AGE_2_V3_CONFIG_PATH
+    AGE_2_V3_LE_LANG_PATH, AGE_2_V3_CONFIG_PATH,
+    # v4 Hybrid Model Paths (Age 3.5-5.5)
+    AGE_3_5_V4_BINARY_MODEL_PATH, AGE_3_5_V4_SEVERITY_MODEL_PATH,
+    AGE_3_5_V4_SCALER_PATH, AGE_3_5_V4_LE_GENDER_PATH,
+    AGE_3_5_V4_LE_LANG_PATH, AGE_3_5_V4_METADATA_PATH
 )
 from app.core.logger import logger
 
@@ -40,6 +44,14 @@ _v3_scaler = None
 _v3_le_gender = None
 _v3_le_lang = None
 _v3_config = None
+
+# v4 Hybrid Model Cache (Age 3.5-5.5)
+_v4_binary_model_3_5 = None
+_v4_severity_model_3_5 = None
+_v4_scaler_3_5 = None
+_v4_le_gender_3_5 = None
+_v4_le_lang_3_5 = None
+_v4_config_3_5 = None
 
 def load_models():
     """Load all model files (called once at startup)"""
@@ -146,6 +158,50 @@ def load_v3_models():
         # Don't raise here, allow the app to boot even if v3 fails (it will error on use)
         return None, None, None, None, None, None
 
+def load_v4_3_5_models():
+    """
+    Load all v4 hybrid model components for the 3.5-5.5 age group (Frog Jump).
+    Uses singleton pattern to cache models in memory.
+    """
+    global _v4_binary_model_3_5, _v4_severity_model_3_5, _v4_scaler_3_5, _v4_le_gender_3_5, _v4_le_lang_3_5, _v4_config_3_5
+    
+    if _v4_binary_model_3_5 is not None:
+        return _v4_binary_model_3_5, _v4_severity_model_3_5, _v4_scaler_3_5, _v4_le_gender_3_5, _v4_le_lang_3_5, _v4_config_3_5
+        
+    logger.info("Loading SenseAI Cognitive Flexibility v4 Model Ensemble (Age 3.5-5.5)...")
+    
+    try:
+        if not AGE_3_5_V4_BINARY_MODEL_PATH.exists():
+            raise FileNotFoundError(f"v4 Binary model not found: {AGE_3_5_V4_BINARY_MODEL_PATH}")
+        _v4_binary_model_3_5 = joblib.load(AGE_3_5_V4_BINARY_MODEL_PATH)
+        
+        if not AGE_3_5_V4_SEVERITY_MODEL_PATH.exists():
+            raise FileNotFoundError(f"v4 Severity model not found: {AGE_3_5_V4_SEVERITY_MODEL_PATH}")
+        _v4_severity_model_3_5 = joblib.load(AGE_3_5_V4_SEVERITY_MODEL_PATH)
+        
+        if not AGE_3_5_V4_SCALER_PATH.exists():
+            raise FileNotFoundError(f"v4 Scaler not found: {AGE_3_5_V4_SCALER_PATH}")
+        _v4_scaler_3_5 = joblib.load(AGE_3_5_V4_SCALER_PATH)
+        
+        if not AGE_3_5_V4_LE_GENDER_PATH.exists():
+            raise FileNotFoundError(f"v4 Gender Encoder not found: {AGE_3_5_V4_LE_GENDER_PATH}")
+        _v4_le_gender_3_5 = joblib.load(AGE_3_5_V4_LE_GENDER_PATH)
+        
+        if not AGE_3_5_V4_LE_LANG_PATH.exists():
+            raise FileNotFoundError(f"v4 Language Encoder not found: {AGE_3_5_V4_LE_LANG_PATH}")
+        _v4_le_lang_3_5 = joblib.load(AGE_3_5_V4_LE_LANG_PATH)
+        
+        if AGE_3_5_V4_METADATA_PATH.exists():
+            with open(AGE_3_5_V4_METADATA_PATH, 'r') as f:
+                _v4_config_3_5 = json.load(f)
+        
+        logger.info("[OK] v4 Model Ensemble (Age 3.5) loaded successfully")
+        return _v4_binary_model_3_5, _v4_severity_model_3_5, _v4_scaler_3_5, _v4_le_gender_3_5, _v4_le_lang_3_5, _v4_config_3_5
+        
+    except Exception as e:
+        logger.error(f"[ERROR] Failed to load v4 models: {str(e)}")
+        return None, None, None, None, None, None
+
 def load_model_metadata() -> Optional[Dict[str, Any]]:
     """Load model metadata if available"""
     if MODEL_METADATA_PATH.exists():
@@ -165,6 +221,9 @@ def check_models_loaded() -> Dict[str, Any]:
         # Check v3 models
         v3_loaded = _v3_binary_model is not None
         
+        # Check v4 (3.5-5.5) models
+        v4_3_5_loaded = _v4_binary_model_3_5 is not None
+        
         status = {
             "legacy": {
                 "loaded": model_loaded,
@@ -175,6 +234,11 @@ def check_models_loaded() -> Dict[str, Any]:
                 "loaded": v3_loaded,
                 "age_group": "2-3.5",
                 "ready": v3_loaded and _v3_scaler is not None
+            },
+            "v4_cogflex": {
+                "loaded": v4_3_5_loaded,
+                "age_group": "3.5-5.5",
+                "ready": v4_3_5_loaded and _v4_scaler_3_5 is not None
             }
         }
         
@@ -189,6 +253,7 @@ def check_models_loaded() -> Dict[str, Any]:
 try:
     load_models()
     load_v3_models()
+    load_v4_3_5_models()
 except Exception:
     pass
 

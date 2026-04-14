@@ -266,6 +266,7 @@ class _ClinicianReflectionScreen23State extends State<ClinicianReflectionScreen2
 
       await StorageService.updateSession(
         id: widget.sessionId,
+        endTime: DateTime.now(),
         reflectionResults: reflectionData,
         riskScore: finalRiskScore,
         riskLevel: finalRiskLevel.toLowerCase(),

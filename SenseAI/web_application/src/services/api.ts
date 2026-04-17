@@ -1,9 +1,18 @@
 import axios from 'axios'
 
- const API_BASE_URL = 'http://localhost:3000' 
-//const API_BASE_URL = 'https://autism-backend-iuhw.vercel.app'
+// Prefer a runtime-configurable API base URL.
+// - Local dev: set `VITE_API_BASE_URL=http://localhost:3000`
+// - Deployed (frontend + backend on same domain): omit to use same-origin `/api`
+const API_BASE_URL =
+  (import.meta as any).env?.VITE_API_BASE_URL?.toString()?.trim() || ''
+
+function normalizeBaseUrl(url: string) {
+  if (!url) return ''
+  return url.endsWith('/') ? url.slice(0, -1) : url
+}
+
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: normalizeBaseUrl(API_BASE_URL),
   headers: {
     'Content-Type': 'application/json',
   },

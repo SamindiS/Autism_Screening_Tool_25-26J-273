@@ -43,6 +43,93 @@ const getSingleClinician = async () => {
   return snap.docs[0];
 };
 
+const isFirestoreAuthError = (err) => {
+  const msg = String(err?.message || '');
+  // Common Firestore auth/permission signals:
+  // - code 16: UNAUTHENTICATED
+  // - code 7: PERMISSION_DENIED
+  return (
+    err?.code === 16 ||
+    err?.code === 7 ||
+    msg.includes('UNAUTHENTICATED') ||
+    msg.includes('PERMISSION_DENIED') ||
+    msg.toLowerCase().includes('permission') ||
+    msg.toLowerCase().includes('unauthenticated')
+  );
+};
+
+const loadManualAdmins = () => {
+  // Admin accounts managed without Firebase.
+  //
+  // Recommended env vars:
+  // - ADMIN_USERS_JSON: JSON array of { pin, name?, hospital? }
+  //   Example: [{"pin":"admin123","name":"Administrator","hospital":"All Hospitals"}]
+  //
+  // Backward-compatible env var:
+  // - ADMIN_PINS: comma-separated pins (names default to "Administrator")
+  //
+  // Security note: PINs in env vars are plaintext; restrict access to deployment settings.
+
+  const admins = [];
+
+  const rawJson = (process.env.ADMIN_USERS_JSON || '').trim();
+  if (rawJson) {
+    try {
+      const parsed = JSON.parse(rawJson);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((a) => {
+          const pin = a?.pin == null ? '' : String(a.pin).trim();
+          if (!pin) return;
+          admins.push({
+            pin,
+            id: a?.id ? String(a.id) : `admin_${pin}`,
+            name: a?.name ? String(a.name) : 'Administrator',
+            hospital: a?.hospital ? String(a.hospital) : 'All Hospitals',
+            role: 'admin',
+            isAdmin: true,
+          });
+        });
+      }
+    } catch (e) {
+      console.warn('⚠️  ADMIN_USERS_JSON is not valid JSON. Ignoring it.');
+    }
+  }
+
+  const rawPins = (process.env.ADMIN_PINS || '').trim();
+  if (rawPins) {
+    rawPins
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .forEach((pin) => {
+        // Avoid duplicates if ADMIN_USERS_JSON already included this PIN.
+        if (admins.some((a) => a.pin === pin)) return;
+        admins.push({
+          pin,
+          id: `admin_${pin}`,
+          name: 'Administrator',
+          hospital: 'All Hospitals',
+          role: 'admin',
+          isAdmin: true,
+        });
+      });
+  }
+
+  // Hardcoded fallback for local/testing (kept for compatibility)
+  if (!admins.some((a) => a.pin === 'admin123')) {
+    admins.push({
+      pin: 'admin123',
+      id: 'admin',
+      name: 'Administrator',
+      hospital: 'All Hospitals',
+      role: 'admin',
+      isAdmin: true,
+    });
+  }
+
+  return admins;
+};
+
 router.post('/register', async (req, res) => {
   try {
     const { error, value } = registerSchema.validate(req.body);
@@ -96,8 +183,13 @@ router.post('/login', async (req, res) => {
     console.log('Request headers:', JSON.stringify(req.headers, null, 2));
     
     // Get PIN from request body
-    const pin = req.body?.pin || req.body;
-    console.log(`📌 PIN received: ${pin ? (pin.length > 0 ? pin.substring(0, 2) + '***' : 'empty') : 'null'}`);
+    const rawPin = req.body?.pin ?? req.body;
+    const pin = rawPin == null ? '' : String(rawPin).trim();
+    console.log(
+      `📌 PIN received: ${
+        pin ? (pin.length > 0 ? pin.substring(0, 2) + '***' : 'empty') : 'null'
+      }`
+    );
     
     // Check if PIN is provided
     if (!pin) {
@@ -105,25 +197,27 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'PIN is required' });
     }
 
-    // Check if admin login FIRST (before any validation) - this bypasses all validation
-    if (pin === 'admin123') {
-      console.log('✅ Admin login detected');
+    // Check if admin login FIRST (before any validation) - this bypasses all validation/Firebase
+    const manualAdmins = loadManualAdmins();
+    const matchedAdmin = manualAdmins.find((a) => a.pin === pin);
+    if (matchedAdmin) {
+      console.log('✅ Admin login detected (manual admin)');
       return res.json({
         success: true,
         message: 'Admin login successful',
         role: 'admin',
         isAdmin: true,
         user: {
-          id: 'admin',
-          name: 'Administrator',
-          hospital: 'All Hospitals',
+          id: matchedAdmin.id,
+          name: matchedAdmin.name,
+          hospital: matchedAdmin.hospital,
           role: 'admin',
         },
         // Also include 'clinician' for backward compatibility
         clinician: {
-          id: 'admin',
-          name: 'Administrator',
-          hospital: 'All Hospitals',
+          id: matchedAdmin.id,
+          name: matchedAdmin.name,
+          hospital: matchedAdmin.hospital,
           role: 'admin',
         },
       });
@@ -136,7 +230,20 @@ router.post('/login', async (req, res) => {
     }
 
     // Regular clinician login - check all clinicians
-    const allClinicians = await collection.get();
+    let allClinicians;
+    try {
+      allClinicians = await collection.get();
+    } catch (err) {
+      console.error('❌ Firestore error during clinicians lookup:', err);
+      if (isFirestoreAuthError(err)) {
+        return res.status(503).json({
+          error:
+            'Clinician login is temporarily unavailable (database authentication/permissions). Please fix FIREBASE_* credentials in the backend deployment.',
+          details: err.message,
+        });
+      }
+      return res.status(500).json({ error: err.message });
+    }
     let matchedClinician = null;
 
     // Use the validated PIN from Joi, or fallback to original pin
@@ -194,6 +301,14 @@ router.post('/login', async (req, res) => {
       },
     });
   } catch (err) {
+    console.error('❌ Login error (unexpected):', err);
+    if (isFirestoreAuthError(err)) {
+      return res.status(503).json({
+        error:
+          'Clinician login is temporarily unavailable (database authentication/permissions). Please fix FIREBASE_* credentials in the backend deployment.',
+        details: err.message,
+      });
+    }
     res.status(500).json({ error: err.message });
   }
 });

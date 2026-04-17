@@ -38,6 +38,10 @@ const CognitiveDashboard = () => {
     frogJumpCount: 0,
     aiBotCount: 0,
     manualCount: 0,
+    highRisk: 0,
+    moderateRisk: 0,
+    lowRisk: 0,
+    avgRiskScore: 0,
   })
 
   useEffect(() => {
@@ -76,6 +80,17 @@ const CognitiveDashboard = () => {
       const aiBotCount = cognitiveSessions.filter((s: any) => s.session_type === 'ai_doctor_bot').length
       const manualCount = cognitiveSessions.filter((s: any) => s.session_type === 'manual_assessment').length
 
+      const highRisk = cognitiveSessions.filter((s: any) => s.risk_level === 'high').length
+      const moderateRisk = cognitiveSessions.filter((s: any) => s.risk_level === 'moderate').length
+      const lowRisk = cognitiveSessions.filter((s: any) => s.risk_level === 'low').length
+
+      const sessionsWithRisk = cognitiveSessions.filter((s: any) => s.risk_score != null)
+      const avgRiskScore =
+        sessionsWithRisk.length > 0
+          ? sessionsWithRisk.reduce((sum: number, s: any) => sum + (Number(s.risk_score) || 0), 0) /
+            sessionsWithRisk.length
+          : 0
+
       setChildren(childrenWithCognitive)
       setSessions(cognitiveSessions)
       setStats({
@@ -85,6 +100,10 @@ const CognitiveDashboard = () => {
         frogJumpCount,
         aiBotCount,
         manualCount,
+        highRisk,
+        moderateRisk,
+        lowRisk,
+        avgRiskScore,
       })
     } catch (error) {
       console.error('Error loading data:', error)
@@ -171,6 +190,51 @@ const CognitiveDashboard = () => {
                 {t('frog_jump_game')}
               </Typography>
               <Typography variant="h4" sx={{ color: '#7C3AED' }}>{stats.frogJumpCount}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                {t('ai_questionnaire')}
+              </Typography>
+              <Typography variant="h4" sx={{ color: '#0EA5E9' }}>{stats.aiBotCount}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                {t('manual_assessment')}
+              </Typography>
+              <Typography variant="h4" sx={{ color: '#059669' }}>{stats.manualCount}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderLeft: '4px solid', borderColor: 'error.main' }}>
+            <CardContent>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                {t('high_risk')}
+              </Typography>
+              <Typography variant="h4" color="error.main">{stats.highRisk}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderLeft: '4px solid', borderColor: 'primary.main' }}>
+            <CardContent>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                {t('avg_risk_score')}
+              </Typography>
+              <Typography variant="h4" color="primary.main">
+                {Number.isFinite(stats.avgRiskScore) ? stats.avgRiskScore.toFixed(1) : '0.0'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {stats.moderateRisk} {t('moderate_risk')} • {stats.lowRisk} {t('low_risk')}
+              </Typography>
             </CardContent>
           </Card>
         </Grid>

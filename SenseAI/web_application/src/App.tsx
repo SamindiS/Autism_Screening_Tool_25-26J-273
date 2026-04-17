@@ -24,10 +24,55 @@ import { isAuthenticated } from './services/auth'
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2',
+      main: '#667eea',
     },
     secondary: {
-      main: '#dc004e',
+      main: '#764ba2',
+    },
+    background: {
+      default: 'transparent', // Let CSS gradient shine through
+      paper: 'transparent',
+    },
+  },
+  typography: {
+    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    button: {
+      textTransform: 'none',
+      fontWeight: 600,
+    },
+  },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+          backgroundColor: 'rgba(255, 255, 255, 0.75)',
+          backdropFilter: 'blur(16px)',
+          borderRadius: '20px',
+          border: '1px solid rgba(255, 255, 255, 0.6)',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.08)',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: '12px',
+          boxShadow: 'none',
+          '&:hover': {
+            boxShadow: '0 8px 24px rgba(102, 126, 234, 0.25)',
+            transform: 'translateY(-2px)',
+          },
+          transition: 'transform 0.2s, box-shadow 0.2s',
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          overflow: 'visible',
+        },
+      },
     },
   },
 })
@@ -38,7 +83,12 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
+      <Router
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <Routes>
           <Route
             path="/login"

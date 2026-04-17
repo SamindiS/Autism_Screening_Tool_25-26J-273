@@ -299,6 +299,9 @@ const Sessions = () => {
               <MenuItem value="frog_jump">{t('frog_jump_game')}</MenuItem>
               <MenuItem value="ai_doctor_bot">{t('ai_questionnaire')}</MenuItem>
               <MenuItem value="manual_assessment">{t('manual_assessment')}</MenuItem>
+              <MenuItem value="rrb">{t('rrb')}</MenuItem>
+              <MenuItem value="auditory">{t('auditory_checking')}</MenuItem>
+              <MenuItem value="visual">{t('visual_checking')}</MenuItem>
             </Select>
           </FormControl>
           <FormControl size="small" sx={{ minWidth: 150 }}>

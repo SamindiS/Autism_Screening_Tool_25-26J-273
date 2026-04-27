@@ -43,6 +43,12 @@ AGE_3_5_V4_LE_LANG_PATH = AGE_3_5_V3_DIR / "le_language_age_3_5_5_5.pkl"
 AGE_3_5_V4_FEATURES_PATH = AGE_3_5_V3_DIR / "features_age_3_5_5_5_frog_jump.json"
 AGE_3_5_V4_METADATA_PATH = AGE_3_5_V3_DIR / "model_metadata_age_3_5_5_5.json"
 
+# Aliases for Age 3.5-5.5 (for backward compatibility with age_specific_loader.py)
+AGE_3_5_5_5_MODEL_PATH = AGE_3_5_V4_BINARY_MODEL_PATH
+AGE_3_5_5_5_SCALER_PATH = AGE_3_5_V4_SCALER_PATH
+AGE_3_5_5_5_FEATURES_PATH = AGE_3_5_V4_FEATURES_PATH
+AGE_3_5_5_5_METADATA_PATH = AGE_3_5_V4_METADATA_PATH
+
 AGE_5_5_6_9_MODEL_PATH = MODEL_DIR / "model_age_5_5_6_9_color_shape.pkl"
 AGE_5_5_6_9_SCALER_PATH = MODEL_DIR / "scaler_age_5_5_6_9_color_shape.pkl"
 AGE_5_5_6_9_FEATURES_PATH = MODEL_DIR / "features_age_5_5_6_9_color_shape.json"

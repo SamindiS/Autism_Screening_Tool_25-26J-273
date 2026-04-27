@@ -87,7 +87,6 @@ class PredictionResponse(BaseModel):
 
     explanations_legacy: Optional[List[ExplanationItem]] = Field(
         default=None,
-        alias="explanations",
         description="Optional simple explanation of top factors affecting the prediction (Legacy SHAP-based)"
     )
     

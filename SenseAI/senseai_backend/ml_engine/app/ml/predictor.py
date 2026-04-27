@@ -567,6 +567,152 @@ def predict_asd_v4_hybrid_3_5(request: PredictionRequest) -> PredictionResponse:
         explanations=explanations
     )
 
+def _get_clinical_rule_score_5_5(d):
+    """
+    Calculate clinical rule score (30% weight in v5 hybrid model for 5.5-6.9).
+    Higher behavior score -> better behavior -> lower ASD risk
+    """
+    # Use fallback 3 (average) if not provided
+    attention = float(d.get('attention_level', 3))
+    engagement = float(d.get('engagement_level', 3))
+    frustration = float(d.get('frustration_tolerance', 3))
+    instruction = float(d.get('instruction_following', 3))
+    overall = float(d.get('overall_behavior', 3))
+    
+    behavior_sum = attention + engagement + frustration + instruction + overall
+    
+    # Normalized score 0->1
+    behavior_score = behavior_sum / 25.0
+    
+    # Clinical risk (inverted)
+    clinical_risk = 1.0 - behavior_score
+    
+    flags = []
+    if clinical_risk >= 0.6:
+        flags.append("high_behavioral_risk")
+        
+    return min(max(clinical_risk, 0.0), 1.0), flags
+
+def predict_asd_v5_hybrid_5_5(request: PredictionRequest) -> PredictionResponse:
+    """
+    v5 Hybrid Inference Engine for Age 5.5-6.9 (Color-Shape/DCCS).
+    Implemented to resolve 100% High Risk bias found in legacy v2 model.
+    70% ML Probability + 30% Clinical Behavioral Rules.
+    """
+    # 1. Load 5.5-6.9 Color-Shape model components
+    try:
+        model, scaler, feature_names, metadata = load_age_specific_model(72) # Target middle of range
+    except Exception:
+        # Fallback to standard if age-specific fails
+        model, scaler, feature_names, _ = load_models()
+
+    if model is None:
+        raise FileNotFoundError("Cognitive Flexibility models for Age 5.5-6.9 could not be loaded.")
+        
+    # 2. Features and Preparation
+    raw_features = request.features.copy()
+    
+    # Get expected number of features from scaler
+    expected_n_features = scaler.n_features_in_
+    
+    # Prepare features in correct order
+    X_vec = prepare_features(raw_features, feature_names, expected_n_features)
+    X_scaled = scaler.transform(X_vec)
+    
+    # 3. ML Prediction (Probability of ASD)
+    ml_prob_asd = float(model.predict_proba(X_scaled)[0][1])
+    
+    # 4. Clinical Rules Component
+    rule_score, rule_flags = _get_clinical_rule_score_5_5(raw_features)
+    
+    # 5. Hybrid Calculation
+    ML_WEIGHT = 0.7
+    RULE_WEIGHT = 0.3
+    hybrid_score = (ML_WEIGHT * ml_prob_asd) + (RULE_WEIGHT * rule_score)
+    
+    # Thresholding
+    severity = "No ASD Risk (Typically Developing)"
+    risk_level = "no_risk"
+    prediction = 0
+    
+    # v5 Specific Hybrid Thresholds
+    th_high = 0.65
+    th_mod = 0.40
+    th_low = 0.20
+    
+    # Performance metrics for guardrails
+    accuracy_overall = float(raw_features.get('accuracy_overall', raw_features.get('overall_accuracy', 0)))
+    post_switch_acc = float(raw_features.get('post_switch_accuracy', 0))
+    p_errors = float(raw_features.get('total_perseverative_errors', raw_features.get('perseverative_errors', 0)))
+    
+    # Apply Thresholds
+    if hybrid_score >= th_high:
+        severity = "High ASD Risk"
+        risk_level = "high"
+        prediction = 1
+    elif hybrid_score >= th_mod:
+        severity = "Moderate ASD Risk"
+        risk_level = "moderate"
+        prediction = 1
+    elif hybrid_score >= th_low:
+        severity = "Low ASD Risk"
+        risk_level = "low"
+        prediction = 1
+
+    # OVERRIDES (The FIX for High Risk Bias)
+    clinical_override = False
+    
+    # Rule 1: Performance Guardrail (Prevent false positives for high flyers)
+    if accuracy_overall >= 90 and post_switch_acc >= 80 and p_errors <= 1:
+        if risk_level == "high" or risk_level == "moderate":
+            # Demote risk if performance is clinically excellent
+            logger.info("Performance Guardrail: Demoting Risk due to excellent cognitive flexibility accuracy.")
+            risk_level = "low"
+            severity = "Low ASD Risk (Performance Guardrail)"
+            prediction = 1 
+            clinical_override = True
+        elif risk_level == "low":
+            risk_level = "no_risk"
+            severity = "No ASD Risk (Typically Developing)"
+            prediction = 0
+            clinical_override = True
+
+    # Rule 2: Behavioral Safety Net
+    if rule_score >= 0.8: # Severe behavioral regulation deficit
+        if risk_level == "no_risk":
+            severity = "Low ASD Risk (Clinical Behavioral Override)"
+            risk_level = "low"
+            prediction = 1
+            clinical_override = True
+
+    logger.info(f"Age 5.5-6.9 Prediction: ML={ml_prob_asd:.3f}, CLI={rule_score:.3f}, HYBRID={hybrid_score:.3f} -> {risk_level}")
+
+    # Explanations
+    explanations = []
+    if post_switch_acc < 60:
+        explanations.append("Reduced accuracy during the rule-switching phase indicates cognitive shift difficulty.")
+    if p_errors > 3:
+        explanations.append("Frequent perseverative errors suggest difficulty inhibiting previous rules.")
+    if accuracy_overall >= 90:
+        explanations.append("Strong overall task performance across both rule sets.")
+    if rule_score < 0.2:
+        explanations.append("Excellent behavioral regulation and engagement during assessment.")
+        
+    return PredictionResponse(
+        prediction=prediction,
+        probability=[1-ml_prob_asd, ml_prob_asd],
+        confidence=float(max(model.predict_proba(X_scaled)[0])),
+        risk_level=risk_level,
+        asd_probability=round(ml_prob_asd, 3),
+        avg_score=round(1.0 - rule_score, 2),
+        clinical_override=clinical_override,
+        model_age_group="5.5-6.9 (v5 Hybrid)",
+        result_summary=f"Cognitive flexibility assessment: {severity}",
+        severity=severity,
+        hybrid_score=round(hybrid_score, 4),
+        explanations=explanations[:5]
+    )
+
 def validate_features(features_dict: dict, feature_names: list) -> None:
     """
     Validate that required features are present
@@ -624,6 +770,11 @@ def predict_asd(request: PredictionRequest) -> PredictionResponse:
     if age_group == "3.5-5.5":
         logger.info("Routing to v4 Cognitive Flexibility Hybrid Engine (Frog Jump)")
         return predict_asd_v4_hybrid_3_5(request)
+
+    # EXCLUSIVE ROUTING: Check if this is the v5 target group (5.5-6.9 years)
+    if age_group == "5.5-6.9":
+        logger.info("Routing to v5 Cognitive Flexibility Hybrid Engine (Color-Shape)")
+        return predict_asd_v5_hybrid_5_5(request)
 
     # Try to load age-specific model (Legacy Age-banded)
     try:

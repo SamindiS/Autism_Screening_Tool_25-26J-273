@@ -182,14 +182,17 @@ router.post('/login', async (req, res) => {
     console.log('Request body:', JSON.stringify(req.body, null, 2));
     console.log('Request headers:', JSON.stringify(req.headers, null, 2));
     
-    // Get PIN from request body
-    const rawPin = req.body?.pin ?? req.body;
-    const pin = rawPin == null ? '' : String(rawPin).trim();
-    console.log(
-      `📌 PIN received: ${
-        pin ? (pin.length > 0 ? pin.substring(0, 2) + '***' : 'empty') : 'null'
-      }`
-    );
+    // Robust PIN extraction from request body
+    // Supports: {"pin": "1234"}, {"pin": 1234}, or just the PIN string/number directly
+    let rawPin = '';
+    if (req.body && typeof req.body === 'object') {
+      rawPin = req.body.pin != null ? String(req.body.pin).trim() : '';
+    } else {
+      rawPin = req.body != null ? String(req.body).trim() : '';
+    }
+    
+    const pin = rawPin;
+    console.log(`📌 Extracted PIN: "${pin ? pin.substring(0, 2) + '***' : 'empty'}" (length: ${pin.length})`);
     
     // Check if PIN is provided
     if (!pin) {
@@ -246,11 +249,10 @@ router.post('/login', async (req, res) => {
     }
     let matchedClinician = null;
 
-    // Use the validated PIN from Joi, or fallback to original pin
-    // Important: Trim and normalize the PIN to match registration format
-    const pinToCompare = String(value.pin || pin).trim();
-    console.log(`🔍 Attempting login with PIN (length: ${pinToCompare.length})`);
-    console.log(`🔍 PIN to compare (first 2 chars): ${pinToCompare.substring(0, 2)}***`);
+    // Use the processed PIN for comparison
+    const pinToCompare = pin;
+    console.log(`🔍 Attempting login against ${allClinicians.docs.length} clinicians`);
+    console.log(`🔍 Comparing PIN (length: ${pinToCompare.length})`);
     
     // Debug: Log all clinicians and their PIN hashes (for troubleshooting)
     console.log(`📋 Found ${allClinicians.docs.length} clinicians in database`);

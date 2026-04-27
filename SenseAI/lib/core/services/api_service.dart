@@ -206,6 +206,7 @@ class ApiService {
       );
 
       debugPrint('📥 Response status: ${response.statusCode}');
+      debugPrint('📥 Response headers: ${response.headers}');
       debugPrint('📥 Response body: ${response.body}');
 
       _handleError(response);

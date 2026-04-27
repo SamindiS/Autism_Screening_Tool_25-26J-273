@@ -26,9 +26,24 @@ from model import model as MODEL_WRAPPER
 from firebase_service import save_report_to_firestore
 import os
 
-DB_PATH = "data.db"
-REPORTS_DIR = "reports"
-os.makedirs(REPORTS_DIR, exist_ok=True)
+import tempfile
+
+# Detect if we're in Vercel/Serverless (read-only filesystem)
+is_serverless = os.environ.get('VERCEL') == '1' or not os.access('.', os.W_OK)
+
+if is_serverless:
+    DB_PATH = os.path.join(tempfile.gettempdir(), "data.db")
+    REPORTS_DIR = os.path.join(tempfile.gettempdir(), "reports")
+else:
+    DB_PATH = "data.db"
+    REPORTS_DIR = "reports"
+
+# Safely create reports directory
+try:
+    os.makedirs(REPORTS_DIR, exist_ok=True)
+except Exception as e:
+    print(f"Warning: Could not create reports directory: {e}")
+    REPORTS_DIR = tempfile.gettempdir()
 
 app = FastAPI(
     title="SenseAI Gaze Analysis API",

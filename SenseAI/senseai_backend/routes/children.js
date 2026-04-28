@@ -141,25 +141,37 @@ router.post('/', async (req, res) => {
 router.get('/clinician/:clinicianId', async (req, res) => {
   try {
     const clinicianId = req.params.clinicianId;
-    // Return children where clinician_id OR created_by_clinician_id matches (so dashboard shows only this clinician's children)
-    const [byClinicianId, byCreatedBy] = await Promise.all([
+    
+    // 1. Fetch clinician to get their hospital
+    const clinicianDoc = await db.collection('clinicians').doc(clinicianId).get();
+    let hospitalName = null;
+    if (clinicianDoc.exists) {
+      hospitalName = clinicianDoc.data().hospital;
+    }
+
+    // 2. Return children where clinician_id, created_by_clinician_id, OR hospital_id matches
+    const queries = [
       childrenCollection.where('clinician_id', '==', clinicianId).get(),
       childrenCollection.where('created_by_clinician_id', '==', clinicianId).get(),
-    ]);
+    ];
+    
+    if (hospitalName) {
+      queries.push(childrenCollection.where('hospital_id', '==', hospitalName).get());
+    }
+
+    const snapshots = await Promise.all(queries);
     const seen = new Set();
     const children = [];
-    for (const doc of byClinicianId.docs) {
-      if (!seen.has(doc.id)) {
-        seen.add(doc.id);
-        children.push(toChild(doc));
+    
+    for (const snap of snapshots) {
+      for (const doc of snap.docs) {
+        if (!seen.has(doc.id)) {
+          seen.add(doc.id);
+          children.push(toChild(doc));
+        }
       }
     }
-    for (const doc of byCreatedBy.docs) {
-      if (!seen.has(doc.id)) {
-        seen.add(doc.id);
-        children.push(toChild(doc));
-      }
-    }
+    
     children.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
     res.json({ count: children.length, children });
   } catch (err) {

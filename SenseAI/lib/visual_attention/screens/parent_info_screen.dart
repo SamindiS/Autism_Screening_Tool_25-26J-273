@@ -97,7 +97,7 @@ class _ParentInfoScreenState extends State<ParentInfoScreen> {
       debugPrint('Checking server connectivity...');
       final healthRes = await http
           .get(Uri.parse('$API_BASE/health'))
-          .timeout(const Duration(seconds: 8));
+          .timeout(const Duration(seconds: 30));
       if (healthRes.statusCode != 200) {
         debugPrint('Health check failed: ${healthRes.statusCode}');
         return false;

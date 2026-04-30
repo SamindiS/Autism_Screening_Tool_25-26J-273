@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 /// - Same machine: http://127.0.0.1:8000
 /// Backend must run with: uvicorn main:app --host 0.0.0.0 --port 8000
 //const String API_BASE = 'https://autism-screening-tool-25-26-j-273.vercel.app';
-const String API_BASE = 'https://visualnew.vercel.app';
+const String API_BASE = 'https://autism-screening-tool-25-26j-273-4.onrender.com';
 // =============================================================================
 // SENSEAI BRAND COLORS (extracted from logo)
 // =============================================================================

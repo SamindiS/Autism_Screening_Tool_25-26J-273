@@ -1,0 +1,10 @@
+{
+  "name": "senseai-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npm run build --prefix web_application",
+    "install-all": "npm install --prefix web_application && npm install --prefix senseai_backend",
+    "start": "npm start --prefix senseai_backend"
+  }
+}

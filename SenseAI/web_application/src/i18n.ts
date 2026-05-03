@@ -1,8 +1,8 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
-import en from './locales/en.json'
-import si from './locales/si.json'
-import ta from './locales/ta.json'
+import en from './locales/en'
+import si from './locales/si'
+import ta from './locales/ta'
 
 i18n
   .use(initReactI18next)

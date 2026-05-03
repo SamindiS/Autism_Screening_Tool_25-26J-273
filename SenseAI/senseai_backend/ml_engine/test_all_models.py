@@ -1,30 +1,31 @@
 """Test all 3 cognitive flexibility models."""
 import requests
 import json
+import sys
 
-BASE = "http://localhost:8002/predict"
+BASE = "http://localhost:8002/predict/"
 
 def test_model(name, payload):
     print("=" * 60)
-    print(f"TEST: {name}")
+    print("TEST: " + name)
     print("=" * 60)
     try:
-        r = requests.post(f"{BASE}/cognitive-flexibility", json=payload)
+        r = requests.post(BASE, json=payload)
         if r.ok:
             d = r.json()
-            print(f"  Model:   {d.get('model_age_group')}")
-            print(f"  Risk:    {d.get('risk_level')}")
-            print(f"  ASD Prob:{d.get('asd_probability')}")
-            print(f"  Hybrid:  {d.get('hybrid_score')}")
-            print(f"  Severity:{d.get('severity')}")
-            print(f"  Override:{d.get('clinical_override')}")
-            print(f"  PASS ✓")
+            print("  Model:   " + str(d.get('model_age_group')))
+            print("  Risk:    " + str(d.get('risk_level')))
+            print("  ASD Prob:" + str(d.get('asd_probability')))
+            print("  Hybrid:  " + str(d.get('hybrid_score')))
+            print("  Severity:" + str(d.get('severity')))
+            print("  Override:" + str(d.get('clinical_override')))
+            print("  PASS")
             return True
         else:
-            print(f"  ERROR {r.status_code}: {r.text[:300]}")
+            print("  ERROR " + str(r.status_code) + ": " + r.text[:300])
             return False
     except Exception as e:
-        print(f"  EXCEPTION: {e}")
+        print("  EXCEPTION: " + str(e))
         return False
 
 
@@ -82,9 +83,9 @@ t3 = test_model("Age 5.5-6.9 (v5 Hybrid - Color-Shape/DCCS)", {
 print()
 print("=" * 60)
 results = ["PASS" if t else "FAIL" for t in [t1, t2, t3]]
-print(f"RESULTS: Age 2-3.5={results[0]}, Age 3.5-5.5={results[1]}, Age 5.5-6.9={results[2]}")
+print("RESULTS: Age 2-3.5=" + results[0] + ", Age 3.5-5.5=" + results[1] + ", Age 5.5-6.9=" + results[2])
 if all([t1, t2, t3]):
-    print("ALL 3 MODELS RUNNING CORRECTLY ✓")
+    print("ALL 3 MODELS RUNNING CORRECTLY")
 else:
-    print("SOME MODELS FAILED ✗")
+    print("SOME MODELS FAILED")
 print("=" * 60)

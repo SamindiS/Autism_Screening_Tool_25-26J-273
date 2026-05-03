@@ -3,8 +3,9 @@ import axios from 'axios'
 // Prefer a runtime-configurable API base URL.
 // - Local dev: set `VITE_API_BASE_URL=http://localhost:3000`
 // - Deployed (frontend + backend on same domain): omit to use same-origin `/api`
-const API_BASE_URL =
-  (import.meta as any).env?.VITE_API_BASE_URL?.toString()?.trim() || ''
+const API_BASE_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:3000' 
+  : 'https://autism-screening-tool-25-26-j-273.vercel.app';
 
 function normalizeBaseUrl(url: string) {
   if (!url) return ''

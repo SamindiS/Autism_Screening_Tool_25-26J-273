@@ -69,32 +69,31 @@ class SenseAIApp extends StatelessWidget {
           title: 'SenseAI',
           navigatorKey: navigatorKey,
           theme: ThemeData(
-            primaryColor: SenseAIColors.primaryBlue, // From friend's theme
+            useMaterial3: true,
+            primaryColor: SenseAIColors.primaryBlue,
             colorScheme: ColorScheme.fromSeed(
               seedColor: SenseAIColors.primaryBlue,
               primary: SenseAIColors.primaryBlue,
               secondary: SenseAIColors.puzzleTeal,
             ),
-            appBarTheme: const AppBarTheme(
+            textTheme: _getTextTheme(languageProvider.locale.languageCode),
+            appBarTheme: AppBarTheme(
               backgroundColor: SenseAIColors.appBarColor,
               foregroundColor: Colors.white,
               elevation: 0,
+              titleTextStyle: _getAppBarTextStyle(languageProvider.locale.languageCode),
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
                 backgroundColor: SenseAIColors.softTeal,
                 foregroundColor: SenseAIColors.primaryBlue,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                textStyle: _getButtonTextStyle(languageProvider.locale.languageCode),
               ),
             ),
-            scaffoldBackgroundColor:
-                Colors.white, // Maintain your background color
+            scaffoldBackgroundColor: Colors.white,
             visualDensity: VisualDensity.adaptivePlatformDensity,
-            fontFamily: _getFontFamily(languageProvider.locale.languageCode),
           ),
           locale: languageProvider.locale,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -108,15 +107,41 @@ class SenseAIApp extends StatelessWidget {
     );
   }
 
-  /// Determines the appropriate font family based on the [languageCode].
-  String? _getFontFamily(String languageCode) {
+  /// Determines the appropriate [TextTheme] based on the [languageCode].
+  TextTheme _getTextTheme(String languageCode) {
     switch (languageCode) {
       case 'si':
-        return 'IskoolaPota';
+        return GoogleFonts.notoSansSinhalaTextTheme();
       case 'ta':
-        return 'Bamini';
+        return GoogleFonts.notoSansTamilTextTheme();
       default:
-        return null;
+        return GoogleFonts.interTextTheme();
+    }
+  }
+
+  /// Custom TextStyle for App Bar titles
+  TextStyle _getAppBarTextStyle(String languageCode) {
+    final base = const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white);
+    switch (languageCode) {
+      case 'si':
+        return GoogleFonts.notoSansSinhala(textStyle: base);
+      case 'ta':
+        return GoogleFonts.notoSansTamil(textStyle: base);
+      default:
+        return GoogleFonts.inter(textStyle: base);
+    }
+  }
+
+  /// Custom TextStyle for Buttons
+  TextStyle _getButtonTextStyle(String languageCode) {
+    final base = const TextStyle(fontSize: 16, fontWeight: FontWeight.w600);
+    switch (languageCode) {
+      case 'si':
+        return GoogleFonts.notoSansSinhala(textStyle: base);
+      case 'ta':
+        return GoogleFonts.notoSansTamil(textStyle: base);
+      default:
+        return GoogleFonts.inter(textStyle: base);
     }
   }
 }

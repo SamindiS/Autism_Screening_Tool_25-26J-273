@@ -27,7 +27,11 @@ from app.core.config import (
     # v4 Hybrid Model Paths (Age 3.5-5.5)
     AGE_3_5_V4_BINARY_MODEL_PATH, AGE_3_5_V4_SEVERITY_MODEL_PATH,
     AGE_3_5_V4_SCALER_PATH, AGE_3_5_V4_LE_GENDER_PATH,
-    AGE_3_5_V4_LE_LANG_PATH, AGE_3_5_V4_METADATA_PATH
+    AGE_3_5_V4_LE_LANG_PATH, AGE_3_5_V4_METADATA_PATH,
+    # v5 Hybrid Model Paths (Age 5.5-6.9)
+    AGE_5_5_V5_BINARY_MODEL_PATH, AGE_5_5_V5_SEVERITY_MODEL_PATH,
+    AGE_5_5_V5_SCALER_PATH, AGE_5_5_V5_FEATURES_PATH,
+    AGE_5_5_V5_NORMS_PATH, AGE_5_5_V5_METADATA_PATH
 )
 from app.core.logger import logger
 
@@ -52,6 +56,14 @@ _v4_scaler_3_5 = None
 _v4_le_gender_3_5 = None
 _v4_le_lang_3_5 = None
 _v4_config_3_5 = None
+
+# v5 Hybrid Model Cache (Age 5.5-6.9)
+_v5_binary_model_5_5 = None
+_v5_severity_model_5_5 = None
+_v5_scaler_5_5 = None
+_v5_features_5_5 = None
+_v5_norms_5_5 = None
+_v5_config_5_5 = None
 
 def load_models():
     """Load all model files (called once at startup)"""
@@ -202,6 +214,67 @@ def load_v4_3_5_models():
         logger.error(f"[ERROR] Failed to load v4 models: {str(e)}")
         return None, None, None, None, None, None
 
+def load_v5_5_5_models():
+    """
+    Load all v5 hybrid model components for the 5.5-6.9 age group (Color-Shape/DCCS).
+    Uses singleton pattern to cache models in memory.
+    
+    Returns:
+        Tuple of (binary_model, severity_model, scaler, feature_names, norms, config)
+    """
+    global _v5_binary_model_5_5, _v5_severity_model_5_5, _v5_scaler_5_5
+    global _v5_features_5_5, _v5_norms_5_5, _v5_config_5_5
+    
+    if _v5_binary_model_5_5 is not None:
+        return (_v5_binary_model_5_5, _v5_severity_model_5_5, _v5_scaler_5_5,
+                _v5_features_5_5, _v5_norms_5_5, _v5_config_5_5)
+        
+    logger.info("Loading SenseAI Cognitive Flexibility v5 Model Ensemble (Age 5.5-6.9)...")
+    
+    try:
+        # Binary classifier
+        if not AGE_5_5_V5_BINARY_MODEL_PATH.exists():
+            raise FileNotFoundError(f"v5 Binary model not found: {AGE_5_5_V5_BINARY_MODEL_PATH}")
+        _v5_binary_model_5_5 = joblib.load(AGE_5_5_V5_BINARY_MODEL_PATH)
+        
+        # Severity classifier
+        if not AGE_5_5_V5_SEVERITY_MODEL_PATH.exists():
+            raise FileNotFoundError(f"v5 Severity model not found: {AGE_5_5_V5_SEVERITY_MODEL_PATH}")
+        _v5_severity_model_5_5 = joblib.load(AGE_5_5_V5_SEVERITY_MODEL_PATH)
+        
+        # Scaler
+        if not AGE_5_5_V5_SCALER_PATH.exists():
+            raise FileNotFoundError(f"v5 Scaler not found: {AGE_5_5_V5_SCALER_PATH}")
+        _v5_scaler_5_5 = joblib.load(AGE_5_5_V5_SCALER_PATH)
+        
+        # Feature names
+        _v5_features_5_5 = None
+        if AGE_5_5_V5_FEATURES_PATH.exists():
+            with open(AGE_5_5_V5_FEATURES_PATH, 'r') as f:
+                _v5_features_5_5 = json.load(f)
+        
+        # TD norms (for z-score calculation at inference)
+        _v5_norms_5_5 = None
+        if AGE_5_5_V5_NORMS_PATH.exists():
+            with open(AGE_5_5_V5_NORMS_PATH, 'r') as f:
+                _v5_norms_5_5 = json.load(f)
+        
+        # Metadata / config (thresholds, weights, etc.)
+        _v5_config_5_5 = None
+        if AGE_5_5_V5_METADATA_PATH.exists():
+            with open(AGE_5_5_V5_METADATA_PATH, 'r') as f:
+                _v5_config_5_5 = json.load(f)
+        
+        logger.info(f"[OK] v5 Model Ensemble (Age 5.5-6.9) loaded successfully "
+                    f"({_v5_scaler_5_5.n_features_in_} features, "
+                    f"norms={'yes' if _v5_norms_5_5 else 'no'})")
+        return (_v5_binary_model_5_5, _v5_severity_model_5_5, _v5_scaler_5_5,
+                _v5_features_5_5, _v5_norms_5_5, _v5_config_5_5)
+        
+    except Exception as e:
+        logger.error(f"[ERROR] Failed to load v5 models (Age 5.5-6.9): {str(e)}")
+        return None, None, None, None, None, None
+
 def load_model_metadata() -> Optional[Dict[str, Any]]:
     """Load model metadata if available"""
     if MODEL_METADATA_PATH.exists():
@@ -224,6 +297,9 @@ def check_models_loaded() -> Dict[str, Any]:
         # Check v4 (3.5-5.5) models
         v4_3_5_loaded = _v4_binary_model_3_5 is not None
         
+        # Check v5 (5.5-6.9) models
+        v5_5_5_loaded = _v5_binary_model_5_5 is not None
+        
         status = {
             "legacy": {
                 "loaded": model_loaded,
@@ -239,6 +315,11 @@ def check_models_loaded() -> Dict[str, Any]:
                 "loaded": v4_3_5_loaded,
                 "age_group": "3.5-5.5",
                 "ready": v4_3_5_loaded and _v4_scaler_3_5 is not None
+            },
+            "v5_cogflex": {
+                "loaded": v5_5_5_loaded,
+                "age_group": "5.5-6.9",
+                "ready": v5_5_5_loaded and _v5_scaler_5_5 is not None
             }
         }
         
@@ -254,6 +335,7 @@ try:
     load_models()
     load_v3_models()
     load_v4_3_5_models()
+    load_v5_5_5_models()
 except Exception:
     pass
 

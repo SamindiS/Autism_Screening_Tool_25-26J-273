@@ -49,10 +49,20 @@ AGE_3_5_5_5_SCALER_PATH = AGE_3_5_V4_SCALER_PATH
 AGE_3_5_5_5_FEATURES_PATH = AGE_3_5_V4_FEATURES_PATH
 AGE_3_5_5_5_METADATA_PATH = AGE_3_5_V4_METADATA_PATH
 
-AGE_5_5_6_9_MODEL_PATH = MODEL_DIR / "model_age_5_5_6_9_color_shape.pkl"
-AGE_5_5_6_9_SCALER_PATH = MODEL_DIR / "scaler_age_5_5_6_9_color_shape.pkl"
-AGE_5_5_6_9_FEATURES_PATH = MODEL_DIR / "features_age_5_5_6_9_color_shape.json"
-AGE_5_5_6_9_METADATA_PATH = MODEL_DIR / "model_metadata_age_5_5_6_9_color_shape.json"
+# Age 5.5-6.9 V5 Hybrid Model Paths (Color-Shape / DCCS)
+AGE_5_5_V3_DIR = MODEL_DIR / "age_5.5_v3"
+AGE_5_5_V5_BINARY_MODEL_PATH = AGE_5_5_V3_DIR / "model_age_5_5_6_9_color_shape.pkl"
+AGE_5_5_V5_SEVERITY_MODEL_PATH = AGE_5_5_V3_DIR / "severity_model_age_5_5_6_9_color_shape.pkl"
+AGE_5_5_V5_SCALER_PATH = AGE_5_5_V3_DIR / "scaler_age_5_5_6_9_color_shape.pkl"
+AGE_5_5_V5_FEATURES_PATH = AGE_5_5_V3_DIR / "features_age_5_5_6_9_color_shape.json"
+AGE_5_5_V5_NORMS_PATH = AGE_5_5_V3_DIR / "norms_age_5_5_6_9_color_shape.json"
+AGE_5_5_V5_METADATA_PATH = AGE_5_5_V3_DIR / "model_metadata_age_5_5_6_9.json"
+
+# Aliases for Age 5.5-6.9 (for backward compatibility with age_specific_loader.py)
+AGE_5_5_6_9_MODEL_PATH = AGE_5_5_V5_BINARY_MODEL_PATH
+AGE_5_5_6_9_SCALER_PATH = AGE_5_5_V5_SCALER_PATH
+AGE_5_5_6_9_FEATURES_PATH = AGE_5_5_V5_FEATURES_PATH
+AGE_5_5_6_9_METADATA_PATH = AGE_5_5_V5_METADATA_PATH
 
 # Legacy model paths (for backward compatibility)
 MODEL_PATH = MODEL_DIR / "asd_detection_model.pkl"

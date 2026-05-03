@@ -53,8 +53,11 @@ export const login = async (pin: string): Promise<{ success: boolean; user?: Use
     return { success: false, error: response.data.error || 'Invalid PIN' }
   } catch (error: any) {
     console.error('❌ Login error:', error)
-    const errorMessage = error.response?.data?.error || error.message || 'Login failed'
-    return { success: false, error: errorMessage }
+    const rawError = error.response?.data?.error || error.message || 'Login failed'
+    const errorMessage = typeof rawError === 'object'
+      ? (rawError.message || JSON.stringify(rawError))
+      : rawError
+    return { success: false, error: String(errorMessage) }
   }
 }
 

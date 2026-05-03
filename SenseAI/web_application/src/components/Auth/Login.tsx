@@ -42,8 +42,11 @@ const Login = () => {
       }
     } catch (err: any) {
       console.error('❌ Login exception:', err)
-      const errorMessage = err?.response?.data?.error || err?.message || t('error_occurred')
-      setError(errorMessage)
+      const rawError = err?.response?.data?.error || err?.message || t('error_occurred')
+      const errorMessage = typeof rawError === 'object' 
+        ? (rawError.message || JSON.stringify(rawError)) 
+        : rawError
+      setError(String(errorMessage))
     } finally {
       setLoading(false)
     }

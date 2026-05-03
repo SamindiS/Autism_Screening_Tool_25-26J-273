@@ -26,24 +26,9 @@ from model import model as MODEL_WRAPPER
 from firebase_service import save_report_to_firestore
 import os
 
-import tempfile
-
-# Detect if we're in Vercel/Serverless (read-only filesystem)
-is_serverless = os.environ.get('VERCEL') == '1' or not os.access('.', os.W_OK)
-
-if is_serverless:
-    DB_PATH = os.path.join(tempfile.gettempdir(), "data.db")
-    REPORTS_DIR = os.path.join(tempfile.gettempdir(), "reports")
-else:
-    DB_PATH = "data.db"
-    REPORTS_DIR = "reports"
-
-# Safely create reports directory
-try:
-    os.makedirs(REPORTS_DIR, exist_ok=True)
-except Exception as e:
-    print(f"Warning: Could not create reports directory: {e}")
-    REPORTS_DIR = tempfile.gettempdir()
+DB_PATH = "data.db"
+REPORTS_DIR = "reports"
+os.makedirs(REPORTS_DIR, exist_ok=True)
 
 app = FastAPI(
     title="SenseAI Gaze Analysis API",
@@ -251,7 +236,14 @@ def save_test_record(test_id: str, info: dict, analysis: dict, events_json: str)
     # Dual storage: also save to Firebase Firestore (non-blocking, failures logged only)
     try:
         created_at = datetime.utcnow().isoformat()
+        try:
+            parsed_events = json.loads(events_json) if events_json else []
+        except (json.JSONDecodeError, TypeError):
+            parsed_events = []
+            print("Firebase sync: invalid events_json — storing empty raw_events")
+
         record_dict = {
+            "testId": test_id,
             "childName": info.get("name") or "Unknown",
             "childAge": info.get("age") or 0,
             "testDateTime": info.get("test_datetime") or created_at,
@@ -264,6 +256,8 @@ def save_test_record(test_id: str, info: dict, analysis: dict, events_json: str)
             "parent_phone": parent_phone,
             "parent_relationship": parent_relationship,
             "created_at": created_at,
+            # Full gaze stream (same logical content as SQLite raw_events column)
+            "raw_events": parsed_events,
         }
         save_report_to_firestore(test_id, record_dict)
     except Exception as e:

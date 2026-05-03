@@ -88,12 +88,21 @@ router.post('/predict', async (req, res) => {
       );
 
       const result = response.data;
-      console.log('📋 FULL ML RESPONSE:', JSON.stringify(result, null, 2));
-      
       const riskScore = Number(
         result.risk_score ??
         (result.hybrid_score !== undefined ? result.hybrid_score * 100 : 50)
       );
+
+      // Sanity check / Clinical Guardrail: 
+      // If accuracy is >= 90%, it's Low Risk (prevents false positives for high-performers)
+      const accuracy = Number(mlFeatures.accuracy_overall ?? mlFeatures.overall_accuracy ?? 0);
+      if (accuracy >= 90 && result.risk_level !== 'low') {
+        console.log(`🛡️  Clinical Override: Accuracy ${accuracy}% is very high. Forcing 'low' risk.`);
+        result.risk_level = 'low';
+        result.clinical_override = true;
+        result.prediction = 0; // Control
+      }
+
       console.log(
         `✅ ML Prediction: ${result.prediction === 1 ? 'ASD Risk' : 'Control'}, ` +
         `Risk Level: ${result.risk_level}, Severity: ${result.severity || 'N/A'}, ` +
@@ -167,18 +176,19 @@ function fallbackPrediction(mlFeatures) {
   }
   // Game feature path (older ages): use simple heuristic markers.
   if (Number.isFinite(accuracy) && accuracy > 0) {
-    if (accuracy < 60) asdProbability += 0.20;
-    else if (accuracy > 85) asdProbability -= 0.10;
+    if (accuracy >= 90) asdProbability -= 0.35; // Significant reduction for high accuracy
+    else if (accuracy > 85) asdProbability -= 0.15;
+    else if (accuracy < 60) asdProbability += 0.25;
   }
-  if (Number.isFinite(perseverativeErrors) && perseverativeErrors > 3) asdProbability += 0.15;
-  if (Number.isFinite(switchCost) && switchCost > 300) asdProbability += 0.15;
-  if (Number.isFinite(riskSignal) && riskSignal < 40) asdProbability += 0.10;
+  
+  if (Number.isFinite(perseverativeErrors) && perseverativeErrors > 5) asdProbability += 0.20;
+  if (Number.isFinite(switchCost) && switchCost > 400) asdProbability += 0.15;
 
   asdProbability = Math.min(0.95, Math.max(0.05, asdProbability));
-  const prediction = asdProbability > 0.5 ? 1 : 0;
+  const prediction = asdProbability >= 0.5 ? 1 : 0;
   let riskLevel = 'moderate';
   if (asdProbability > 0.7) riskLevel = 'high';
-  else if (asdProbability < 0.3) riskLevel = 'low';
+  else if (asdProbability < 0.35) riskLevel = 'low'; // Slightly wider low-risk window
   
   return {
     success: true,

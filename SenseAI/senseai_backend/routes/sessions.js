@@ -222,30 +222,35 @@ router.get('/', async (req, res) => {
     }
 
     // 3. Fetch from Visual Database (Aggregation)
-    console.log('📡 Visual DB Status:', visualDb ? 'CONNECTED' : 'NOT CONNECTED');
     if (visualDb && (!sessionType || sessionType === 'visual')) {
       try {
-        const visualSnap = await visualDb.collection('reports').get();
-        const visualSessions = visualSnap.docs.map(doc => {
-          const data = doc.data();
-          const score = data.score || 0;
-          let risk_level = 'low';
-          if (score < 50) risk_level = 'high';
-          else if (score < 75) risk_level = 'moderate';
+        let visualSessions = [];
+        try {
+          const visualSnap = await visualDb.collection('reports').get();
+          visualSessions = visualSnap.docs.map(doc => {
+            const data = doc.data();
+            const score = data.score || 0;
+            let risk_level = 'low';
+            if (score < 50) risk_level = 'high';
+            else if (score < 75) risk_level = 'moderate';
 
-          return {
-            id: doc.id,
-            child_id: data.testId || doc.id,
-            session_type: 'visual',
-            risk_score: score,
-            risk_level: risk_level,
-            created_at: data.created_at ? new Date(data.created_at).getTime() : Date.now(),
-            name: data.childName,
-            age: data.childAge,
-            metrics: data.metrics || {},
-            interpretation: data.interpretation || {}
-          };
-        });
+            return {
+              id: doc.id,
+              child_id: data.testId || doc.id,
+              session_type: 'visual',
+              risk_score: score,
+              risk_level: risk_level,
+              created_at: data.created_at ? new Date(data.created_at).getTime() : Date.now(),
+              name: data.childName,
+              age: data.childAge,
+              metrics: data.metrics || {},
+              interpretation: data.interpretation || {}
+            };
+          });
+        } catch (vErr) {
+          console.error('⚠️  Failed to fetch from Visual DB:', vErr.message);
+          // Don't crash, just continue with main sessions
+        }
         
         // If type is specifically 'visual', only show these
         if (sessionType === 'visual') {

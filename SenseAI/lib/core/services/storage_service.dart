@@ -525,30 +525,49 @@ class StorageService {
       return 'CH-${'1'.padLeft(digits, '0')}';
     }
 
-    // Web: sqflite not available, return placeholder — server will assign real code
-    if (kIsWeb) return '$normalizedPrefix-${'1'.padLeft(digits, '0')}';
+    // Attempt to get the latest children from the backend first to ensure we have the most up-to-date codes
+    // This is especially important for multi-device setups or fresh installs
+    List<Map<String, dynamic>> allExistingChildren = [];
+    try {
+      allExistingChildren = await getAllChildren();
+    } catch (e) {
+      debugPrint('⚠️ Note: Could not fetch from backend for next ID, using local only: $e');
+    }
 
-    final db = await database;
-    final rows = await db.query(
-      'children',
-      columns: ['child_code'],
-      where: 'child_code LIKE ?',
-      whereArgs: ['$normalizedPrefix-%'],
-    );
-
+    int maxN = 0;
     final pattern = RegExp(
       '^${RegExp.escape(normalizedPrefix)}-(\\d+)\$',
       caseSensitive: false,
     );
 
-    var maxN = 0;
-    for (final row in rows) {
-      final code = row['child_code']?.toString();
-      if (code == null) continue;
-      final match = pattern.firstMatch(code.trim());
-      if (match == null) continue;
-      final n = int.tryParse(match.group(1) ?? '');
-      if (n != null && n > maxN) maxN = n;
+    // If we have children (either from cloud sync or local), find the max number
+    if (allExistingChildren.isNotEmpty) {
+      for (final child in allExistingChildren) {
+        final code = child['child_code']?.toString();
+        if (code == null) continue;
+        final match = pattern.firstMatch(code.trim());
+        if (match == null) continue;
+        final n = int.tryParse(match.group(1) ?? '');
+        if (n != null && n > maxN) maxN = n;
+      }
+    } else if (!kIsWeb) {
+      // Fallback: Check local SQLite directly if sync failed or was skipped
+      final db = await database;
+      final rows = await db.query(
+        'children',
+        columns: ['child_code'],
+        where: 'child_code LIKE ?',
+        whereArgs: ['$normalizedPrefix-%'],
+      );
+
+      for (final row in rows) {
+        final code = row['child_code']?.toString();
+        if (code == null) continue;
+        final match = pattern.firstMatch(code.trim());
+        if (match == null) continue;
+        final n = int.tryParse(match.group(1) ?? '');
+        if (n != null && n > maxN) maxN = n;
+      }
     }
 
     final next = (maxN + 1).toString().padLeft(digits, '0');

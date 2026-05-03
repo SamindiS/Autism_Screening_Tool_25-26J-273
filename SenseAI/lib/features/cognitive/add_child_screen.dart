@@ -388,6 +388,10 @@ class _AddChildScreenState extends State<AddChildScreen> {
       _selectedGroup = ChildGroup.typicallyDeveloping;
     }
 
+    String diagnosisSource;
+    String? clinicianId;
+    String? hospitalId;
+
     diagnosisSource = _diagnosisSourceCtrl.text.trim().isNotEmpty
         ? _diagnosisSourceCtrl.text.trim()
         : (_registeredHospital ?? widget.child?['diagnosis_source'] as String? ?? 'Unknown Hospital');

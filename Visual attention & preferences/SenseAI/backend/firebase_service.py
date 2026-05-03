@@ -6,9 +6,14 @@ Saves child test reports to Firebase Firestore (dual storage with SQLite).
 Works gracefully when Firebase is not configured - skips writes without failing.
 """
 
+import json
 import os
+from copy import deepcopy
 from pathlib import Path
 from typing import Optional, Dict, Any
+
+# Firestore maximum document size is 1 MiB; stay under with margin for protobuf overhead.
+_FIRESTORE_DOC_SIZE_LIMIT = 1_048_576 - 40_960
 
 # Firebase is optional - only import when needed
 _firestore_db = None
@@ -62,15 +67,46 @@ def _init_firebase() -> bool:
         return False
 
 
+def _estimate_payload_bytes(payload: Dict[str, Any]) -> int:
+    """Rough UTF-8 size of JSON serialization (good proxy for Firestore document bulk)."""
+    try:
+        return len(json.dumps(payload, default=str, ensure_ascii=False).encode("utf-8"))
+    except (TypeError, ValueError):
+        return _FIRESTORE_DOC_SIZE_LIMIT + 1
+
+
+def _shrink_payload_for_firestore(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Ensure payload fits Firestore limits; omit raw gaze data first if needed."""
+    out = deepcopy(payload)
+    size = _estimate_payload_bytes(out)
+    if size <= _FIRESTORE_DOC_SIZE_LIMIT:
+        out["raw_events_synced"] = "raw_events" in out
+        return out
+
+    out.pop("raw_events", None)
+    out["raw_events_synced"] = False
+    out["raw_events_omitted_reason"] = "firestore_document_size_limit"
+    size = _estimate_payload_bytes(out)
+    if size <= _FIRESTORE_DOC_SIZE_LIMIT:
+        print(
+            f"Firebase: raw_events omitted (approx payload too large); "
+            f"estimated doc ~{size} bytes without raw gaze data"
+        )
+        return out
+
+    print(f"Firebase: Document still oversized (~{_estimate_payload_bytes(out)} bytes), cannot save summary")
+    return {}
+
+
 def save_report_to_firestore(test_id: str, record_dict: Dict[str, Any]) -> bool:
     """
     Save a test report to Firebase Firestore.
 
     Args:
         test_id: Unique test identifier (document ID)
-        record_dict: Report data with keys: childName, childAge, testDateTime,
-                     score, scores, metrics, interpretation, parent_name,
-                     parent_email, parent_phone, parent_relationship, created_at
+        record_dict: Full test snapshot aligned with SQLite: childName, childAge,
+                     testDateTime, score, scores, metrics, interpretation,
+                     parent fields, created_at, testId, and optional raw_events (list).
 
     Returns:
         True if saved successfully, False otherwise.
@@ -80,9 +116,16 @@ def save_report_to_firestore(test_id: str, record_dict: Dict[str, Any]) -> bool:
         return False
 
     try:
+        payload = _shrink_payload_for_firestore(record_dict)
+        if not payload:
+            return False
         doc_ref = _firestore_db.collection("reports").document(test_id)
-        doc_ref.set(record_dict)
-        print(f"Firebase: Report {test_id} saved to Firestore")
+        doc_ref.set(payload)
+        raw_ok = payload.get("raw_events_synced", False)
+        print(
+            f"Firebase: Report {test_id} saved to Firestore"
+            + (" (with raw_events)" if raw_ok else " (without raw_events or summary-only)")
+        )
         return True
     except Exception as e:
         print(f"Firebase: Failed to save report {test_id} - {e}")

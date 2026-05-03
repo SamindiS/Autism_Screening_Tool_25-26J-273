@@ -15,3 +15,5 @@ Cognitive_Flexibility/senseai_backend/serviceAccountKey.json
 node_modules/
 dist/
 .env*
+Restrictive_Repititive_Behaviors/backend/vercel.json
+Visual attention & preferences/SenseAI/backend/vercel.json

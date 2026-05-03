@@ -207,29 +207,69 @@ router.get('/clinician/:clinicianId', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const sessionType = req.query.type; // Filter by session type (e.g., 'color_shape', 'frog_jump')
-    const hospital = req.query.hospital; // Filter by hospital (via child's hospital)
+    const sessionType = req.query.type;
+    const hospital = req.query.hospital;
+    const { visualDb } = require('../firebase');
     
-    let query = sessionsCollection.orderBy('created_at', 'desc');
-    
-    if (sessionType) {
-      query = sessionsCollection.where('session_type', '==', sessionType).orderBy('created_at', 'desc');
+    // 1. Fetch from Main Database (Cognitive)
+    // Fetch all to avoid composite index requirements for now
+    const snap = await sessionsCollection.orderBy('created_at', 'desc').get();
+    let sessions = snap.docs.map(toSession);
+
+    // 2. Filter by session type in memory (avoids Index Error)
+    if (sessionType && sessionType !== 'visual') {
+      sessions = sessions.filter(s => s.session_type === sessionType);
+    }
+
+    // 3. Fetch from Visual Database (Aggregation)
+    if (visualDb && (!sessionType || sessionType === 'visual')) {
+      try {
+        const visualSnap = await visualDb.collection('reports').get();
+        const visualSessions = visualSnap.docs.map(doc => {
+          const data = doc.data();
+          const score = data.score || 0;
+          let risk_level = 'low';
+          if (score < 50) risk_level = 'high';
+          else if (score < 75) risk_level = 'moderate';
+
+          return {
+            id: doc.id,
+            child_id: data.testId || doc.id,
+            session_type: 'visual',
+            risk_score: score,
+            risk_level: risk_level,
+            created_at: data.created_at ? new Date(data.created_at).getTime() : Date.now(),
+            name: data.childName,
+            age: data.childAge,
+            metrics: data.metrics || {},
+            interpretation: data.interpretation || {}
+          };
+        });
+        
+        // If type is specifically 'visual', only show these
+        if (sessionType === 'visual') {
+          sessions = visualSessions;
+        } else {
+          sessions = [...sessions, ...visualSessions];
+        }
+      } catch (vErr) {
+        console.error('⚠️ Error fetching visual data:', vErr.message);
+      }
     }
     
-    const snap = await query.get();
-    let sessions = snap.docs.map(toSession);
-    
-    // Filter by hospital if provided
+    // Final Sort and Hospital Filtering
+    sessions.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+
     if (hospital) {
       const childIds = new Set();
       const childrenSnap = await childrenCollection.where('diagnosis_source', '==', hospital).get();
       childrenSnap.docs.forEach(doc => childIds.add(doc.id));
-      
       sessions = sessions.filter(s => childIds.has(s.child_id));
     }
     
     res.json({ count: sessions.length, sessions });
   } catch (err) {
+    console.error('❌ Sessions API Error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

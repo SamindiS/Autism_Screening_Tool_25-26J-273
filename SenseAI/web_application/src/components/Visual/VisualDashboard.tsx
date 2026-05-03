@@ -52,10 +52,14 @@ const VisualDashboard = () => {
 
       const allChildren = childrenRes.data.children || []
       const allSessions = sessionsRes.data.sessions || []
+      console.log('📊 TOTAL SESSIONS RECEIVED:', allSessions.length)
+      console.log('📊 SESSION TYPES FOUND:', [...new Set(allSessions.map((s: any) => s.session_type))])
+      console.log('📊 SAMPLE SESSION:', allSessions[0])
 
       const visualSessions = allSessions.filter(
-        (s: any) => s.session_type === 'visual'
+        (s: any) => s.session_type === 'visual' || s.session_type === 'visual_attention'
       )
+      console.log('📊 VISUAL SESSIONS FOUND:', visualSessions.length)
 
       // Use names from sessions if children are missing
       const childrenWithVisual = allChildren.filter((c: any) =>

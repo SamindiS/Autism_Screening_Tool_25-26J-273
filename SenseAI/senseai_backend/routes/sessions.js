@@ -222,6 +222,7 @@ router.get('/', async (req, res) => {
     }
 
     // 3. Fetch from Visual Database (Aggregation)
+    console.log('📡 Visual DB Status:', visualDb ? 'CONNECTED' : 'NOT CONNECTED');
     if (visualDb && (!sessionType || sessionType === 'visual')) {
       try {
         const visualSnap = await visualDb.collection('reports').get();

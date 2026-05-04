@@ -36,7 +36,18 @@ if (hasEnvCredentials) {
 let visualConfig = null;
 const visualKeyPath = path.join(__dirname, 'config', 'visual_service_key.json');
 
-if (process.env.VISUAL_FIREBASE_KEY) {
+const hasVisualEnvCredentials =
+  process.env.VISUAL_FIREBASE_PROJECT_ID &&
+  process.env.VISUAL_FIREBASE_CLIENT_EMAIL &&
+  process.env.VISUAL_FIREBASE_PRIVATE_KEY;
+
+if (hasVisualEnvCredentials) {
+  visualConfig = {
+    projectId: process.env.VISUAL_FIREBASE_PROJECT_ID,
+    clientEmail: process.env.VISUAL_FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.VISUAL_FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  };
+} else if (process.env.VISUAL_FIREBASE_KEY) {
   // Read from Environment Variable (for Vercel)
   try {
     visualConfig = JSON.parse(process.env.VISUAL_FIREBASE_KEY);

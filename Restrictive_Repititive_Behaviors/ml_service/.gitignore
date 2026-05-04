@@ -43,8 +43,6 @@ processed/
 logs/
 outputs/
 preprocessed_data/
-models/*.h5
-models/*.pkl
 *.log
 
 # Environment
@@ -55,8 +53,6 @@ models/*.pkl
 *.ipynb
 
 # Model files (large)
-*.h5
-*.pkl
 *.pth
 *.onnx
 

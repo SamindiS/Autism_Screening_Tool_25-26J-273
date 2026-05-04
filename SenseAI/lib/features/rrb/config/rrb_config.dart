@@ -1,9 +1,26 @@
 /// RRB Module Configuration
 class RrbConfig {
-  // ML Service URL (Flask server on port 5000)
-  static const String mlServiceUrl = 'http://localhost:5000/api/v1';
+  // ─────────────────────────────────────────────────────────────────────
+  // PRIMARY: Standalone RRB Node.js backend (deployed on Render)
+  // This backend receives the video, forwards it to the ML service,
+  // and returns the combined result.
+  //
+  // ➜ Replace the placeholder below with your actual Render URL after deploy.
+  // ─────────────────────────────────────────────────────────────────────
+  static const String rrbNodeBackendUrl =
+      'https://your-rrb-backend.onrender.com'; // ← CHANGE THIS after deploy
 
-  // API Endpoints
+  // Upload endpoint on the Node.js backend
+  static const String uploadVideoEndpoint = '/api/videos/upload';
+
+  // ─────────────────────────────────────────────────────────────────────
+  // REFERENCE ONLY: Direct ML service URL (for local dev / testing)
+  // Not used by the app when rrbNodeBackendUrl is set above.
+  // ─────────────────────────────────────────────────────────────────────
+  static const String mlServiceUrl =
+      'https://your-rrb-ml-service.onrender.com/api/v1'; // ← CHANGE THIS after deploy
+
+  // Direct detect endpoint (only used when calling ML service directly)
   static const String detectRRBEndpoint = '/detect';
 
   // Video Configuration

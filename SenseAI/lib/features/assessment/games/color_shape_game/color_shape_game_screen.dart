@@ -61,12 +61,13 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
   // Session
   String? _sessionId;
   Timer? _timer;
+  late final Future<void> _sessionReady;
 
   @override
   void initState() {
     super.initState();
     _totalTrials = _practiceTrials + _preSwitchTrials + _postSwitchTrials + _mixedTrials;
-    _createSession();
+    _sessionReady = _createSession();
   }
 
   Future<void> _initializeWithLanguage(String language) async {
@@ -96,7 +97,11 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
     }
   }
 
-  void _startGame() {
+  Future<void> _startGame() async {
+    // Ensure the session exists before gameplay begins.
+    try {
+      await _sessionReady;
+    } catch (_) {}
     GameAudioService.startBackgroundMusic();
     setState(() {
       _gamePhase = 'practice';
@@ -374,36 +379,16 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
       final summary = _calculateSummary();
       final endTime = DateTime.now();
 
-      MLPredictionResult? mlResult;
-      try {
-        final hasEnoughTrials = summary.totalTrials >= 8;
-        final featuresValid = summary.mlFeatures.isNotEmpty &&
-            !summary.mlFeatures.values.any((v) => v is double && (v.isNaN || v.isInfinite));
-        if (hasEnoughTrials && featuresValid) {
-          mlResult = await MLService.predict(
-            mlFeatures: {
-              ...summary.mlFeatures,
-              'age_months': (widget.child.age * 12).round(),
-            },
-            ageGroup: AgeCalculator.getAgeGroup(widget.child.age),
-            sessionType: 'color_shape',
-          );
-          
-          if (mlResult != null && mlResult.method == 'ml') {
-            debugPrint('✅ ML Prediction: ${mlResult.riskLevel} (${mlResult.riskScore.toStringAsFixed(1)}%)');
-          } else {
-            debugPrint('⚠️  ML prediction unavailable, using rule-based');
-          }
-        } else {
-          debugPrint('⚠️  ML skipped: trials=${summary.totalTrials} (min 8), featuresValid=$featuresValid');
-        }
-      } catch (e) {
-        debugPrint('⚠️  ML prediction error: $e - using rule-based');
-        // Continue with rule-based (graceful fallback)
+      // Ensure we have a session id even if game flow was fast.
+      if (_sessionId == null) {
+        try {
+          await _sessionReady;
+        } catch (_) {}
       }
+      _sessionId ??= DateTime.now().millisecondsSinceEpoch.toString();
 
-      // Convert to GameResults for compatibility (use ML result if available)
-      final gameResults = GameResults(
+      // Build results immediately so we can navigate without waiting on ML or trial sync.
+      final baseGameResults = GameResults(
         gameType: 'dccs-color-shape',
         totalTrials: summary.totalTrials,
         correctTrials: _trials.where((t) => t.correct).length,
@@ -424,49 +409,14 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
           isPerseverativeError: t.isPerseverativeError,
         )).toList(),
         mlFeatures: summary.mlFeatures,
-        // ✅ Add ML prediction data
-        riskScore: mlResult?.riskScore,
-        riskLevel: mlResult?.riskLevel,
-        mlPrediction: mlResult != null ? {
-          'isASD': mlResult.isASD,
-          'asdProbability': mlResult.asdProbability,
-          'controlProbability': mlResult.controlProbability,
-          'confidence': mlResult.confidence,
-          'riskLevel': mlResult.riskLevel,
-          'riskScore': mlResult.riskScore,
-          'method': mlResult.method,
-          'modelAgeGroup': mlResult.modelAgeGroup,
-          'explanations': mlResult.explanations
-              .map((e) => {
-                    'feature': e.feature,
-                    'value': e.value,
-                    'contribution': e.contribution,
-                    'direction': e.direction,
-                  })
-              .toList(),
-        } : null,
       );
 
-      if (_sessionId != null) {
-        await StorageService.updateSession(
-          id: _sessionId!,
-          endTime: endTime,
-          gameResults: gameResults.toJson(),
-        );
-
-        for (final trial in _trials) {
-          await StorageService.saveTrial(
-            id: '${_sessionId}_trial_${trial.trialNumber}',
-            sessionId: _sessionId!,
-            trialNumber: trial.trialNumber,
-            stimulus: '${trial.stimulusColor} ${trial.stimulusShape}',
-            response: trial.childChoice,
-            reactionTime: trial.reactionTimeMs,
-            correct: trial.correct,
-            timestamp: trial.timestamp,
-          );
-        }
-      }
+      // Persist completion locally ASAP (end_time drives Completed vs Pending).
+      await StorageService.updateSession(
+        id: _sessionId!,
+        endTime: endTime,
+        gameResults: baseGameResults.toJson(),
+      );
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -475,11 +425,93 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
             builder: (_) => ClinicianReflectionScreen(
               child: widget.child,
               sessionId: _sessionId!,
-              gameResults: gameResults,
+              gameResults: baseGameResults,
             ),
           ),
         );
       }
+
+      // Heavy work (ML + trial uploads) should not block navigation.
+      Future.microtask(() async {
+        // Save trials using a batch call for speed.
+        try {
+          final trialPayloads = _trials.map((trial) {
+            return {
+              'id': '${_sessionId}_trial_${trial.trialNumber}',
+              'session_id': _sessionId!,
+              'trial_number': trial.trialNumber,
+              'stimulus': '${trial.stimulusColor} ${trial.stimulusShape}',
+              'rule': trial.rule,
+              'response': trial.childChoice,
+              'reaction_time': trial.reactionTimeMs,
+              'correct': trial.correct,
+              'timestamp': trial.timestamp,
+              'is_post_switch': trial.isPostSwitch,
+              'is_perseverative_error': trial.isPerseverativeError,
+              'additional_data': {
+                'phase': trial.phase,
+                'rule': trial.rule,
+              },
+            };
+          }).toList();
+
+          await StorageService.saveTrialsBatch(trials: trialPayloads);
+        } catch (e) {
+          debugPrint('⚠️  Trial batch save failed: $e');
+        }
+
+        // Run ML prediction and update session when available.
+        try {
+          final hasEnoughTrials = summary.totalTrials >= 8;
+          final featuresValid = summary.mlFeatures.isNotEmpty &&
+              !summary.mlFeatures.values.any(
+                  (v) => v is double && (v.isNaN || v.isInfinite));
+          if (!hasEnoughTrials || !featuresValid) return;
+
+          final mlResult = await MLService.predict(
+            mlFeatures: {
+              ...summary.mlFeatures,
+              'age_months': (widget.child.age * 12).round(),
+            },
+            ageGroup: AgeCalculator.getAgeGroup(widget.child.age),
+            sessionType: 'color_shape',
+          );
+          if (mlResult == null) return;
+
+          final enriched = baseGameResults.copyWith(
+            riskScore: mlResult.riskScore,
+            riskLevel: mlResult.riskLevel,
+            mlPrediction: {
+              'isASD': mlResult.isASD,
+              'asdProbability': mlResult.asdProbability,
+              'controlProbability': mlResult.controlProbability,
+              'confidence': mlResult.confidence,
+              'riskLevel': mlResult.riskLevel,
+              'riskScore': mlResult.riskScore,
+              'method': mlResult.method,
+              'modelAgeGroup': mlResult.modelAgeGroup,
+              'explanations': mlResult.explanations
+                  .map((e) => {
+                        'feature': e.feature,
+                        'value': e.value,
+                        'contribution': e.contribution,
+                        'direction': e.direction,
+                      })
+                  .toList(),
+            },
+          );
+
+          await StorageService.updateSession(
+            id: _sessionId!,
+            endTime: endTime,
+            gameResults: enriched.toJson(),
+            riskScore: mlResult.riskScore,
+            riskLevel: mlResult.riskLevel,
+          );
+        } catch (e) {
+          debugPrint('⚠️  ML update failed: $e');
+        }
+      });
     } catch (e) {
       debugPrint('Error saving results: $e');
       if (mounted) {

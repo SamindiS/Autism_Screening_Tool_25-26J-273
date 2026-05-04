@@ -58,20 +58,25 @@ const CognitiveDashboard = () => {
       const allChildren = childrenRes.data.children || []
       const allSessions = sessionsRes.data.sessions || []
 
-      // Filter cognitive flexibility sessions
-      const cognitiveSessionTypes = ['color_shape', 'frog_jump', 'ai_doctor_bot', 'manual_assessment']
-      const cognitiveSessions = allSessions.filter((s: any) =>
-        cognitiveSessionTypes.includes(s.session_type)
-      )
+      // Filter cognitive flexibility sessions - be flexible with naming
+      const cognitiveSessionTypes = [
+        'color_shape', 'frog_jump', 'ai_doctor_bot', 'manual_assessment',
+        'color-shape', 'frog-jump', 'dccs_color_shape', 'dccs-color-shape'
+      ]
+      
+      const cognitiveSessions = allSessions.filter((s: any) => {
+        const type = (s.session_type || '').toLowerCase();
+        return cognitiveSessionTypes.some(ct => type.includes(ct));
+      })
 
-      // Get unique child IDs who have cognitive assessments
+      // Get unique child IDs who have cognitive assessments (string-safe)
       const childIdsWithCognitive = new Set(
-        cognitiveSessions.map((s: any) => s.child_id)
+        cognitiveSessions.map((s: any) => String(s.child_id))
       )
 
       // Filter children who have cognitive assessments
       const childrenWithCognitive = allChildren.filter((c: any) =>
-        childIdsWithCognitive.has(c.id)
+        childIdsWithCognitive.has(String(c.id))
       )
 
       // Count sessions by type
@@ -80,9 +85,19 @@ const CognitiveDashboard = () => {
       const aiBotCount = cognitiveSessions.filter((s: any) => s.session_type === 'ai_doctor_bot').length
       const manualCount = cognitiveSessions.filter((s: any) => s.session_type === 'manual_assessment').length
 
-      const highRisk = cognitiveSessions.filter((s: any) => s.risk_level === 'high').length
-      const moderateRisk = cognitiveSessions.filter((s: any) => s.risk_level === 'moderate').length
-      const lowRisk = cognitiveSessions.filter((s: any) => s.risk_level === 'low').length
+      // Count stats based on latest result for each child
+      const childrenResults = allChildren.map(child => {
+        const childSessions = allSessions.filter(s => String(s.child_id) === String(child.id));
+        const latestWithRisk = [...childSessions]
+          .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+          .find(s => s.risk_level || s.ml_prediction?.risk_level);
+        
+        return latestWithRisk?.risk_level || latestWithRisk?.ml_prediction?.risk_level;
+      });
+
+      const highRisk = childrenResults.filter(r => r === 'high').length;
+      const moderateRisk = childrenResults.filter(r => r === 'moderate').length;
+      const lowRisk = childrenResults.filter(r => r === 'low').length;
 
       const sessionsWithRisk = cognitiveSessions.filter((s: any) => s.risk_score != null)
       const avgRiskScore =
@@ -91,11 +106,12 @@ const CognitiveDashboard = () => {
             sessionsWithRisk.length
           : 0
 
-      setChildren(childrenWithCognitive)
-      setSessions(cognitiveSessions)
+      setChildren(allChildren)
+      setSessions(allSessions)
+      setFilteredChildren(allChildren)
       setStats({
-        totalChildren: childrenWithCognitive.length,
-        totalSessions: cognitiveSessions.length,
+        totalChildren: allChildren.length,
+        totalSessions: allSessions.length,
         colorShapeCount,
         frogJumpCount,
         aiBotCount,
@@ -117,8 +133,8 @@ const CognitiveDashboard = () => {
     child.child_code?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const getChildSessions = (childId: string) => {
-    return sessions.filter((s) => s.child_id === childId)
+  const getChildSessions = (childId: string | number) => {
+    return sessions.filter((s) => String(s.child_id) === String(childId))
   }
 
   const getSessionTypeLabel = (type: string) => {
@@ -274,12 +290,51 @@ const CognitiveDashboard = () => {
                           </Typography>
                         </Box>
                       </Box>
+                      
                       <Box display="flex" gap={1} mb={2} flexWrap="wrap">
+                        {/* Primary Highlight: Latest Assessment Result */}
+                        {childSessions.length > 0 ? (
+                          (() => {
+                            const sortedSessions = [...childSessions].sort((a, b) => 
+                              new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+                            );
+                            
+                            const latestWithRisk = sortedSessions.find(s => s.risk_level || s.ml_prediction?.risk_level);
+                            const completedSession = sortedSessions.find(s => s.end_time || s.status === 'completed');
+                            
+                            if (latestWithRisk) {
+                              const risk = latestWithRisk.risk_level || latestWithRisk.ml_prediction?.risk_level;
+                              return (
+                                <Chip
+                                  label={`${t('result')}: ${t(risk)}`}
+                                  size="small"
+                                  color={
+                                    risk === 'high' ? 'error' : 
+                                    risk === 'moderate' ? 'warning' : 'success'
+                                  }
+                                  sx={{ fontWeight: 'bold' }}
+                                />
+                              );
+                            }
+                            
+                            if (completedSession) {
+                              return <Chip label={t('processing')} size="small" variant="outlined" color="warning" />;
+                            }
+                            
+                            return <Chip label={t('pending_result')} size="small" variant="outlined" />;
+                          })()
+                        ) : (
+                          <Chip label={t('no_sessions')} size="small" variant="outlined" />
+                        )}
+
+                        {/* Secondary Info: Registration Group */}
                         <Chip
                           label={t(child.group || 'typically_developing')}
                           size="small"
-                          color={child.group === 'asd' ? 'error' : 'success'}
+                          variant="outlined"
+                          sx={{ opacity: 0.8 }}
                         />
+
                         {child.age && (
                           <Chip
                             label={`${child.age.toFixed(1)} ${t('years')}`}
@@ -288,6 +343,7 @@ const CognitiveDashboard = () => {
                           />
                         )}
                       </Box>
+
                       <Typography variant="body2" color="text.secondary">
                         {childSessions.length} {t('cognitive')} {t('sessions')}
                       </Typography>

@@ -1,14 +1,19 @@
 Cognitive_Flexibility/senseai_backend/serviceAccountKey.json
 /Cognitive_Flexibility/senseai_backend/backups
-Cognitive_Flexibility/senseai_backend/serviceAccountKey.json
 *.json
 
+# Allow these specific JSON files
 !package.json
-/Auditory_Checking/backend/__pycache__
+!vercel.json
+!SenseAI/web_application/package.json
+!SenseAI/senseai_backend/package.json
+!SenseAI/web_application/src/locales/*.json
+
+# Python/Misc
 *.pyc
-/Auditory_Checking/backend/data/__pycache__
-/Restrictive_Repititive_Behaviors/backend/node_modules
-/Restrictive_Repititive_Behaviors/backend/node_modules
-/Restrictive_Repititive_Behaviors/backend/node_modules
-/Restrictive_Repititive_Behaviors/backend/node_modules
-/Restrictive_Repititive_Behaviors/backend/node_modules
+**/__pycache__
+node_modules/
+dist/
+.env*
+Restrictive_Repititive_Behaviors/backend/vercel.json
+Visual attention & preferences/SenseAI/backend/vercel.json

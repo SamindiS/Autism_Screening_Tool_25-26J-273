@@ -1,0 +1,35 @@
+services:
+  # 1. The Backend (Node.js Express)
+  - type: web
+    name: senseai-backend
+    env: node
+    plan: free
+    rootDir: SenseAI/senseai_backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: 18.0.0
+      - key: PORT
+        value: 10000
+
+  # 2. The Frontend (React/Vite)
+  - type: static
+    name: senseai-frontend
+    env: static
+    plan: free
+    rootDir: SenseAI/web_application
+    buildCommand: npm install && npm run build
+    publishPath: dist
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: max-age=0, no-cache, no-store, must-revalidate
+    routes:
+      - type: rewrite
+        source: /api/*
+        # Render will automatically map this to your backend service
+        destination: https://senseai-backend.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html

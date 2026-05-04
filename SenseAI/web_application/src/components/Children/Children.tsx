@@ -78,8 +78,36 @@ const Children = () => {
   const loadChildren = async () => {
     try {
       setLoading(true)
-      const response = await childrenApi.getAll()
-      setChildren(response.data.children || [])
+      const [childrenRes, sessionsRes] = await Promise.all([
+        childrenApi.getAll(),
+        // Also fetch sessions to show results
+        import('../../services/api').then(m => m.sessionsApi.getAll())
+      ])
+      
+      const allChildren = childrenRes.data.children || []
+      const allSessions = sessionsRes.data.sessions || []
+
+      // Map latest risk level to each child
+      const childrenWithResults = allChildren.map((child: any) => {
+        const childSessions = allSessions.filter((s: any) => String(s.child_id) === String(child.id))
+        
+        // Find the absolute latest session that has any risk data
+        const sessionsWithRisk = [...childSessions]
+          .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+        
+        const latestSession = sessionsWithRisk.find((s: any) => s.risk_level || s.ml_prediction?.risk_level);
+        
+        // Also check if they have ANY session that is "completed" even if risk is null
+        const completedSession = sessionsWithRisk.find((s: any) => s.end_time || s.status === 'completed');
+
+        return {
+          ...child,
+          latest_risk: latestSession?.risk_level || latestSession?.ml_prediction?.risk_level,
+          has_completed_session: !!completedSession
+        }
+      })
+
+      setChildren(childrenWithResults)
     } catch (error) {
       console.error('Error loading children:', error)
     } finally {
@@ -326,7 +354,7 @@ const Children = () => {
               </TableCell>
               <TableCell>
                 <Typography variant="subtitle2" fontWeight="bold">
-                  {t('group')}
+                  {t('status_result')}
                 </Typography>
               </TableCell>
               <TableCell>
@@ -351,14 +379,21 @@ const Children = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedChildren.map((child) => (
-                <TableRow key={child.id} hover sx={{ cursor: 'pointer' }}>
+              paginatedChildren.map((child: any) => (
+                <TableRow 
+                  key={child.id} 
+                  hover 
+                  sx={{ cursor: 'pointer' }}
+                  onClick={() => navigate(`/children/${child.id}`)}
+                >
                   <TableCell>
                     <Box display="flex" alignItems="center" gap={2}>
                       <Avatar
                         sx={{
                           bgcolor:
-                            child.group === 'asd' ? 'error.main' : 'success.main',
+                            child.latest_risk === 'high' ? 'error.main' : 
+                            child.latest_risk === 'moderate' ? 'warning.main' :
+                            child.latest_risk === 'low' ? 'success.main' : 'grey.400',
                           width: 40,
                           height: 40,
                         }}
@@ -388,11 +423,26 @@ const Children = () => {
                     />
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={t(child.group || 'typically_developing')}
-                      size="small"
-                      color={child.group === 'asd' ? 'error' : 'success'}
-                    />
+                    <Stack spacing={0.5}>
+                      {child.latest_risk ? (
+                        <Chip
+                          label={t(child.latest_risk)}
+                          size="small"
+                          color={
+                            child.latest_risk === 'high' ? 'error' : 
+                            child.latest_risk === 'moderate' ? 'warning' : 'success'
+                          }
+                          sx={{ fontWeight: 'bold' }}
+                        />
+                      ) : child.has_completed_session ? (
+                        <Chip label={t('processing')} size="small" color="info" variant="outlined" />
+                      ) : (
+                        <Chip label={t('pending')} size="small" variant="outlined" />
+                      )}
+                      <Typography variant="caption" color="text.secondary">
+                        {t(child.group || 'typically_developing')}
+                      </Typography>
+                    </Stack>
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
@@ -406,7 +456,10 @@ const Children = () => {
                       <Tooltip title={t('view_details')}>
                         <IconButton
                           size="small"
-                          onClick={() => navigate(`/children/${child.id}`)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/children/${child.id}`);
+                          }}
                           color="primary"
                         >
                           <Visibility />
@@ -415,7 +468,10 @@ const Children = () => {
                       <Tooltip title={t('delete')}>
                         <IconButton
                           size="small"
-                          onClick={() => handleDelete(child.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(child.id);
+                          }}
                           color="error"
                         >
                           <Delete />

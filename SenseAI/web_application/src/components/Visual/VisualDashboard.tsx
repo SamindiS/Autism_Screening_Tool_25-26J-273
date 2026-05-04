@@ -57,12 +57,23 @@ const VisualDashboard = () => {
         (s: any) => s.session_type === 'visual'
       )
 
-      const childIdsWithVisual = new Set(
-        visualSessions.map((s: any) => s.child_id)
-      )
+      // Use names from sessions if children are missing
       const childrenWithVisual = allChildren.filter((c: any) =>
-        childIdsWithVisual.has(c.id)
+        visualSessions.some((s: any) => s.child_id === c.id)
       )
+      
+      // Add "Virtual" children for sessions that don't have a main profile
+      visualSessions.forEach((s: any) => {
+        if (!childrenWithVisual.some(c => c.id === s.child_id)) {
+           childrenWithVisual.push({
+             id: s.child_id,
+             name: s.name || `Child (${s.child_id})`,
+             child_code: s.child_code || s.child_id,
+             group: 'unknown',
+             age: s.age
+           });
+        }
+      });
 
       const highRisk = visualSessions.filter(
         (s: any) => s.risk_level === 'high'

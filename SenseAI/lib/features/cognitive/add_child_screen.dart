@@ -299,30 +299,37 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
   Future<void> _createChild() async {
     try {
-      // Determine diagnosis source and clinician info based on group
-      String diagnosisSource;
-      String? clinicianId;
-      String? hospitalId;
-      
-      // Attach hospital and clinician info for this clinical system.
-      diagnosisSource = _diagnosisSourceCtrl.text.trim().isNotEmpty
-          ? _diagnosisSourceCtrl.text.trim()
-          : (_registeredHospital ?? 'Unknown Hospital');
-      hospitalId = _registeredHospital;
-      clinicianId = _clinicianIdCtrl.text.trim();
+    // Determine diagnosis source and clinician info based on group
+    String diagnosisSource;
+    String? clinicianId;
+    String? hospitalId;
+    
+    // Automatically set group based on diagnosis type
+    // If it's a new or existing diagnosis, they belong to the ASD/Clinical group
+    if (_diagnosisType == 'new' || _diagnosisType == 'existing') {
+      _selectedGroup = ChildGroup.asd;
+    } else {
+      _selectedGroup = ChildGroup.typicallyDeveloping;
+    }
 
-      final childData = await StorageService.saveChild(
-        childCode: _childCodeCtrl.text.trim(),
-        name: _nameCtrl.text.trim().isNotEmpty 
-            ? _nameCtrl.text.trim() 
-            : _childCodeCtrl.text.trim(),
-        dateOfBirth: _selectedDate!,
-        ageInMonths: _calculatedAgeInMonths!,
-        gender: _selectedGender!,
-        language: _selectedLanguage!,
-        age: _calculatedAge!,
-        hospitalId: hospitalId, // Auto-filled from logged clinician's hospital
-        group: _selectedGroup,
+    diagnosisSource = _diagnosisSourceCtrl.text.trim().isNotEmpty
+        ? _diagnosisSourceCtrl.text.trim()
+        : (_registeredHospital ?? 'Unknown Hospital');
+    hospitalId = _registeredHospital;
+    clinicianId = _clinicianIdCtrl.text.trim();
+
+    final childData = await StorageService.saveChild(
+      childCode: _childCodeCtrl.text.trim(),
+      name: _nameCtrl.text.trim().isNotEmpty 
+          ? _nameCtrl.text.trim() 
+          : _childCodeCtrl.text.trim(),
+      dateOfBirth: _selectedDate!,
+      ageInMonths: _calculatedAgeInMonths!,
+      gender: _selectedGender!,
+      language: _selectedLanguage!,
+      age: _calculatedAge!,
+      hospitalId: hospitalId, 
+      group: _selectedGroup,
         // Clinical version: we no longer capture ASD severity level
         // in the app; this was only needed for pilot data collection.
         asdLevel: null,
@@ -374,11 +381,17 @@ class _AddChildScreenState extends State<AddChildScreen> {
       return;
     }
 
-    // Determine diagnosis source and clinician info based on group
+    // Automatically set group based on diagnosis type
+    if (_diagnosisType == 'new' || _diagnosisType == 'existing') {
+      _selectedGroup = ChildGroup.asd;
+    } else {
+      _selectedGroup = ChildGroup.typicallyDeveloping;
+    }
+
     String diagnosisSource;
     String? clinicianId;
     String? hospitalId;
-    
+
     diagnosisSource = _diagnosisSourceCtrl.text.trim().isNotEmpty
         ? _diagnosisSourceCtrl.text.trim()
         : (_registeredHospital ?? widget.child?['diagnosis_source'] as String? ?? 'Unknown Hospital');

@@ -1,11 +1,22 @@
+/**
+ * Clinicians Routes - SenseAI Backend
+ * ===================================
+ * This file manages Clinician (Doctor) accounts, including authentication,
+ * registration, and administrative access.
+ */
+
 const express = require('express');
-const bcrypt = require('bcrypt');
-const Joi = require('joi');
-const { db } = require('../firebase');
+const bcrypt = require('bcrypt'); // For secure password/PIN hashing
+const Joi = require('joi'); // For request body validation
+const { db } = require('../firebase'); // Firestore instance
 
 const router = express.Router();
 const collection = db.collection('clinicians');
 
+/**
+ * Joi Schema for Registration
+ * Clinicians use a 4-digit PIN for quick access in clinical settings.
+ */
 const registerSchema = Joi.object({
   name: Joi.string().min(3).max(100).required(),
   hospital: Joi.string().min(3).max(200).required(),
@@ -15,6 +26,10 @@ const registerSchema = Joi.object({
     .messages({ 'string.pattern.base': 'PIN must be exactly 4 digits' }),
 });
 
+/**
+ * Joi Schema for Login
+ * Accepts PINs for authentication.
+ */
 const loginSchema = Joi.object({
   pin: Joi.string()
     .min(4)
@@ -26,6 +41,9 @@ const loginSchema = Joi.object({
     }),
 });
 
+/**
+ * Utility: Clean up Firestore document for API response (removes sensitive hash)
+ */
 const docToClinician = (doc) => {
   const data = doc.data();
   return {
@@ -37,17 +55,20 @@ const docToClinician = (doc) => {
   };
 };
 
+/**
+ * Utility: Fetch any single clinician (used for health checks or simplified flows)
+ */
 const getSingleClinician = async () => {
   const snap = await collection.limit(1).get();
   if (snap.empty) return null;
   return snap.docs[0];
 };
 
+/**
+ * Error Helper: Detects if a Firebase error is related to authentication
+ */
 const isFirestoreAuthError = (err) => {
   const msg = String(err?.message || '');
-  // Common Firestore auth/permission signals:
-  // - code 16: UNAUTHENTICATED
-  // - code 7: PERMISSION_DENIED
   return (
     err?.code === 16 ||
     err?.code === 7 ||
@@ -58,20 +79,15 @@ const isFirestoreAuthError = (err) => {
   );
 };
 
+/**
+ * Admin Management: Load static admin accounts from environment variables
+ * This allows "Super Admins" to login without being registered in the Firestore collection.
+ * Supports ADMIN_USERS_JSON or comma-separated ADMIN_PINS.
+ */
 const loadManualAdmins = () => {
-  // Admin accounts managed without Firebase.
-  //
-  // Recommended env vars:
-  // - ADMIN_USERS_JSON: JSON array of { pin, name?, hospital? }
-  //   Example: [{"pin":"admin123","name":"Administrator","hospital":"All Hospitals"}]
-  //
-  // Backward-compatible env var:
-  // - ADMIN_PINS: comma-separated pins (names default to "Administrator")
-  //
-  // Security note: PINs in env vars are plaintext; restrict access to deployment settings.
-
   const admins = [];
 
+  // Method 1: Load from complex JSON env var
   const rawJson = (process.env.ADMIN_USERS_JSON || '').trim();
   if (rawJson) {
     try {
@@ -95,6 +111,7 @@ const loadManualAdmins = () => {
     }
   }
 
+  // Method 2: Load from simple comma-separated PINs
   const rawPins = (process.env.ADMIN_PINS || '').trim();
   if (rawPins) {
     rawPins
@@ -102,7 +119,6 @@ const loadManualAdmins = () => {
       .map((p) => p.trim())
       .filter(Boolean)
       .forEach((pin) => {
-        // Avoid duplicates if ADMIN_USERS_JSON already included this PIN.
         if (admins.some((a) => a.pin === pin)) return;
         admins.push({
           pin,
@@ -115,7 +131,7 @@ const loadManualAdmins = () => {
       });
   }
 
-  // Hardcoded fallback for local/testing (kept for compatibility)
+  // Fallback: Default local admin for development
   if (!admins.some((a) => a.pin === 'admin123')) {
     admins.push({
       pin: 'admin123',
@@ -130,6 +146,10 @@ const loadManualAdmins = () => {
   return admins;
 };
 
+/**
+ * POST /register - Register a new doctor
+ * Hashes the PIN using bcrypt before storing in Firestore.
+ */
 router.post('/register', async (req, res) => {
   try {
     const { error, value } = registerSchema.validate(req.body);
@@ -138,7 +158,6 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    // Check if PIN is exactly 4 digits for clinicians
     const pin = String(value.pin).trim();
     if (!/^\d{4}$/.test(pin)) {
       console.log('❌ Registration failed: PIN must be exactly 4 digits');
@@ -147,6 +166,7 @@ router.post('/register', async (req, res) => {
 
     console.log(`📝 Registering clinician: ${value.name} from ${value.hospital}`);
 
+    // Hash the PIN (bcrypt)
     const pinHash = await bcrypt.hash(pin, 10);
     const now = Date.now();
     const payload = {
@@ -157,7 +177,6 @@ router.post('/register', async (req, res) => {
       updated_at: now,
     };
 
-    // Allow multiple clinicians - just add new one
     const ref = await collection.add(payload);
     const saved = await ref.get();
     const clinicianData = docToClinician(saved);
@@ -174,16 +193,16 @@ router.post('/register', async (req, res) => {
   }
 });
 
+/**
+ * POST /login - Clinician & Admin Login
+ * 1. Checks hardcoded/env admin PINs first (Fast path)
+ * 2. If not admin, checks Firestore clinician collection
+ * 3. Verifies PIN hash using bcrypt
+ */
 router.post('/login', async (req, res) => {
   try {
-    console.log('\n' + '='.repeat(50));
-    console.log('🔐 LOGIN REQUEST RECEIVED');
-    console.log('='.repeat(50));
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
-    console.log('Request headers:', JSON.stringify(req.headers, null, 2));
+    console.log('\n🔐 LOGIN REQUEST RECEIVED');
     
-    // Robust PIN extraction from request body
-    // Supports: {"pin": "1234"}, {"pin": 1234}, or just the PIN string/number directly
     let rawPin = '';
     if (req.body && typeof req.body === 'object') {
       rawPin = req.body.pin != null ? String(req.body.pin).trim() : '';
@@ -192,19 +211,15 @@ router.post('/login', async (req, res) => {
     }
     
     const pin = rawPin;
-    console.log(`📌 Extracted PIN: "${pin ? pin.substring(0, 2) + '***' : 'empty'}" (length: ${pin.length})`);
-    
-    // Check if PIN is provided
     if (!pin) {
-      console.log('❌ Login failed: PIN is required');
       return res.status(400).json({ error: 'PIN is required' });
     }
 
-    // Check if admin login FIRST (before any validation) - this bypasses all validation/Firebase
+    // Step 1: Check Admin List (Environment Variables)
     const manualAdmins = loadManualAdmins();
     const matchedAdmin = manualAdmins.find((a) => a.pin === pin);
     if (matchedAdmin) {
-      console.log('✅ Admin login detected (manual admin)');
+      console.log('✅ Admin login detected');
       return res.json({
         success: true,
         message: 'Admin login successful',
@@ -216,7 +231,6 @@ router.post('/login', async (req, res) => {
           hospital: matchedAdmin.hospital,
           role: 'admin',
         },
-        // Also include 'clinician' for backward compatibility
         clinician: {
           id: matchedAdmin.id,
           name: matchedAdmin.name,
@@ -226,56 +240,30 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Validate for regular clinician login (only if not admin)
-    const { error, value } = loginSchema.validate({ pin });
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
-
-    // Regular clinician login - check all clinicians
+    // Step 2: Regular Clinician Login (Firestore)
     let allClinicians;
     try {
       allClinicians = await collection.get();
     } catch (err) {
-      console.error('❌ Firestore error during clinicians lookup:', err);
       if (isFirestoreAuthError(err)) {
         return res.status(503).json({
-          error:
-            'Clinician login is temporarily unavailable (database authentication/permissions). Please fix FIREBASE_* credentials in the backend deployment.',
-          details: err.message,
+          error: 'Database connection error. Please check backend credentials.',
         });
       }
       return res.status(500).json({ error: err.message });
     }
+
     let matchedClinician = null;
 
-    // Use the processed PIN for comparison
-    const pinToCompare = pin;
-    console.log(`🔍 Attempting login against ${allClinicians.docs.length} clinicians`);
-    console.log(`🔍 Comparing PIN (length: ${pinToCompare.length})`);
-    
-    // Debug: Log all clinicians and their PIN hashes (for troubleshooting)
-    console.log(`📋 Found ${allClinicians.docs.length} clinicians in database`);
-
+    // Step 3: Iterate and verify PIN hash
     for (const doc of allClinicians.docs) {
       const data = doc.data();
-      
-      // Check if pin_hash exists
-      if (!data.pin_hash) {
-        console.log(`⚠️  Clinician ${doc.id} has no pin_hash`);
-        continue;
-      }
+      if (!data.pin_hash) continue;
 
-      // Compare PIN
-      // Debug: Log comparison attempt
-      console.log(`🔍 Comparing PIN for clinician ${doc.id} (${data.name})`);
-      const match = await bcrypt.compare(pinToCompare, data.pin_hash);
+      const match = await bcrypt.compare(pin, data.pin_hash);
       if (match) {
         matchedClinician = doc;
-        console.log(`✅ PIN match found for clinician: ${doc.id} (${data.name})`);
         break;
-      } else {
-        console.log(`❌ PIN mismatch for clinician ${doc.id} (${data.name})`);
       }
     }
 
@@ -285,7 +273,7 @@ router.post('/login', async (req, res) => {
     }
 
     const clinicianData = docToClinician(matchedClinician);
-    console.log('✅ Login successful for clinician:', clinicianData.id, clinicianData.name);
+    console.log('✅ Login successful:', clinicianData.name);
 
     res.json({
       success: true,
@@ -296,29 +284,23 @@ router.post('/login', async (req, res) => {
         ...clinicianData,
         role: 'clinician',
       },
-      // Also include 'clinician' for backward compatibility with Flutter app
       clinician: {
         ...clinicianData,
         role: 'clinician',
       },
     });
   } catch (err) {
-    console.error('❌ Login error (unexpected):', err);
-    if (isFirestoreAuthError(err)) {
-      return res.status(503).json({
-        error:
-          'Clinician login is temporarily unavailable (database authentication/permissions). Please fix FIREBASE_* credentials in the backend deployment.',
-        details: err.message,
-      });
-    }
+    console.error('❌ Login error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Get all clinicians (for admin)
+/**
+ * GET / - List all clinicians (Admin use)
+ */
 router.get('/', async (req, res) => {
   try {
-    const hospital = req.query.hospital; // Optional filter by hospital
+    const hospital = req.query.hospital;
     let query = collection.orderBy('created_at', 'desc');
     
     if (hospital) {
@@ -327,39 +309,30 @@ router.get('/', async (req, res) => {
     
     const snap = await query.get();
     const clinicians = snap.docs.map(doc => docToClinician(doc));
-    
     res.json({ count: clinicians.length, clinicians });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Get single clinician by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const doc = await collection.doc(req.params.id).get();
-    if (!doc.exists) {
-      return res.status(404).json({ error: 'Clinician not found' });
-    }
-    res.json({ clinician: docToClinician(doc) });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
+/**
+ * GET /me - Get currently active clinician (Legacy support)
+ */
 router.get('/me', async (_req, res) => {
   try {
     const clinicianDoc = await getSingleClinician();
     if (!clinicianDoc) {
       return res.status(404).json({ error: 'No clinician registered' });
     }
-
     res.json({ clinician: docToClinician(clinicianDoc) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+/**
+ * PUT /:id - Update clinician details
+ */
 router.put('/:id', async (req, res) => {
   try {
     const { error, value } = registerSchema.validate(req.body);
@@ -391,6 +364,9 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+/**
+ * DELETE /:id - Delete a clinician account
+ */
 router.delete('/:id', async (req, res) => {
   try {
     const docRef = collection.doc(req.params.id);
@@ -407,4 +383,3 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = router;
-

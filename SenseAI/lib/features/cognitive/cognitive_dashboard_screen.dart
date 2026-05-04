@@ -104,22 +104,41 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
       // Load sessions and keep only those for this clinician's children
       final allSessions = await StorageService.getAllSessions();
       final childIds = _children.map((c) => c.id).toSet();
-      _sessions = allSessions
-          .where((s) => childIds.contains(s['child_id'] as String?))
-          .toList();
+      
+      // Define cognitive session types to avoid counting visual/auditory data here
+      final cognitiveTypes = [
+        'frog_jump', 'color_shape', 'ai_doctor_bot', 'manual_assessment',
+        'dccs_color_shape', 'frog-jump', 'color-shape'
+      ];
+
+      _sessions = allSessions.where((s) {
+        final childMatch = childIds.contains(s['child_id'] as String?);
+        final typeMatch = cognitiveTypes.contains((s['session_type'] as String?)?.toLowerCase());
+        return childMatch && typeMatch;
+      }).toList();
 
       // Calculate statistics
-      final today = DateTime.now();
-      final todayStart = DateTime(today.year, today.month, today.day);
+      final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day);
 
-      _completedAssessments =
-          _sessions.where((s) => _isSessionCompleted(s)).length;
-      _pendingAssessments =
-          _sessions.where((s) => !_isSessionCompleted(s)).length;
+      // 1. Completed: Sessions with a completed status
+      _completedAssessments = _sessions.where((s) => _isSessionCompleted(s)).length;
+
+      // 2. Today: Sessions created since 00:00 today
       _todayAssessments = _sessions.where((s) {
-        final sessionDate = DateTime.fromMillisecondsSinceEpoch(s['created_at'] as int);
-        return sessionDate.isAfter(todayStart);
+        final createdAt = s['created_at'] as int?;
+        if (createdAt == null) return false;
+        final sessionDate = DateTime.fromMillisecondsSinceEpoch(createdAt);
+        return !sessionDate.isBefore(todayStart);
       }).length;
+
+      // 3. Pending: Children registered who either have no sessions OR no completed sessions
+      final completedChildIds = _sessions
+          .where((s) => _isSessionCompleted(s))
+          .map((s) => s['child_id'] as String)
+          .toSet();
+      
+      _pendingAssessments = _children.where((c) => !completedChildIds.contains(c.id)).length;
 
       if (mounted) {
         setState(() {

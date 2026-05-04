@@ -18,7 +18,7 @@ Workflow:
 
 import numpy as np
 from app.ml.age_specific_loader import load_age_specific_model
-from app.ml.model_loader import load_models, load_v3_models, load_v4_3_5_models  # Updated with v3 and v4 loaders
+from app.ml.model_loader import load_models, load_v3_models, load_v4_3_5_models, load_v5_5_5_models
 from app.ml.preprocessing import normalize_features, prepare_features
 from app.core.config import RISK_THRESHOLDS, get_age_group
 from app.core.logger import logger
@@ -567,6 +567,75 @@ def predict_asd_v4_hybrid_3_5(request: PredictionRequest) -> PredictionResponse:
         explanations=explanations
     )
 
+def _engineer_dccs_features_v5(raw_features, norms):
+    """
+    Engineer the 9 curated features expected by the v5 DCCS model.
+    Matches the exact feature engineering from the v5 training notebook.
+    
+    Expected output features (in order):
+        1. post_switch_accuracy
+        2. perseverative_error_rate_post_switch
+        3. number_of_consecutive_perseverations
+        4. switch_cost_ms
+        5. mixed_block_accuracy
+        6. behavioral_regulation
+        7. streak_efficiency
+        8. z_post_switch_accuracy
+        9. z_perseverative_error_rate_post_switch
+    """
+    eng = {}
+    
+    # 1-5. Pass-through raw DCCS metrics
+    eng['post_switch_accuracy'] = float(raw_features.get('post_switch_accuracy', 0))
+    eng['perseverative_error_rate_post_switch'] = float(raw_features.get('perseverative_error_rate_post_switch', 0))
+    eng['number_of_consecutive_perseverations'] = float(raw_features.get('number_of_consecutive_perseverations', 0))
+    eng['switch_cost_ms'] = float(raw_features.get('switch_cost_ms', 0))
+    eng['mixed_block_accuracy'] = float(raw_features.get('mixed_block_accuracy', 0))
+    
+    # 6. Behavioral Regulation = mean of clinician reflection scores
+    attention = float(raw_features.get('attention_level', 3))
+    engagement = float(raw_features.get('engagement_level', 3))
+    frustration = float(raw_features.get('frustration_tolerance', 3))
+    instruction = float(raw_features.get('instruction_following', 3))
+    overall = float(raw_features.get('overall_behavior', 3))
+    eng['behavioral_regulation'] = (attention + engagement + frustration + instruction + overall) / 5.0
+    
+    # 7. Streak Efficiency = longest_streak_correct / total_trials
+    longest_streak = float(raw_features.get('longest_streak_correct', 0))
+    total_trials = float(raw_features.get('total_trials', raw_features.get('total_questions', 16)))
+    if total_trials <= 0:
+        total_trials = 16  # default DCCS trial count
+    eng['streak_efficiency'] = longest_streak / total_trials
+    
+    # 8-9. Z-scores using TD norms from training data
+    if norms:
+        # z_post_switch_accuracy (inverted: lower accuracy = higher z = more risk)
+        psa_norm = norms.get('post_switch_accuracy', {})
+        psa_mean = psa_norm.get('mean', 90.0)
+        psa_std = psa_norm.get('std', 5.0)
+        if psa_std > 0:
+            eng['z_post_switch_accuracy'] = (psa_mean - eng['post_switch_accuracy']) / psa_std
+        else:
+            eng['z_post_switch_accuracy'] = 0.0
+        
+        # z_perseverative_error_rate_post_switch (higher errors = higher z = more risk)
+        per_norm = norms.get('perseverative_error_rate_post_switch', {})
+        per_mean = per_norm.get('mean', 1.0)
+        per_std = per_norm.get('std', 2.0)
+        if per_std > 0:
+            eng['z_perseverative_error_rate_post_switch'] = (
+                eng['perseverative_error_rate_post_switch'] - per_mean
+            ) / per_std
+        else:
+            eng['z_perseverative_error_rate_post_switch'] = 0.0
+    else:
+        # No norms available, use raw values as-is
+        eng['z_post_switch_accuracy'] = 0.0
+        eng['z_perseverative_error_rate_post_switch'] = 0.0
+    
+    return eng
+
+
 def _get_clinical_rule_score_5_5(d):
     """
     Calculate clinical rule score (30% weight in v5 hybrid model for 5.5-6.9).
@@ -596,56 +665,58 @@ def _get_clinical_rule_score_5_5(d):
 def predict_asd_v5_hybrid_5_5(request: PredictionRequest) -> PredictionResponse:
     """
     v5 Hybrid Inference Engine for Age 5.5-6.9 (Color-Shape/DCCS).
-    Implemented to resolve 100% High Risk bias found in legacy v2 model.
+    Uses the new model from age_5.5_v3/ with 9 curated features.
     70% ML Probability + 30% Clinical Behavioral Rules.
     """
-    # 1. Load 5.5-6.9 Color-Shape model components
-    try:
-        model, scaler, feature_names, metadata = load_age_specific_model(72) # Target middle of range
-    except Exception:
-        # Fallback to standard if age-specific fails
-        model, scaler, feature_names, _ = load_models()
-
-    if model is None:
-        raise FileNotFoundError("Cognitive Flexibility models for Age 5.5-6.9 could not be loaded.")
-        
-    # 2. Features and Preparation
+    # 1. Load v5 model ensemble from age_5.5_v3/
+    (bin_model, sev_model, scaler, feature_names, norms, config) = load_v5_5_5_models()
+    if bin_model is None:
+        raise FileNotFoundError("v5 Cognitive Flexibility models for Age 5.5-6.9 could not be loaded.")
+    
+    # 2. Feature Engineering (v5 curated 9 features)
     raw_features = request.features.copy()
+    eng_features = _engineer_dccs_features_v5(raw_features, norms)
     
-    # Get expected number of features from scaler
-    expected_n_features = scaler.n_features_in_
+    # 3. Prepare feature vector in correct order from features JSON
+    top_features = feature_names if feature_names else config.get('top_features', []) if config else []
+    if not top_features:
+        # Hardcoded fallback matching the model's training order
+        top_features = [
+            'post_switch_accuracy', 'perseverative_error_rate_post_switch',
+            'number_of_consecutive_perseverations', 'switch_cost_ms',
+            'mixed_block_accuracy', 'behavioral_regulation', 'streak_efficiency',
+            'z_post_switch_accuracy', 'z_perseverative_error_rate_post_switch'
+        ]
     
-    # Prepare features in correct order
-    X_vec = prepare_features(raw_features, feature_names, expected_n_features)
+    X_vec = np.array([eng_features.get(f, 0.0) for f in top_features]).reshape(1, -1)
     X_scaled = scaler.transform(X_vec)
     
-    # 3. ML Prediction (Probability of ASD)
-    ml_prob_asd = float(model.predict_proba(X_scaled)[0][1])
+    # 4. ML Prediction (Probability of ASD)
+    ml_prob_asd = float(bin_model.predict_proba(X_scaled)[0][1])
     
-    # 4. Clinical Rules Component
+    # 5. Severity prediction
+    sev_probs = sev_model.predict_proba(X_scaled)[0]
+    sev_pred = int(sev_model.predict(X_scaled)[0])
+    sev_labels = config.get('severity_classes', {}) if config else {}
+    sev_label = sev_labels.get(str(sev_pred), 'Unknown')
+    
+    # 6. Clinical Rules Component
     rule_score, rule_flags = _get_clinical_rule_score_5_5(raw_features)
     
-    # 5. Hybrid Calculation
-    ML_WEIGHT = 0.7
-    RULE_WEIGHT = 0.3
+    # 7. Hybrid Calculation
+    ML_WEIGHT = config.get('ml_weight', 0.7) if config else 0.7
+    RULE_WEIGHT = config.get('rule_weight', 0.3) if config else 0.3
     hybrid_score = (ML_WEIGHT * ml_prob_asd) + (RULE_WEIGHT * rule_score)
     
-    # Thresholding
+    # 8. Thresholding (from model metadata)
+    th_high = config.get('high_threshold', 0.68) if config else 0.68
+    th_mod = config.get('mod_threshold', 0.42) if config else 0.42
+    th_low = config.get('low_threshold', 0.22) if config else 0.22
+    
     severity = "No ASD Risk (Typically Developing)"
     risk_level = "no_risk"
     prediction = 0
     
-    # v5 Specific Hybrid Thresholds
-    th_high = 0.65
-    th_mod = 0.40
-    th_low = 0.20
-    
-    # Performance metrics for guardrails
-    accuracy_overall = float(raw_features.get('accuracy_overall', raw_features.get('overall_accuracy', 0)))
-    post_switch_acc = float(raw_features.get('post_switch_accuracy', 0))
-    p_errors = float(raw_features.get('total_perseverative_errors', raw_features.get('perseverative_errors', 0)))
-    
-    # Apply Thresholds
     if hybrid_score >= th_high:
         severity = "High ASD Risk"
         risk_level = "high"
@@ -658,50 +729,58 @@ def predict_asd_v5_hybrid_5_5(request: PredictionRequest) -> PredictionResponse:
         severity = "Low ASD Risk"
         risk_level = "low"
         prediction = 1
-
-    # OVERRIDES (The FIX for High Risk Bias)
+    
+    # 9. OVERRIDES (Performance guardrails)
     clinical_override = False
     
-    # Rule 1: Performance Guardrail (Prevent false positives for high flyers)
+    accuracy_overall = float(raw_features.get('accuracy_overall', raw_features.get('overall_accuracy', 0)))
+    post_switch_acc = eng_features.get('post_switch_accuracy', 0)
+    p_errors = float(raw_features.get('total_perseverative_errors', raw_features.get('perseverative_errors', 0)))
+    
+    # Rule 1: Performance Guardrail (Prevent false positives for high performers)
     if accuracy_overall >= 90 and post_switch_acc >= 80 and p_errors <= 1:
         if risk_level == "high" or risk_level == "moderate":
-            # Demote risk if performance is clinically excellent
             logger.info("Performance Guardrail: Demoting Risk due to excellent cognitive flexibility accuracy.")
             risk_level = "low"
             severity = "Low ASD Risk (Performance Guardrail)"
-            prediction = 1 
+            prediction = 1
             clinical_override = True
         elif risk_level == "low":
             risk_level = "no_risk"
             severity = "No ASD Risk (Typically Developing)"
             prediction = 0
             clinical_override = True
-
+    
     # Rule 2: Behavioral Safety Net
-    if rule_score >= 0.8: # Severe behavioral regulation deficit
+    if rule_score >= 0.8:
         if risk_level == "no_risk":
             severity = "Low ASD Risk (Clinical Behavioral Override)"
             risk_level = "low"
             prediction = 1
             clinical_override = True
-
-    logger.info(f"Age 5.5-6.9 Prediction: ML={ml_prob_asd:.3f}, CLI={rule_score:.3f}, HYBRID={hybrid_score:.3f} -> {risk_level}")
-
-    # Explanations
+    
+    logger.info(f"Age 5.5-6.9 v5 Prediction: ML={ml_prob_asd:.3f}, CLI={rule_score:.3f}, "
+                f"HYBRID={hybrid_score:.3f}, SEV={sev_label} -> {risk_level}")
+    
+    # 10. Explanations
     explanations = []
     if post_switch_acc < 60:
         explanations.append("Reduced accuracy during the rule-switching phase indicates cognitive shift difficulty.")
     if p_errors > 3:
         explanations.append("Frequent perseverative errors suggest difficulty inhibiting previous rules.")
+    if eng_features.get('z_post_switch_accuracy', 0) > 2:
+        explanations.append("Post-switch accuracy is significantly below age norms (>2 SD).")
+    if eng_features.get('z_perseverative_error_rate_post_switch', 0) > 2:
+        explanations.append("Perseverative error rate is significantly above age norms (>2 SD).")
     if accuracy_overall >= 90:
         explanations.append("Strong overall task performance across both rule sets.")
     if rule_score < 0.2:
         explanations.append("Excellent behavioral regulation and engagement during assessment.")
-        
+    
     return PredictionResponse(
         prediction=prediction,
-        probability=[1-ml_prob_asd, ml_prob_asd],
-        confidence=float(max(model.predict_proba(X_scaled)[0])),
+        probability=[1 - ml_prob_asd, ml_prob_asd],
+        confidence=float(max(sev_probs)),
         risk_level=risk_level,
         asd_probability=round(ml_prob_asd, 3),
         avg_score=round(1.0 - rule_score, 2),

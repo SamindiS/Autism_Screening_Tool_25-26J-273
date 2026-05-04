@@ -277,7 +277,8 @@ class AuthService {
     }
   }
 
-  /// Retrieves the current clinician's profile directly from the backend.
+  /// Retrieves the current clinician's profile.
+  /// Falls back to local storage if the backend is unreachable.
   static Future<Map<String, String?>> getClinicianInfo() async {
     try {
       final clinician = await ApiService.getClinicianInfo();
@@ -287,7 +288,15 @@ class AuthService {
         'id': clinician['id']?.toString(),
       };
     } catch (e) {
-      debugPrint('Error getting clinician info: $e');
+      debugPrint('Error getting clinician info from API, checking local storage: $e');
+      final stored = await getStoredClinicianData();
+      if (stored != null) {
+        return {
+          'name': stored['name']?.toString(),
+          'hospital': stored['hospital']?.toString(),
+          'id': stored['id']?.toString(),
+        };
+      }
       return {
         'name': null,
         'hospital': null,

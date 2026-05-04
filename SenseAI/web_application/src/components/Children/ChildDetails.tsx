@@ -21,6 +21,8 @@ import {
   Card,
   CardContent,
   Stack,
+  Avatar,
+  alpha,
 } from '@mui/material'
 import {
   ArrowBack,
@@ -39,11 +41,12 @@ import { format } from 'date-fns'
 import { isAdmin } from '../../services/auth'
 
 const getComponentType = (sessionType: string): string => {
-  const cognitiveTypes = ['color_shape', 'frog_jump', 'ai_doctor_bot', 'manual_assessment']
-  if (cognitiveTypes.includes(sessionType)) return 'Cognitive'
-  if (sessionType === 'rrb') return 'RRB'
-  if (sessionType === 'auditory') return 'Auditory'
-  if (sessionType === 'visual') return 'Visual'
+  const type = sessionType.toLowerCase()
+  const cognitiveTypes = ['color_shape', 'frog_jump', 'ai_doctor_bot', 'manual_assessment', 'dccs', 'flexibility']
+  if (cognitiveTypes.some(t => type.includes(t))) return 'Cognitive'
+  if (type.includes('rrb')) return 'RRB'
+  if (type.includes('auditory')) return 'Auditory'
+  if (type.includes('visual')) return 'Visual'
   return 'Other'
 }
 
@@ -66,6 +69,8 @@ const formatSessionType = (type: string): string => {
     'rrb': 'RRB Assessment',
     'auditory': 'Auditory Assessment',
     'visual': 'Visual Assessment',
+    'dccs_color_shape': 'DCCS Color-Shape',
+    'dccs-color-shape': 'DCCS Color-Shape',
   }
   return typeMap[type] || type
 }
@@ -80,6 +85,8 @@ const ChildDetails = () => {
   const [viewMode, setViewMode] = useState<'table' | 'timeline'>('table')
   const admin = isAdmin()
 
+  const [error, setError] = useState<string | null>(null)
+
   useEffect(() => {
     if (id) {
       loadData()
@@ -88,14 +95,28 @@ const ChildDetails = () => {
 
   const loadData = async () => {
     try {
-      const [childRes, sessionsRes] = await Promise.all([
-        childrenApi.getById(id!),
-        sessionsApi.getByChild(id!),
-      ])
-      setChild(childRes.data.child)
-      setSessions(sessionsRes.data.sessions || [])
+      setLoading(true)
+      setError(null)
+      
+      // Load child details first
+      try {
+        const childRes = await childrenApi.getById(id!)
+        setChild(childRes.data.child)
+      } catch (err: any) {
+        console.error('Error loading child:', err)
+        setError(t('child_not_found'))
+      }
+
+      // Load sessions independently
+      try {
+        const sessionsRes = await sessionsApi.getByChild(id!)
+        setSessions(sessionsRes.data.sessions || [])
+      } catch (err) {
+        console.error('Error loading sessions:', err)
+        // Don't set global error, just show empty sessions
+      }
     } catch (error) {
-      console.error('Error loading data:', error)
+      console.error('Error in loadData:', error)
     } finally {
       setLoading(false)
     }
@@ -120,8 +141,22 @@ const ChildDetails = () => {
     )
   }
 
-  if (!child) {
-    return <Typography>{t('no_data')}</Typography>
+  if (error) {
+    return (
+      <Box textAlign="center" py={10}>
+        <Typography variant="h6" color="error">{error}</Typography>
+        <Button onClick={() => navigate('/children')} sx={{ mt: 2 }}>{t('back_to_list')}</Button>
+      </Box>
+    )
+  }
+
+  if (!child && !loading) {
+    return (
+      <Box textAlign="center" py={10}>
+        <Typography variant="h6">{t('no_data')}</Typography>
+        <Button onClick={() => navigate('/children')} sx={{ mt: 2 }}>{t('back_to_list')}</Button>
+      </Box>
+    )
   }
 
   return (
@@ -135,44 +170,104 @@ const ChildDetails = () => {
         </Button>
       </Box>
 
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" gutterBottom fontWeight="bold">
         {t('child_details')}
       </Typography>
 
       <Grid container spacing={3} sx={{ mt: 2 }}>
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              {t('name')}: {child.name}
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              {t('code')}: {child.child_code || '-'}
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              {t('age')}: {child.age ? `${child.age.toFixed(1)} ${t('years')}` : '-'}
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              {t('gender')}: {t(child.gender)}
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              {t('group')}:{' '}
-              <Chip
-                label={t(child.group || 'typically_developing')}
-                size="small"
-                color={child.group === 'asd' ? 'error' : 'success'}
-              />
-            </Typography>
-            {child.asd_level && (
-              <Typography variant="body1" gutterBottom>
-                ASD Level: {child.asd_level}
-              </Typography>
-            )}
-            {child.clinician_name && (
-              <Typography variant="body1" gutterBottom>
-                {t('examined_by')}: {child.clinician_name}
-              </Typography>
-            )}
+        <Grid item xs={12} md={7}>
+          <Paper sx={{ p: 3, height: '100%', borderRadius: 2 }}>
+            <Box display="flex" alignItems="center" gap={2} mb={3}>
+              <Avatar sx={{ width: 64, height: 64, bgcolor: 'primary.main' }}>
+                <Person sx={{ fontSize: 40 }} />
+              </Avatar>
+              <Box>
+                <Typography variant="h5" fontWeight="bold">
+                  {child.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {child.child_code || t('no_code')} • {t(child.gender)}
+                </Typography>
+              </Box>
+            </Box>
+
+            <Divider sx={{ mb: 2 }} />
+
+            <Grid container spacing={2}>
+              <Grid item xs={6} sm={4}>
+                <Typography variant="caption" color="text.secondary">{t('age')}</Typography>
+                <Typography variant="body1" fontWeight="medium">
+                  {child.age ? `${child.age.toFixed(1)} ${t('years')}` : '-'}
+                </Typography>
+              </Grid>
+              <Grid item xs={6} sm={4}>
+                <Typography variant="caption" color="text.secondary">{t('group')}</Typography>
+                <Box>
+                  <Chip
+                    label={t(child.group || 'typically_developing')}
+                    size="small"
+                    color={child.group === 'asd' ? 'error' : 'success'}
+                  />
+                </Box>
+              </Grid>
+              <Grid item xs={6} sm={4}>
+                <Typography variant="caption" color="text.secondary">{t('language')}</Typography>
+                <Typography variant="body1" fontWeight="medium">{t(child.language || 'english')}</Typography>
+              </Grid>
+              <Grid item xs={6} sm={4}>
+                <Typography variant="caption" color="text.secondary">{t('hospital')}</Typography>
+                <Typography variant="body1" fontWeight="medium">{child.hospital_id || child.diagnosis_source || '-'}</Typography>
+              </Grid>
+              <Grid item xs={6} sm={4}>
+                <Typography variant="caption" color="text.secondary">{t('registered')}</Typography>
+                <Typography variant="body1" fontWeight="medium">
+                  {child.created_at ? format(new Date(child.created_at), 'yyyy-MM-dd') : '-'}
+                </Typography>
+              </Grid>
+              {child.clinician_name && (
+                <Grid item xs={12} sm={4}>
+                  <Typography variant="caption" color="text.secondary">{t('examined_by')}</Typography>
+                  <Typography variant="body1" fontWeight="medium">{child.clinician_name}</Typography>
+                </Grid>
+              )}
+            </Grid>
           </Paper>
+        </Grid>
+
+        <Grid item xs={12} md={5}>
+          <Card sx={{ height: '100%', bgcolor: alpha('#2563EB', 0.03), borderRadius: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom fontWeight="bold">
+                {t('diagnostic_summary')}
+              </Typography>
+              <Stack spacing={2} sx={{ mt: 2 }}>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2">{t('overall_risk')}</Typography>
+                  <Chip 
+                    label={t(sessions.some(s => s.risk_level === 'high') ? 'high' : 
+                           sessions.some(s => s.risk_level === 'moderate') ? 'moderate' : 'low')}
+                    size="small"
+                    color={sessions.some(s => s.risk_level === 'high') ? 'error' : 
+                           sessions.some(s => s.risk_level === 'moderate') ? 'warning' : 'success'}
+                    sx={{ fontWeight: 'bold' }}
+                  />
+                </Box>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2">{t('avg_score')}</Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {(sessions.reduce((sum, s) => sum + (s.risk_score || 0), 0) / (sessions.length || 1)).toFixed(1)}%
+                  </Typography>
+                </Box>
+                <Divider />
+                <Typography variant="caption" color="text.secondary" fontWeight="bold">
+                  {t('initial_clinical_notes')}
+                </Typography>
+                <Typography variant="body2">
+                  {child.external_diagnosis ? `${t('initial_diagnosis')}: ${t(child.external_diagnosis)}` : t('no_clinical_notes')}
+                </Typography>
+              </Stack>
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
 
@@ -388,7 +483,7 @@ const ChildDetails = () => {
                           )}
                         </Box>
                         <Box flex={1}>
-                          <Card>
+                          <Card variant="outlined" sx={{ mb: 1 }}>
                             <CardContent>
                               <Box display="flex" justifyContent="space-between" alignItems="start" mb={2}>
                                 <Box>
@@ -407,48 +502,55 @@ const ChildDetails = () => {
                                     size="small"
                                     color={getComponentColor(componentType)}
                                   />
-                                  {session.risk_level && (
-                                    <Chip
-                                      label={t(session.risk_level)}
-                                      size="small"
-                                      color={
-                                        session.risk_level === 'high'
-                                          ? 'error'
-                                          : session.risk_level === 'moderate'
-                                          ? 'warning'
-                                          : 'success'
-                                      }
-                                    />
-                                  )}
+                                  <Chip
+                                    label={t(session.risk_level || session.ml_prediction?.risk_level || 'pending')}
+                                    size="small"
+                                    color={
+                                      (session.risk_level || session.ml_prediction?.risk_level) === 'high' ? 'error' : 
+                                      (session.risk_level || session.ml_prediction?.risk_level) === 'moderate' ? 'warning' : 
+                                      (session.risk_level || session.ml_prediction?.risk_level) === 'low' ? 'success' : 'default'
+                                    }
+                                  />
                                 </Stack>
                               </Box>
+                              
                               <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
-                                  <Typography variant="body2" color="text.secondary">
-                                    {t('risk_score')}:
-                                  </Typography>
-                                  <Typography variant="body1" fontWeight="medium">
-                                    {session.risk_score !== null && session.risk_score !== undefined
-                                      ? session.risk_score.toFixed(1)
-                                      : '-'}
+                                <Grid item xs={12} sm={4}>
+                                  <Typography variant="caption" color="text.secondary">{t('risk_score')}</Typography>
+                                  <Typography variant="body1" fontWeight="bold">
+                                    {((session.risk_score || session.ml_prediction?.risk_score || 0)).toFixed(1)}%
                                   </Typography>
                                 </Grid>
-                                <Grid item xs={12} sm={6}>
-                                  <Typography variant="body2" color="text.secondary">
-                                    {t('age_group')}:
-                                  </Typography>
-                                  <Typography variant="body1" fontWeight="medium">
-                                    {session.age_group || '-'}
+                                <Grid item xs={12} sm={8}>
+                                  <Typography variant="caption" color="text.secondary">{t('result_summary')}</Typography>
+                                  <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
+                                    {session.ml_prediction?.result_summary || session.result_summary || t('no_summary_available')}
                                   </Typography>
                                 </Grid>
                               </Grid>
-                              <Box mt={2}>
+
+                              {session.ml_prediction?.explanations && (
+                                <Box mt={2} p={1.5} sx={{ bgcolor: alpha('#000', 0.02), borderRadius: 1 }}>
+                                  <Typography variant="caption" color="primary" fontWeight="bold" display="block" mb={0.5}>
+                                    {t('clinical_explanations')}
+                                  </Typography>
+                                  <Stack spacing={0.5}>
+                                    {Object.entries(session.ml_prediction.explanations).map(([key, val]: [string, any]) => (
+                                      <Typography key={key} variant="caption" display="block">
+                                        • <strong>{key.replace(/_/g, ' ')}:</strong> {val}
+                                      </Typography>
+                                    ))}
+                                  </Stack>
+                                </Box>
+                              )}
+
+                              <Box mt={2} display="flex" gap={1}>
                                 <Button
                                   size="small"
-                                  variant="outlined"
+                                  variant="contained"
                                   onClick={() => navigate(`/sessions/${session.id}`)}
                                 >
-                                  {t('view_full_details')}
+                                  {t('view_full_report')}
                                 </Button>
                               </Box>
                             </CardContent>

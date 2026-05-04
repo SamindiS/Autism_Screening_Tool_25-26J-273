@@ -32,15 +32,15 @@ class AgeCalculator {
   /// Determines the study-defined age group string for routing.
   /// 
   /// The clinical study categorizes children into distinct cohorts:
-  /// '2-3.5', '3.5-5.5', and '5.5-6'. If [ageInYears] falls outside
+  /// '2-3.5', '3.5-5.5', and '5.5-6.9'. If [ageInYears] falls outside
   /// these ranges, it returns 'out_of_range'.
   static String getAgeGroup(double ageInYears) {
     if (ageInYears >= 2.0 && ageInYears < 3.5) {
       return '2-3.5';
     } else if (ageInYears >= 3.5 && ageInYears < 5.5) {
       return '3.5-5.5';
-    } else if (ageInYears >= 5.5 && ageInYears <= 6.0) {
-      return '5.5-6';
+    } else if (ageInYears >= 5.5 && ageInYears < 6.9) {
+      return '5.5-6.9';
     }
     return 'out_of_range';
   }
@@ -49,13 +49,13 @@ class AgeCalculator {
   /// 
   /// - 2.0 to <3.5 years: [AssessmentType.aiDoctorBot]
   /// - 3.5 to <5.5 years: [AssessmentType.frogJump]
-  /// - 5.5 to 6.0 years: [AssessmentType.colorShape]
+  /// - 5.5 to <6.9 years: [AssessmentType.colorShape]
   static AssessmentType getAssessmentType(double ageInYears) {
     if (ageInYears >= 2.0 && ageInYears < 3.5) {
       return AssessmentType.aiDoctorBot;
     } else if (ageInYears >= 3.5 && ageInYears < 5.5) {
       return AssessmentType.frogJump;
-    } else if (ageInYears >= 5.5 && ageInYears <= 6.0) {
+    } else if (ageInYears >= 5.5 && ageInYears < 6.9) {
       return AssessmentType.colorShape;
     }
     return AssessmentType.none;
@@ -110,7 +110,7 @@ enum AssessmentType {
   /// Response inhibition and working memory task (3.5-5.5 yrs)
   frogJump,
   
-  /// Set-shifting and cognitive flexibility task (5.5-6 yrs)
+  /// Set-shifting and cognitive flexibility task (5.5-6.9 yrs)
   colorShape,
   
   /// Indicates an unsupported age or configuration error

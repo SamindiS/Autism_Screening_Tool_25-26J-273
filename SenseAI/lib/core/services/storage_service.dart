@@ -727,7 +727,8 @@ class StorageService {
       final localSession = {
         'id': offlineId,
         'child_id': childId,
-        'session_type': sessionType,
+        // Keep local storage consistent with backend expectations so UI filters/exports work offline.
+        'session_type': normalizedSessionType,
         'age_group': ageGroup,
         'status': status,
         'start_time': startTime.millisecondsSinceEpoch,
@@ -750,6 +751,8 @@ class StorageService {
         endpoint: '/api/sessions',
         method: 'POST',
         payload: {
+          // Ensure backend uses this id so trials can reference it after sync
+          'id': offlineId,
           ...payload,
           // include created_by_clinician_id for proper backend scoping
           'created_by_clinician_id':

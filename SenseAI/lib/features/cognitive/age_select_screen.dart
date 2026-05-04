@@ -130,7 +130,7 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
         ),
       );
     } else if (age >= 5.5 && age < 6.9) {
-      // Age 5.5-6.8: Color-Shape Game + Clinician Reflection
+      // Age 5.5-6.9: Color-Shape Game + Clinician Reflection
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

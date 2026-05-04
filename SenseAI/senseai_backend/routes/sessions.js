@@ -10,6 +10,8 @@ const childrenCollection = db.collection('children');
 const trialsCollection = db.collection('trials');
 
 const sessionSchema = Joi.object({
+  // Optional client-provided ID (used for offline sync so trials can reference the same id)
+  id: Joi.string().max(200).allow(null, '').optional(),
   child_id: Joi.string().required(),
   session_type: Joi.string()
     .valid('ai_doctor_bot', 'frog_jump', 'color_shape', 'color-shape', 'manual_assessment', 'rrb', 'auditory', 'visual')
@@ -137,13 +139,27 @@ router.post('/', async (req, res) => {
 
     // Try to save to Firebase, but don't fail if Firebase is unavailable
     try {
+      // If the client provided an id (offline sync), use it so dependent records (trials) can reference it.
+      const requestedId = (value.id || '').toString().trim();
+      if (requestedId) {
+        const docRef = sessionsCollection.doc(requestedId);
+        await docRef.set(session, { merge: false });
+        const saved = await docRef.get();
+        console.log(`✅ Session created in Firebase (client id): ${requestedId} (Type: ${session.session_type}, Child: ${session.child_id})`);
+        return res.status(201).json({
+          session: toSession(saved),
+          saved_to_firebase: true,
+          warnings: validationResult.warnings,
+        });
+      }
+
       const ref = await sessionsCollection.add(session);
       const saved = await ref.get();
       console.log(`✅ Session created in Firebase: ${ref.id} (Type: ${session.session_type}, Child: ${session.child_id})`);
-      res.status(201).json({ 
+      return res.status(201).json({
         session: toSession(saved),
         saved_to_firebase: true,
-        warnings: validationResult.warnings
+        warnings: validationResult.warnings,
       });
     } catch (firebaseErr) {
       // Firebase unavailable - return session data anyway (app will save locally)

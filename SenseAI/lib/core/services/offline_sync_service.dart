@@ -82,12 +82,34 @@ class OfflineSyncService {
   /// Removes them from the queue upon successful transmission.
   static Future<void> _processQueue() async {
     if (_db == null) return;
-    final rows = await _db!.query(_queueTable, orderBy: 'timestamp ASC');
+    final rows = await _db!.query(_queueTable);
     if (rows.isEmpty) return;
 
     final baseUrl = await ApiService.getBackendUrl();
 
-    for (final row in rows) {
+    int priorityFor(Map<String, Object?> row) {
+      final endpoint = (row['endpoint'] as String?) ?? '';
+      final method = ((row['method'] as String?) ?? '').toUpperCase();
+
+      // Ensure sessions are created/updated before trials that reference them.
+      // This prevents "Session not found" during offline sync.
+      if (endpoint == '/api/sessions' && method == 'POST') return 0;
+      if (endpoint.startsWith('/api/sessions/') && method == 'PUT') return 1;
+      if (endpoint.startsWith('/api/trials') && (method == 'POST' || method == 'PUT')) return 2;
+      return 3;
+    }
+
+    final sorted = [...rows];
+    sorted.sort((a, b) {
+      final pa = priorityFor(a);
+      final pb = priorityFor(b);
+      if (pa != pb) return pa.compareTo(pb);
+      final ta = (a['timestamp'] as int?) ?? 0;
+      final tb = (b['timestamp'] as int?) ?? 0;
+      return ta.compareTo(tb);
+    });
+
+    for (final row in sorted) {
       try {
         final payload =
             jsonDecode(row['payload'] as String) as Map<String, dynamic>;
@@ -112,6 +134,13 @@ class OfflineSyncService {
           await _db!
               .delete(_queueTable, where: 'id = ?', whereArgs: [row['id']]);
         } else {
+          // If we somehow hit trials before a session exists, don't block the entire queue.
+          // We'll retry later after session POST succeeds.
+          if ((row['endpoint'] as String).startsWith('/api/trials') &&
+              response != null &&
+              response.statusCode == 404) {
+            continue;
+          }
           // Stop on server error (e.g. 400, 500) – will retry later
           break;
         }

@@ -59,12 +59,13 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
 
   // Session
   String? _sessionId;
+  late final Future<void> _sessionReady;
 
   @override
   void initState() {
     super.initState();
     _initializeServices();
-    _createSession();
+    _sessionReady = _createSession();
     
     // Set initial language from provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -102,7 +103,15 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
     }
   }
 
-  void _startGame() {
+  Future<void> _startGame() async {
+    // Ensure the session exists before gameplay begins.
+    // Otherwise, a fast completion/back navigation can result in missing end_time/results,
+    // which shows up as "Pending" even though the assessment was completed.
+    try {
+      await _sessionReady;
+    } catch (_) {
+      // If session creation failed, we still allow the game to proceed; an offline id is used.
+    }
     setState(() {
       _gamePhase = 'practice';
       _currentTrial = 1;
@@ -325,13 +334,29 @@ class _FrogJumpGameScreenState extends State<FrogJumpGameScreen>
       final results = _calculateResults();
       final endTime = DateTime.now();
 
+      // Ensure we have a session id (can be null if user started very quickly).
+      if (_sessionId == null) {
+        try {
+          await _sessionReady;
+        } catch (_) {}
+      }
+      _sessionId ??= DateTime.now().millisecondsSinceEpoch.toString();
+
+      // Persist completion locally ASAP (end_time drives Completed vs Pending).
+      // Network/ML/trial sync can happen after navigation.
+      await StorageService.updateSession(
+        id: _sessionId!,
+        endTime: endTime,
+        gameResults: results.toJson(),
+      );
+
       if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (_) => ClinicianReflectionScreen(
               child: widget.child,
-              sessionId: _sessionId ?? '',
+              sessionId: _sessionId!,
               gameResults: results,
             ),
           ),

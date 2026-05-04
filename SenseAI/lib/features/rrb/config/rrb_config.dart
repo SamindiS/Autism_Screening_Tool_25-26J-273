@@ -8,7 +8,7 @@ class RrbConfig {
   // ➜ Replace the placeholder below with your actual Render URL after deploy.
   // ─────────────────────────────────────────────────────────────────────
   static const String rrbNodeBackendUrl =
-      'https://your-rrb-backend.onrender.com'; // ← CHANGE THIS after deploy
+      'https://autism-screening-tool-25-26j-273-1-px9p.onrender.com';
 
   // Upload endpoint on the Node.js backend
   static const String uploadVideoEndpoint = '/api/videos/upload';
@@ -18,7 +18,7 @@ class RrbConfig {
   // Not used by the app when rrbNodeBackendUrl is set above.
   // ─────────────────────────────────────────────────────────────────────
   static const String mlServiceUrl =
-      'https://your-rrb-ml-service.onrender.com/api/v1'; // ← CHANGE THIS after deploy
+      'https://autism-screening-tool-25-26j-273-y3tg.onrender.com/api/v1';
 
   // Direct detect endpoint (only used when calling ML service directly)
   static const String detectRRBEndpoint = '/detect';

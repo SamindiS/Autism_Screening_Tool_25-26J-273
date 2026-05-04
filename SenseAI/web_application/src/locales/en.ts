@@ -113,6 +113,8 @@ const en = {
   "pending_result": "Pending Result",
   "status_result": "Status/Result",
   "result": "Result",
+  "back_to_list": "Back to Children List",
+  "child_not_found": "Child profile not found or server error",
   "diagnostic_summary": "Diagnostic Summary",
   "overall_risk": "Overall Risk Profile",
   "initial_clinical_notes": "Initial Clinical Notes",

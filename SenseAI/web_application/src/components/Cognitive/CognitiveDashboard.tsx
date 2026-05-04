@@ -85,9 +85,19 @@ const CognitiveDashboard = () => {
       const aiBotCount = cognitiveSessions.filter((s: any) => s.session_type === 'ai_doctor_bot').length
       const manualCount = cognitiveSessions.filter((s: any) => s.session_type === 'manual_assessment').length
 
-      const highRisk = cognitiveSessions.filter((s: any) => s.risk_level === 'high').length
-      const moderateRisk = cognitiveSessions.filter((s: any) => s.risk_level === 'moderate').length
-      const lowRisk = cognitiveSessions.filter((s: any) => s.risk_level === 'low').length
+      // Count stats based on latest result for each child
+      const childrenResults = allChildren.map(child => {
+        const childSessions = allSessions.filter(s => String(s.child_id) === String(child.id));
+        const latestWithRisk = [...childSessions]
+          .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+          .find(s => s.risk_level || s.ml_prediction?.risk_level);
+        
+        return latestWithRisk?.risk_level || latestWithRisk?.ml_prediction?.risk_level;
+      });
+
+      const highRisk = childrenResults.filter(r => r === 'high').length;
+      const moderateRisk = childrenResults.filter(r => r === 'moderate').length;
+      const lowRisk = childrenResults.filter(r => r === 'low').length;
 
       const sessionsWithRisk = cognitiveSessions.filter((s: any) => s.risk_score != null)
       const avgRiskScore =
@@ -96,11 +106,12 @@ const CognitiveDashboard = () => {
             sessionsWithRisk.length
           : 0
 
-      setChildren(childrenWithCognitive)
-      setSessions(cognitiveSessions)
+      setChildren(allChildren)
+      setSessions(allSessions)
+      setFilteredChildren(allChildren)
       setStats({
-        totalChildren: childrenWithCognitive.length,
-        totalSessions: cognitiveSessions.length,
+        totalChildren: allChildren.length,
+        totalSessions: allSessions.length,
         colorShapeCount,
         frogJumpCount,
         aiBotCount,
@@ -289,7 +300,7 @@ const CognitiveDashboard = () => {
                             );
                             
                             const latestWithRisk = sortedSessions.find(s => s.risk_level || s.ml_prediction?.risk_level);
-                            const isCompleted = sortedSessions.some(s => s.end_time || s.status === 'completed');
+                            const completedSession = sortedSessions.find(s => s.end_time || s.status === 'completed');
                             
                             if (latestWithRisk) {
                               const risk = latestWithRisk.risk_level || latestWithRisk.ml_prediction?.risk_level;
@@ -304,11 +315,13 @@ const CognitiveDashboard = () => {
                                   sx={{ fontWeight: 'bold' }}
                                 />
                               );
-                            } else if (isCompleted) {
-                              return <Chip label={t('processing')} size="small" color="info" variant="outlined" />;
-                            } else {
-                              return <Chip label={t('pending_result')} size="small" variant="outlined" />;
                             }
+                            
+                            if (completedSession) {
+                              return <Chip label={t('processing')} size="small" variant="outlined" color="warning" />;
+                            }
+                            
+                            return <Chip label={t('pending_result')} size="small" variant="outlined" />;
                           })()
                         ) : (
                           <Chip label={t('no_sessions')} size="small" variant="outlined" />

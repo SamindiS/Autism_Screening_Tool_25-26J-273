@@ -1,19 +1,9 @@
 import axios from 'axios'
 
-// Prefer a runtime-configurable API base URL.
-// - Local dev: set `VITE_API_BASE_URL=http://localhost:3000`
-// - Deployed (frontend + backend on same domain): omit to use same-origin `/api`
-const API_BASE_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3000' 
-  : 'https://autism-screening-tool-25-26-j-273.vercel.app';
-
-function normalizeBaseUrl(url: string) {
-  if (!url) return ''
-  return url.endsWith('/') ? url.slice(0, -1) : url
-}
-
+const API_BASE_URL = 'http://localhost:3000';
+// const API_BASE_URL = 'https://autism-screening-tool-25-26-j-273.vercel.app';
 const api = axios.create({
-  baseURL: normalizeBaseUrl(API_BASE_URL),
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -101,7 +91,7 @@ export const cliniciansApi = {
   getCurrent: () => api.get('/api/clinicians/me'),
   register: (data: any) => api.post('/api/clinicians/register', data),
   getAll: (hospital?: string) => {
-    const url = hospital 
+    const url = hospital
       ? `/api/clinicians?hospital=${encodeURIComponent(hospital)}`
       : '/api/clinicians'
     return api.get(url)

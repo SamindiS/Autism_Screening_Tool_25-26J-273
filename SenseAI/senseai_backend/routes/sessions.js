@@ -33,6 +33,7 @@ const sessionSchema = Joi.object({
 });
 
 const updateSchema = Joi.object({
+  status: Joi.string().valid('in_progress', 'completed', 'aborted').optional(),
   end_time: Joi.number().integer().positive().allow(null).optional(),
   metrics: Joi.object().allow(null).optional(),
   game_results: Joi.object().allow(null).optional(),
@@ -181,11 +182,12 @@ router.post('/', async (req, res) => {
 
 router.get('/child/:childId', async (req, res) => {
   try {
+    // Remove orderBy to avoid index requirements, sort in memory instead
     const snap = await sessionsCollection
       .where('child_id', '==', req.params.childId)
-      .orderBy('created_at', 'desc')
       .get();
     const sessions = snap.docs.map(toSession);
+    sessions.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
     res.json({ count: sessions.length, sessions });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -294,8 +296,17 @@ router.get('/:id', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
+    // Normalize risk_level if present (e.g. "Low Risk" -> "low")
+    if (req.body.risk_level && typeof req.body.risk_level === 'string') {
+      const rl = req.body.risk_level.toLowerCase();
+      if (rl.includes('low')) req.body.risk_level = 'low';
+      else if (rl.includes('moderate')) req.body.risk_level = 'moderate';
+      else if (rl.includes('high')) req.body.risk_level = 'high';
+    }
+
     const { error, value } = updateSchema.validate(req.body);
     if (error) {
+      console.error('❌ Session update validation error:', error.details[0].message);
       return res.status(400).json({ error: error.details[0].message });
     }
 
@@ -309,10 +320,18 @@ router.put('/:id', async (req, res) => {
       ...value,
       updated_at: Date.now(),
     };
+
+    // Auto-update status to completed if end_time is provided
+    if (value.end_time && !value.status) {
+      update.status = 'completed';
+    }
+
     await docRef.update(update);
     const updated = await docRef.get();
+    console.log(`✅ Session updated: ${req.params.id} (Status: ${update.status || existing.data().status})`);
     res.json({ session: toSession(updated) });
   } catch (err) {
+    console.error('❌ Session update error:', err);
     res.status(500).json({ error: err.message });
   }
 });

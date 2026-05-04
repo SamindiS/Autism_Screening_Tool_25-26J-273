@@ -21,6 +21,8 @@ import {
   Card,
   CardContent,
   Stack,
+  Avatar,
+  alpha,
 } from '@mui/material'
 import {
   ArrowBack,
@@ -83,6 +85,8 @@ const ChildDetails = () => {
   const [viewMode, setViewMode] = useState<'table' | 'timeline'>('table')
   const admin = isAdmin()
 
+  const [error, setError] = useState<string | null>(null)
+
   useEffect(() => {
     if (id) {
       loadData()
@@ -91,14 +95,28 @@ const ChildDetails = () => {
 
   const loadData = async () => {
     try {
-      const [childRes, sessionsRes] = await Promise.all([
-        childrenApi.getById(id!),
-        sessionsApi.getByChild(id!),
-      ])
-      setChild(childRes.data.child)
-      setSessions(sessionsRes.data.sessions || [])
+      setLoading(true)
+      setError(null)
+      
+      // Load child details first
+      try {
+        const childRes = await childrenApi.getById(id!)
+        setChild(childRes.data.child)
+      } catch (err: any) {
+        console.error('Error loading child:', err)
+        setError(t('child_not_found'))
+      }
+
+      // Load sessions independently
+      try {
+        const sessionsRes = await sessionsApi.getByChild(id!)
+        setSessions(sessionsRes.data.sessions || [])
+      } catch (err) {
+        console.error('Error loading sessions:', err)
+        // Don't set global error, just show empty sessions
+      }
     } catch (error) {
-      console.error('Error loading data:', error)
+      console.error('Error in loadData:', error)
     } finally {
       setLoading(false)
     }
@@ -123,12 +141,23 @@ const ChildDetails = () => {
     )
   }
 
-  if (!child) {
-    return <Typography>{t('no_data')}</Typography>
+  if (error) {
+    return (
+      <Box textAlign="center" py={10}>
+        <Typography variant="h6" color="error">{error}</Typography>
+        <Button onClick={() => navigate('/children')} sx={{ mt: 2 }}>{t('back_to_list')}</Button>
+      </Box>
+    )
   }
 
-  const { alpha } = require('@mui/material/styles');
-  const Avatar = require('@mui/material/Avatar').default;
+  if (!child && !loading) {
+    return (
+      <Box textAlign="center" py={10}>
+        <Typography variant="h6">{t('no_data')}</Typography>
+        <Button onClick={() => navigate('/children')} sx={{ mt: 2 }}>{t('back_to_list')}</Button>
+      </Box>
+    )
+  }
 
   return (
     <Box>

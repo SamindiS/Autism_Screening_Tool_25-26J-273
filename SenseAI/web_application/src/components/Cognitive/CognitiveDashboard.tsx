@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Box,
   Paper,
@@ -31,18 +31,47 @@ const CognitiveDashboard = () => {
   const [sessions, setSessions] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({
-    totalChildren: 0,
-    totalSessions: 0,
-    colorShapeCount: 0,
-    frogJumpCount: 0,
-    aiBotCount: 0,
-    manualCount: 0,
-    highRisk: 0,
-    moderateRisk: 0,
-    lowRisk: 0,
-    avgRiskScore: 0,
-  })
+
+  const stats = useMemo(() => {
+    const normalizeType = (t: unknown) =>
+      String(t || '')
+        .toLowerCase()
+        .replace(/-/g, '_')
+        .replace(/^dccs_/, '')
+
+    const byType = sessions.reduce(
+      (acc: Record<string, number>, s: any) => {
+        const t = normalizeType(s?.session_type)
+        acc[t] = (acc[t] || 0) + 1
+        return acc
+      },
+      {}
+    )
+
+    const sessionsWithRisk = sessions.filter((s: any) => s?.risk_score != null)
+    const avgRiskScore =
+      sessionsWithRisk.length > 0
+        ? sessionsWithRisk.reduce((sum: number, s: any) => sum + (Number(s.risk_score) || 0), 0) /
+          sessionsWithRisk.length
+        : 0
+
+    const highRisk = sessions.filter((s: any) => (s?.risk_level || '').toLowerCase() === 'high').length
+    const moderateRisk = sessions.filter((s: any) => (s?.risk_level || '').toLowerCase() === 'moderate').length
+    const lowRisk = sessions.filter((s: any) => (s?.risk_level || '').toLowerCase() === 'low').length
+
+    return {
+      totalChildren: children.length,
+      totalSessions: sessions.length,
+      colorShapeCount: byType.color_shape || 0,
+      frogJumpCount: byType.frog_jump || 0,
+      aiBotCount: byType.ai_doctor_bot || 0,
+      manualCount: byType.manual_assessment || 0,
+      highRisk,
+      moderateRisk,
+      lowRisk,
+      avgRiskScore,
+    }
+  }, [children, sessions])
 
   useEffect(() => {
     loadData()
@@ -79,48 +108,8 @@ const CognitiveDashboard = () => {
         childIdsWithCognitive.has(String(c.id))
       )
 
-      // Count sessions by type
-      const colorShapeCount = cognitiveSessions.filter((s: any) => s.session_type === 'color_shape').length
-      const frogJumpCount = cognitiveSessions.filter((s: any) => s.session_type === 'frog_jump').length
-      const aiBotCount = cognitiveSessions.filter((s: any) => s.session_type === 'ai_doctor_bot').length
-      const manualCount = cognitiveSessions.filter((s: any) => s.session_type === 'manual_assessment').length
-
-      // Count stats based on latest result for each child
-      const childrenResults = allChildren.map(child => {
-        const childSessions = allSessions.filter(s => String(s.child_id) === String(child.id));
-        const latestWithRisk = [...childSessions]
-          .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
-          .find(s => s.risk_level || s.ml_prediction?.risk_level);
-        
-        return latestWithRisk?.risk_level || latestWithRisk?.ml_prediction?.risk_level;
-      });
-
-      const highRisk = childrenResults.filter(r => r === 'high').length;
-      const moderateRisk = childrenResults.filter(r => r === 'moderate').length;
-      const lowRisk = childrenResults.filter(r => r === 'low').length;
-
-      const sessionsWithRisk = cognitiveSessions.filter((s: any) => s.risk_score != null)
-      const avgRiskScore =
-        sessionsWithRisk.length > 0
-          ? sessionsWithRisk.reduce((sum: number, s: any) => sum + (Number(s.risk_score) || 0), 0) /
-            sessionsWithRisk.length
-          : 0
-
-      setChildren(allChildren)
-      setSessions(allSessions)
-      setFilteredChildren(allChildren)
-      setStats({
-        totalChildren: allChildren.length,
-        totalSessions: allSessions.length,
-        colorShapeCount,
-        frogJumpCount,
-        aiBotCount,
-        manualCount,
-        highRisk,
-        moderateRisk,
-        lowRisk,
-        avgRiskScore,
-      })
+      setChildren(childrenWithCognitive)
+      setSessions(cognitiveSessions)
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {

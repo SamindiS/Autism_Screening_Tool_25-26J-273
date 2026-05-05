@@ -33,35 +33,38 @@ const CognitiveDashboard = () => {
   const [loading, setLoading] = useState(true)
 
   const stats = useMemo(() => {
-    const normalizeType = (t: unknown) =>
-      String(t || '')
+    const normalizeType = (v: unknown) =>
+      String(v || '')
         .toLowerCase()
         .replace(/-/g, '_')
         .replace(/^dccs_/, '')
 
-    const byType = sessions.reduce(
+    const cognitiveTypes = new Set(['color_shape', 'frog_jump', 'ai_doctor_bot', 'manual_assessment'])
+    const cognitiveSessions = sessions.filter((s: any) => cognitiveTypes.has(normalizeType(s?.session_type)))
+
+    const byType = cognitiveSessions.reduce(
       (acc: Record<string, number>, s: any) => {
-        const t = normalizeType(s?.session_type)
-        acc[t] = (acc[t] || 0) + 1
+        const st = normalizeType(s?.session_type)
+        acc[st] = (acc[st] || 0) + 1
         return acc
       },
       {}
     )
 
-    const sessionsWithRisk = sessions.filter((s: any) => s?.risk_score != null)
+    const sessionsWithRisk = cognitiveSessions.filter((s: any) => s?.risk_score != null)
     const avgRiskScore =
       sessionsWithRisk.length > 0
         ? sessionsWithRisk.reduce((sum: number, s: any) => sum + (Number(s.risk_score) || 0), 0) /
           sessionsWithRisk.length
         : 0
 
-    const highRisk = sessions.filter((s: any) => (s?.risk_level || '').toLowerCase() === 'high').length
-    const moderateRisk = sessions.filter((s: any) => (s?.risk_level || '').toLowerCase() === 'moderate').length
-    const lowRisk = sessions.filter((s: any) => (s?.risk_level || '').toLowerCase() === 'low').length
+    const highRisk = cognitiveSessions.filter((s: any) => (s?.risk_level || '').toLowerCase() === 'high').length
+    const moderateRisk = cognitiveSessions.filter((s: any) => (s?.risk_level || '').toLowerCase() === 'moderate').length
+    const lowRisk = cognitiveSessions.filter((s: any) => (s?.risk_level || '').toLowerCase() === 'low').length
 
     return {
       totalChildren: children.length,
-      totalSessions: sessions.length,
+      totalSessions: cognitiveSessions.length,
       colorShapeCount: byType.color_shape || 0,
       frogJumpCount: byType.frog_jump || 0,
       aiBotCount: byType.ai_doctor_bot || 0,
@@ -87,26 +90,16 @@ const CognitiveDashboard = () => {
       const allChildren = childrenRes.data.children || []
       const allSessions = sessionsRes.data.sessions || []
 
-      // Filter cognitive flexibility sessions - be flexible with naming
-      const cognitiveSessionTypes = [
-        'color_shape', 'frog_jump', 'ai_doctor_bot', 'manual_assessment',
-        'color-shape', 'frog-jump', 'dccs_color_shape', 'dccs-color-shape'
-      ]
-      
-      const cognitiveSessions = allSessions.filter((s: any) => {
-        const type = (s.session_type || '').toLowerCase();
-        return cognitiveSessionTypes.some(ct => type.includes(ct));
-      })
+      const normalizeType = (v: unknown) =>
+        String(v || '')
+          .toLowerCase()
+          .replace(/-/g, '_')
+          .replace(/^dccs_/, '')
+      const cognitiveTypes = new Set(['color_shape', 'frog_jump', 'ai_doctor_bot', 'manual_assessment'])
 
-      // Get unique child IDs who have cognitive assessments (string-safe)
-      const childIdsWithCognitive = new Set(
-        cognitiveSessions.map((s: any) => String(s.child_id))
-      )
-
-      // Filter children who have cognitive assessments
-      const childrenWithCognitive = allChildren.filter((c: any) =>
-        childIdsWithCognitive.has(String(c.id))
-      )
+      const cognitiveSessions = allSessions.filter((s: any) => cognitiveTypes.has(normalizeType(s?.session_type)))
+      const childIdsWithCognitive = new Set(cognitiveSessions.map((s: any) => String(s.child_id)))
+      const childrenWithCognitive = allChildren.filter((c: any) => childIdsWithCognitive.has(String(c.id)))
 
       setChildren(childrenWithCognitive)
       setSessions(cognitiveSessions)

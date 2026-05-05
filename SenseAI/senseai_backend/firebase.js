@@ -88,8 +88,10 @@ if (visualConfig) {
   }
 }
 
-const db = admin.firestore(app);
-db.settings({ ignoreUndefinedProperties: true });
+const db = app ? admin.firestore(app) : null;
+if (db) db.settings({ ignoreUndefinedProperties: true });
+else console.error('❌ FATAL: Main Firebase app is not initialized. Check FIREBASE_PRIVATE_KEY env vars.');
+
 if (visualDb) visualDb.settings({ ignoreUndefinedProperties: true });
 
 module.exports = { db, visualDb };

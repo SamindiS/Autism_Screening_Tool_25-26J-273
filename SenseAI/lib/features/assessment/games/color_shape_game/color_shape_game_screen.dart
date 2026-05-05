@@ -33,13 +33,12 @@ class ColorShapeGameScreen extends StatefulWidget {
 
 class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
     with TickerProviderStateMixin {
-  
   // DCCS Configuration
   static const int _practiceTrials = 4;
   static const int _preSwitchTrials = 8;
   static const int _postSwitchTrials = 12;
   static const int _mixedTrials = 8;
-  
+
   // Game state
   int _currentTrial = 0;
   int _totalTrials = 0;
@@ -66,14 +65,16 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
   @override
   void initState() {
     super.initState();
-    _totalTrials = _practiceTrials + _preSwitchTrials + _postSwitchTrials + _mixedTrials;
+    _totalTrials =
+        _practiceTrials + _preSwitchTrials + _postSwitchTrials + _mixedTrials;
     _sessionReady = _createSession();
   }
 
   Future<void> _initializeWithLanguage(String language) async {
     _selectedLanguage = language;
     await GameSpeechService.initialize(language: language);
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
     final locale = Locale(language);
     if (languageProvider.locale != locale) {
       await languageProvider.setLocale(locale);
@@ -85,7 +86,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
       final ageGroup = AgeCalculator.getAgeGroup(widget.child.age);
       final sessionData = await StorageService.saveSession(
         childId: widget.child.id,
-        sessionType: 'color_shape',  // Use backend-expected format
+        sessionType: 'color_shape', // Use backend-expected format
         ageGroup: ageGroup,
         startTime: DateTime.now(),
       );
@@ -139,7 +140,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
 
   void _nextTrial() {
     _currentTrial++;
-    
+
     if (_currentTrial > _totalTrials) {
       _endGame();
       return;
@@ -148,14 +149,15 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
     // Determine phase and rule
     _previousRule = _currentRule;
     final previousPhase = _gamePhase;
-    
+
     if (_currentTrial <= _practiceTrials) {
       _gamePhase = 'practice';
       _currentRule = 'color';
     } else if (_currentTrial <= _practiceTrials + _preSwitchTrials) {
       _gamePhase = 'pre_switch';
       _currentRule = 'color';
-    } else if (_currentTrial <= _practiceTrials + _preSwitchTrials + _postSwitchTrials) {
+    } else if (_currentTrial <=
+        _practiceTrials + _preSwitchTrials + _postSwitchTrials) {
       _gamePhase = 'post_switch';
       _currentRule = 'shape';
     } else {
@@ -181,7 +183,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
     _trialStartTime = DateTime.now();
     _isProcessing = false;
     _showFeedback = false;
-    
+
     setState(() {});
   }
 
@@ -194,7 +196,8 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
       _isProcessing = true;
     });
 
-    final reactionTime = DateTime.now().difference(_trialStartTime!).inMilliseconds;
+    final reactionTime =
+        DateTime.now().difference(_trialStartTime!).inMilliseconds;
     final correctSide = _currentStimulus!.getCorrectSide(_currentRule);
     final isCorrect = side == correctSide;
 
@@ -310,7 +313,8 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
 
     double meanRt(List<DccsTrial> trials) {
       if (trials.isEmpty) return 0;
-      return trials.map((t) => t.reactionTimeMs).reduce((a, b) => a + b) / trials.length;
+      return trials.map((t) => t.reactionTimeMs).reduce((a, b) => a + b) /
+          trials.length;
     }
 
     // Calculate switch cost
@@ -320,10 +324,12 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
     final switchCost = postRtCorrect - preRt;
 
     // Count perseverative errors
-    final perseverativeErrors = _trials.where((t) => t.isPerseverativeError).length;
+    final perseverativeErrors =
+        _trials.where((t) => t.isPerseverativeError).length;
     // postErrors variable reserved for future use
-    final perseverativeRate = postTrials.isEmpty ? 0.0 :
-        (perseverativeErrors / postTrials.length) * 100;
+    final perseverativeRate = postTrials.isEmpty
+        ? 0.0
+        : (perseverativeErrors / postTrials.length) * 100;
 
     // Count consecutive perseverations
     int maxConsec = 0;
@@ -338,18 +344,25 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
     }
 
     // Total rule switch errors
-    final ruleSwitchErrors = _trials.where((t) => !t.correct && (t.isPostSwitch || t.isSwitchTrial)).length;
+    final ruleSwitchErrors = _trials
+        .where((t) => !t.correct && (t.isPostSwitch || t.isSwitchTrial))
+        .length;
 
     final completionTime = _sessionStartTime != null
         ? DateTime.now().difference(_sessionStartTime!).inSeconds
         : 0;
 
     // RT variability (std dev of correct-trial RTs)
-    final correctRts = _trials.where((t) => t.correct).map((t) => t.reactionTimeMs.toDouble()).toList();
+    final correctRts = _trials
+        .where((t) => t.correct)
+        .map((t) => t.reactionTimeMs.toDouble())
+        .toList();
     double rtVariability = 0;
     if (correctRts.length > 1) {
       final mean = correctRts.reduce((a, b) => a + b) / correctRts.length;
-      final sumSquares = correctRts.map((rt) => (rt - mean) * (rt - mean)).reduce((a, b) => a + b);
+      final sumSquares = correctRts
+          .map((rt) => (rt - mean) * (rt - mean))
+          .reduce((a, b) => a + b);
       rtVariability = math.sqrt(sumSquares / (correctRts.length - 1));
     }
 
@@ -397,17 +410,19 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
         completionTime: summary.completionTimeSec,
         switchCost: summary.switchCostMs.round(),
         perseverativeErrors: summary.perseverativeErrors,
-        trials: _trials.map((t) => TrialData(
-          trialNumber: t.trialNumber,
-          stimulus: '${t.stimulusColor} ${t.stimulusShape}',
-          rule: t.rule,
-          response: t.childChoice,
-          correct: t.correct,
-          reactionTime: t.reactionTimeMs,
-          timestamp: t.timestamp,
-          isPostSwitch: t.isPostSwitch,
-          isPerseverativeError: t.isPerseverativeError,
-        )).toList(),
+        trials: _trials
+            .map((t) => TrialData(
+                  trialNumber: t.trialNumber,
+                  stimulus: '${t.stimulusColor} ${t.stimulusShape}',
+                  rule: t.rule,
+                  response: t.childChoice,
+                  correct: t.correct,
+                  reactionTime: t.reactionTimeMs,
+                  timestamp: t.timestamp,
+                  isPostSwitch: t.isPostSwitch,
+                  isPerseverativeError: t.isPerseverativeError,
+                ))
+            .toList(),
         mlFeatures: summary.mlFeatures,
       );
 
@@ -464,8 +479,8 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
         try {
           final hasEnoughTrials = summary.totalTrials >= 8;
           final featuresValid = summary.mlFeatures.isNotEmpty &&
-              !summary.mlFeatures.values.any(
-                  (v) => v is double && (v.isNaN || v.isInfinite));
+              !summary.mlFeatures.values
+                  .any((v) => v is double && (v.isNaN || v.isInfinite));
           if (!hasEnoughTrials || !featuresValid) return;
 
           final mlResult = await MLService.predict(
@@ -558,7 +573,9 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
           'If you leave now the session will be saved as incomplete and will not be sent for analysis.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Continue Game')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Continue Game')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -575,17 +592,19 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
         final partial = _trials.isNotEmpty ? _calculateSummary() : null;
         await StorageService.abortSession(
           id: _sessionId!,
-          partialGameResults: partial != null ? GameResults(
-            gameType: 'dccs-color-shape',
-            totalTrials: partial.totalTrials,
-            correctTrials: _trials.where((t) => t.correct).length,
-            accuracy: partial.accuracyOverall,
-            averageReactionTime: partial.avgReactionTimeMs.round(),
-            completionTime: partial.completionTimeSec,
-            switchCost: partial.switchCostMs.round(),
-            perseverativeErrors: partial.perseverativeErrors,
-            trials: [],
-          ).toJson() : null,
+          partialGameResults: partial != null
+              ? GameResults(
+                  gameType: 'dccs-color-shape',
+                  totalTrials: partial.totalTrials,
+                  correctTrials: _trials.where((t) => t.correct).length,
+                  accuracy: partial.accuracyOverall,
+                  averageReactionTime: partial.avgReactionTimeMs.round(),
+                  completionTime: partial.completionTimeSec,
+                  switchCost: partial.switchCostMs.round(),
+                  perseverativeErrors: partial.perseverativeErrors,
+                  trials: [],
+                ).toJson()
+              : null,
         );
       }
       if (mounted) Navigator.pop(context);
@@ -724,7 +743,8 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFF90CAF9), width: 2),
+                      border:
+                          Border.all(color: const Color(0xFF90CAF9), width: 2),
                     ),
                     child: Column(
                       children: [
@@ -753,7 +773,8 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
                           children: [
                             _buildTargetPreview(Colors.red, true, _t('left')),
                             const SizedBox(width: 40),
-                            _buildTargetPreview(Colors.blue, false, _t('right')),
+                            _buildTargetPreview(
+                                Colors.blue, false, _t('right')),
                           ],
                         ),
                       ],
@@ -1115,7 +1136,8 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
             height: 100,
             decoration: BoxDecoration(
               color: _currentStimulus!.colorValue,
-              borderRadius: BorderRadius.circular(_currentStimulus!.borderRadius),
+              borderRadius:
+                  BorderRadius.circular(_currentStimulus!.borderRadius),
             ),
           ),
           const SizedBox(height: 12),
@@ -1158,7 +1180,7 @@ class _ColorShapeGameScreenState extends State<ColorShapeGameScreen>
   Widget _buildPhaseIndicator() {
     String phaseText;
     Color phaseColor;
-    
+
     switch (_gamePhase) {
       case 'practice':
         phaseText = _t('practice_round');

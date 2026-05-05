@@ -120,7 +120,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterAge => 'Enter Child Age';
 
   @override
-  String get ageRange => 'Age must be between 2.0 and 6.0 years';
+  String get ageRange =>
+      'Age must be at least 2.0 years and less than 6.9 years';
 
   @override
   String get startAssessment => 'START ASSESSMENT';
@@ -132,10 +133,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ageGroup23 => '2.0 - 3.4 years';
 
   @override
-  String get ageGroup35 => '3.5 - 5.5 years';
+  String get ageGroup35 => '3.5 - 5.4 years';
 
   @override
-  String get ageGroup56 => '5.6 - 6.0 years';
+  String get ageGroup56 => '5.5 - 6.9 years';
 
   @override
   String get assessment23 => 'Parent Interview Bot';
@@ -198,7 +199,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicianProfile => 'Clinician Profile';
 
   @override
-  String get clinicianReflection23 => 'Clinician Reflection (2-3.5 yrs)';
+  String get clinicianReflection23 => 'Clinician Reflection (2-3.4 yrs)';
 
   @override
   String get manualTasks => 'Manual Cognitive Flexibility Tasks';
@@ -762,7 +763,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importantNoteText =>
-      'This child (ages 2-3.5) did NOT play tablet games. Please use physical objects (blocks, toys, etc.) to assess cognitive flexibility and rule-switching. Observe how the child adapts when rules change.';
+      'This child (ages 2-3.4) did NOT play tablet games. Please use physical objects (blocks, toys, etc.) to assess cognitive flexibility and rule-switching. Observe how the child adapts when rules change.';
 
   @override
   String get taskToPerform => 'Task to Perform:';

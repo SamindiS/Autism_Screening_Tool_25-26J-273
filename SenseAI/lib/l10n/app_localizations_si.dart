@@ -120,7 +120,8 @@ class AppLocalizationsSi extends AppLocalizations {
   String get enterAge => 'ළමයාගේ වයස ඇතුළත් කරන්න';
 
   @override
-  String get ageRange => 'වයස 2.0 සහ 6.0 වසර අතර විය යුතුය';
+  String get ageRange =>
+      'වයස අවම වශයෙන් 2.0 වසර විය යුතු අතර 6.9 වසරට වඩා අඩු විය යුතුය';
 
   @override
   String get startAssessment => 'තක්සේරුව ආරම්භ කරන්න';
@@ -132,10 +133,10 @@ class AppLocalizationsSi extends AppLocalizations {
   String get ageGroup23 => '2.0 - 3.4 වසර';
 
   @override
-  String get ageGroup35 => '3.5 - 5.5 වසර';
+  String get ageGroup35 => '3.5 - 5.4 වසර';
 
   @override
-  String get ageGroup56 => '5.6 - 6.0 වසර';
+  String get ageGroup56 => '5.5 - 6.9 වසර';
 
   @override
   String get assessment23 => 'මව්පිය සම්මුඛ සාකච්ඡා බොට්';
@@ -198,7 +199,7 @@ class AppLocalizationsSi extends AppLocalizations {
   String get clinicianProfile => 'වෛද්‍ය පැතිකඩ';
 
   @override
-  String get clinicianReflection23 => 'වෛද්‍ය පරාවර්තනය (වයස 2-3.5)';
+  String get clinicianReflection23 => 'වෛද්‍ය පරාවර්තනය (වයස 2-3.4)';
 
   @override
   String get manualTasks => 'අතින් ඥානාත්මක නම්යශීලීභාව කාර්යයන්';
@@ -774,7 +775,7 @@ class AppLocalizationsSi extends AppLocalizations {
 
   @override
   String get importantNoteText =>
-      'This child (ages 2-3.5) did NOT play tablet games. Please use physical objects (blocks, toys, etc.) to assess cognitive flexibility and rule-switching. Observe how the child adapts when rules change.';
+      'This child (ages 2-3.4) did NOT play tablet games. Please use physical objects (blocks, toys, etc.) to assess cognitive flexibility and rule-switching. Observe how the child adapts when rules change.';
 
   @override
   String get taskToPerform => 'Task to Perform:';

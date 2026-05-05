@@ -325,7 +325,7 @@ abstract class AppLocalizations {
   /// No description provided for @ageRange.
   ///
   /// In en, this message translates to:
-  /// **'Age must be between 2.0 and 6.0 years'**
+  /// **'Age must be at least 2.0 years and less than 6.9 years'**
   String get ageRange;
 
   /// No description provided for @startAssessment.
@@ -349,13 +349,13 @@ abstract class AppLocalizations {
   /// No description provided for @ageGroup35.
   ///
   /// In en, this message translates to:
-  /// **'3.5 - 5.5 years'**
+  /// **'3.5 - 5.4 years'**
   String get ageGroup35;
 
   /// No description provided for @ageGroup56.
   ///
   /// In en, this message translates to:
-  /// **'5.6 - 6.0 years'**
+  /// **'5.5 - 6.9 years'**
   String get ageGroup56;
 
   /// No description provided for @assessment23.
@@ -481,7 +481,7 @@ abstract class AppLocalizations {
   /// No description provided for @clinicianReflection23.
   ///
   /// In en, this message translates to:
-  /// **'Clinician Reflection (2-3.5 yrs)'**
+  /// **'Clinician Reflection (2-3.4 yrs)'**
   String get clinicianReflection23;
 
   /// No description provided for @manualTasks.
@@ -1525,7 +1525,7 @@ abstract class AppLocalizations {
   /// No description provided for @importantNoteText.
   ///
   /// In en, this message translates to:
-  /// **'This child (ages 2-3.5) did NOT play tablet games. Please use physical objects (blocks, toys, etc.) to assess cognitive flexibility and rule-switching. Observe how the child adapts when rules change.'**
+  /// **'This child (ages 2-3.4) did NOT play tablet games. Please use physical objects (blocks, toys, etc.) to assess cognitive flexibility and rule-switching. Observe how the child adapts when rules change.'**
   String get importantNoteText;
 
   /// No description provided for @taskToPerform.

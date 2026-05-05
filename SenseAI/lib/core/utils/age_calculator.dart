@@ -32,13 +32,13 @@ class AgeCalculator {
   /// Determines the study-defined age group string for routing.
   /// 
   /// The clinical study categorizes children into distinct cohorts:
-  /// '2-3.5', '3.5-5.5', and '5.5-6.9'. If [ageInYears] falls outside
+  /// '2-3.4', '3.5-5.4', and '5.5-6.9'. If [ageInYears] falls outside
   /// these ranges, it returns 'out_of_range'.
   static String getAgeGroup(double ageInYears) {
     if (ageInYears >= 2.0 && ageInYears < 3.5) {
-      return '2-3.5';
+      return '2-3.4';
     } else if (ageInYears >= 3.5 && ageInYears < 5.5) {
-      return '3.5-5.5';
+      return '3.5-5.4';
     } else if (ageInYears >= 5.5 && ageInYears < 6.9) {
       return '5.5-6.9';
     }
@@ -104,10 +104,10 @@ class AgeResult {
 
 /// Defines the different assessment pathways available in the app.
 enum AssessmentType {
-  /// Early childhood interaction and joint attention observation (2-3.5 yrs)
+  /// Early childhood interaction and joint attention observation (2-3.4 yrs)
   aiDoctorBot,
   
-  /// Response inhibition and working memory task (3.5-5.5 yrs)
+  /// Response inhibition and working memory task (3.5-5.4 yrs)
   frogJump,
   
   /// Set-shifting and cognitive flexibility task (5.5-6.9 yrs)

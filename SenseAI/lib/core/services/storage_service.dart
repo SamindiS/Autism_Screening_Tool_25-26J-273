@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../data/models/child.dart';
+import '../utils/age_group_cohort.dart';
 import 'api_service.dart';
 import 'offline_sync_service.dart';
 
@@ -659,10 +660,12 @@ class StorageService {
     normalizedSessionType =
         sessionTypeMap[normalizedSessionType] ?? normalizedSessionType;
 
+    final String? normalizedAgeGroup = AgeGroupCohort.normalize(ageGroup);
+
     final payload = {
       'child_id': childId,
       'session_type': normalizedSessionType,
-      'age_group': ageGroup,
+      'age_group': normalizedAgeGroup,
       'start_time': startTime.millisecondsSinceEpoch,
       'end_time': endTime?.millisecondsSinceEpoch,
       'metrics': metrics,
@@ -684,7 +687,7 @@ class StorageService {
       final session = await ApiService.createSession(
         childId: childId,
         sessionType: normalizedSessionType,
-        ageGroup: ageGroup,
+        ageGroup: normalizedAgeGroup,
         startTime: startTime,
         endTime: endTime,
         metrics: metrics,
@@ -729,7 +732,7 @@ class StorageService {
         'child_id': childId,
         // Keep local storage consistent with backend expectations so UI filters/exports work offline.
         'session_type': normalizedSessionType,
-        'age_group': ageGroup,
+        'age_group': normalizedAgeGroup,
         'status': status,
         'start_time': startTime.millisecondsSinceEpoch,
         'end_time': endTime?.millisecondsSinceEpoch,

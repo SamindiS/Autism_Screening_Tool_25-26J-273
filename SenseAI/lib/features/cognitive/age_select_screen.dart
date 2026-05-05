@@ -387,7 +387,7 @@ class _AgeSelectScreenState extends State<AgeSelectScreen> {
                     Colors.green),
                 const SizedBox(height: 12),
                 _buildAgeGroupItem(
-                    l10n?.ageGroup56 ?? '5.5 - 6.8 years',
+                    l10n?.ageGroup56 ?? '5.5 - 6.9 years',
                     l10n?.translate('age_group_56_desc') ??
                         'Color-Shape Game + Clinician Reflection',
                     Colors.purple),

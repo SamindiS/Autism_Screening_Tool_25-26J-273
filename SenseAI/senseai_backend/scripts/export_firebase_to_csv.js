@@ -9,13 +9,19 @@
  *   --format=ml|raw     Export format (default: ml)
  *   --group=asd|typically_developing  Filter by group
  *   --sessionType=color_shape|frog_jump|ai_doctor_bot  Filter by type
- *   --ageGroup=2-3.5|3.5-5.5|5.5-6.9  Filter by age group
+ *   --ageGroup=2-3.4|3.5-5.4|5.5-6.9 (legacy: 2-3.5|3.5-5.5|5.5-6.9)  Filter by age group
  *   --output=filename.csv  Output filename (default: export_<timestamp>.csv)
  */
 
 const admin = require('firebase-admin');
 const fs = require('fs');
 const path = require('path');
+const {
+  normalizeExportAgeGroupParam,
+  sessionAgeGroupMatchesFilter,
+  monthsInCanonicalCohort,
+  CANONICAL,
+} = require('../utils/ageGroup');
 
 // Initialize Firebase Admin
 const serviceAccount = require('../serviceAccountKey.json');
@@ -47,6 +53,10 @@ args.forEach(arg => {
     options.output = arg.split('=')[1];
   }
 });
+
+if (options.ageGroup) {
+  options.ageGroup = normalizeExportAgeGroupParam(options.ageGroup);
+}
 
 if (!options.output) {
   options.output = `export_${Date.now()}.csv`;
@@ -100,15 +110,15 @@ async function exportData() {
 
     // Filter by age group if specified
     // IMPORTANT: Each age group must only include its corresponding session type
-    // Age 2-3.5 → ai_doctor_bot (Questionnaire)
-    // Age 3.5-5.5 → frog_jump (Go/No-Go)
+    // Age 2-3.4 → ai_doctor_bot (Questionnaire)
+    // Age 3.5-5.4 → frog_jump (Go/No-Go)
     // Age 5.5-6.9 → color_shape (DCCS)
     if (options.ageGroup) {
       // Map age group to required session type
       const requiredSessionType = {
-        '2-3.5': 'ai_doctor_bot',
-        '3.5-5.5': 'frog_jump',
-        '5.5-6.9': 'color_shape'
+        [CANONICAL.FIRST]: 'ai_doctor_bot',
+        [CANONICAL.SECOND]: 'frog_jump',
+        [CANONICAL.THIRD]: 'color_shape'
       }[options.ageGroup];
 
       sessions = sessions.filter(s => {
@@ -118,19 +128,15 @@ async function exportData() {
         }
 
         // Additional validation: Check age_group field or child's age
-        if (s.age_group === options.ageGroup) {
+        if (sessionAgeGroupMatchesFilter(options.ageGroup, s.age_group)) {
           return true;
         }
         
         // Also check child's age if age_group not set
         const child = children[s.child_id];
-        if (child && child.age_in_months) {
+        if (child && child.age_in_months != null) {
           const ageMonths = child.age_in_months;
-          if (options.ageGroup === '2-3.5' && ageMonths >= 24 && ageMonths < 42) {
-            return true;
-          } else if (options.ageGroup === '3.5-5.5' && ageMonths >= 42 && ageMonths < 66) {
-            return true;
-          } else if (options.ageGroup === '5.5-6.9' && ageMonths >= 66 && ageMonths < 83) {
+          if (monthsInCanonicalCohort(options.ageGroup, ageMonths)) {
             return true;
           }
         }

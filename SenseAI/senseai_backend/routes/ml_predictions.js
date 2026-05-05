@@ -6,6 +6,7 @@
 
 const express = require('express');
 const axios = require('axios');
+const { ageGroupToMlEngine } = require('../utils/ageGroup');
 const router = express.Router();
 
 // FastAPI ML Engine URL
@@ -57,6 +58,7 @@ setInterval(checkMLEngine, 60000);
 router.post('/predict', async (req, res) => {
   try {
     const { mlFeatures, ageGroup, sessionType } = req.body;
+    const mlAgeGroup = ageGroupToMlEngine(ageGroup) || 'unknown';
     
     // Validate input
     if (!mlFeatures) {
@@ -76,7 +78,7 @@ router.post('/predict', async (req, res) => {
         {
           age_months: mlFeatures.age_months || 36,
           features: mlFeatures,
-          age_group: ageGroup || 'unknown',
+          age_group: mlAgeGroup,
           session_type: sessionType || 'unknown'
         },
         {
@@ -167,7 +169,7 @@ function fallbackPrediction(mlFeatures) {
   const totalQScore = Number(mlFeatures.total_q_score ?? 25);
 
   let asdProbability = 0.5;
-  // Questionnaire path (age 2-3.5): lower scores increase risk.
+  // Questionnaire path (age ~2–3.5y cohort): lower scores increase risk.
   if (Number.isFinite(totalQScore) && totalQScore > 0) {
     if (totalQScore <= 20) asdProbability += 0.30;
     else if (totalQScore <= 30) asdProbability += 0.15;

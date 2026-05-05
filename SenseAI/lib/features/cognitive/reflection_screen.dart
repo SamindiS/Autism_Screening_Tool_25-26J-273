@@ -179,12 +179,16 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
         try {
           final sessionData = await StorageService.saveSession(
             childId: widget.child.id,
-            sessionType: widget.child.age >= 3.5 && widget.child.age < 5.5 
-                ? 'frog_jump' 
-                : 'color_shape',
-            ageGroup: widget.child.age >= 3.5 && widget.child.age < 5.5 
-                ? '3.5-5.5' 
-                : '5.5-6.9',
+            sessionType: widget.child.age >= 2.0 && widget.child.age < 3.5
+                ? 'ai_doctor_bot'
+                : widget.child.age >= 3.5 && widget.child.age < 5.5
+                    ? 'frog_jump'
+                    : 'color_shape',
+            ageGroup: widget.child.age >= 2.0 && widget.child.age < 3.5
+                ? '2-3.4'
+                : widget.child.age >= 3.5 && widget.child.age < 5.5
+                    ? '3.5-5.4'
+                    : '5.5-6.9',
             startTime: DateTime.now().subtract(const Duration(minutes: 10)),
             endTime: DateTime.now(),
             gameResults: widget.gameResults.toJson(),

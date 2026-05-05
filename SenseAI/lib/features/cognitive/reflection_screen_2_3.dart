@@ -8,7 +8,7 @@ import '../settings/settings_screen.dart';
 import '../assessment/result_screen.dart';
 import '../../core/services/ml_service.dart';
 
-/// Specialized post-assessment reflection form for the 2-3.5 age bracket.
+/// Specialized post-assessment reflection form for the 2-3.4 age bracket.
 class ClinicianReflectionScreen23 extends StatefulWidget {
   final Child child;
   final String sessionId;
@@ -205,7 +205,7 @@ class _ClinicianReflectionScreen23State extends State<ClinicianReflectionScreen2
 
       final mlResult = await MLService.predict(
         mlFeatures: mlFeatures,
-        ageGroup: '2-3.5',
+        ageGroup: '2-3.4',
         sessionType: 'clinician_reflection',
       );
 
@@ -400,7 +400,7 @@ class _ClinicianReflectionScreen23State extends State<ClinicianReflectionScreen2
         children: [
           Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
           const SizedBox(width: 12),
-          Expanded(child: Text('Important: This age group (2-3.5) uses manual tasks for assessment.')),
+          Expanded(child: Text('Important: This age group (2-3.4) uses manual tasks for assessment.')),
         ],
       ),
     );

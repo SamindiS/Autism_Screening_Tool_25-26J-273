@@ -1,5 +1,11 @@
 const express = require('express');
 const { db } = require('../firebase');
+const {
+  normalizeExportAgeGroupParam,
+  sessionAgeGroupMatchesFilter,
+  monthsInCanonicalCohort,
+  CANONICAL,
+} = require('../utils/ageGroup');
 const router = express.Router();
 
 const childrenCollection = db.collection('children');
@@ -14,14 +20,15 @@ const trialsCollection = db.collection('trials');
  * - format: 'ml' (for ML training) or 'raw' (raw data export)
  * - sessionType: Filter by session type (optional)
  * - group: Filter by study group (optional)
- * - ageGroup: Filter by age group (optional: '2-3.5', '3.5-5.5', '5.5-6.9')
+ * - ageGroup: Filter by age group (optional: '2-3.4', '3.5-5.4', '5.5-6.9'; legacy: '2-3.5', '3.5-5.5')
  */
 router.get('/csv', async (req, res) => {
   try {
     const format = req.query.format || 'ml'; // 'ml' or 'raw'
     const sessionType = req.query.sessionType; // Optional filter
     const group = req.query.group; // Optional filter (asd, typically_developing)
-    const ageGroup = req.query.ageGroup; // Optional filter (2-3.5, 3.5-5.5, 5.5-6.9)
+    const ageGroupRaw = req.query.ageGroup;
+    const ageGroup = ageGroupRaw ? normalizeExportAgeGroupParam(ageGroupRaw) : null;
 
     console.log(`📊 Exporting data to CSV (format: ${format})`);
     if (ageGroup) {
@@ -84,15 +91,15 @@ router.get('/csv', async (req, res) => {
     
     // Filter by age group if specified
     // IMPORTANT: Each age group must only include its corresponding session type
-    // Age 2-3.5 → ai_doctor_bot (Questionnaire)
-    // Age 3.5-5.5 → frog_jump (Go/No-Go)
+    // Age 2-3.4 → ai_doctor_bot (Questionnaire)
+    // Age 3.5-5.4 → frog_jump (Go/No-Go)
     // Age 5.5-6.9 → color_shape (DCCS)
     if (ageGroup) {
       // Map age group to required session type
       const requiredSessionType = {
-        '2-3.5': 'ai_doctor_bot',
-        '3.5-5.5': 'frog_jump',
-        '5.5-6.9': 'color_shape'
+        [CANONICAL.FIRST]: 'ai_doctor_bot',
+        [CANONICAL.SECOND]: 'frog_jump',
+        [CANONICAL.THIRD]: 'color_shape'
       }[ageGroup];
 
       filteredSessions = filteredSessions.filter(s => {
@@ -102,19 +109,15 @@ router.get('/csv', async (req, res) => {
         }
 
         // Additional validation: Check age_group field or child's age
-        if (s.age_group === ageGroup) {
+        if (sessionAgeGroupMatchesFilter(ageGroup, s.age_group)) {
           return true;
         }
         
         // Also check child's age if age_group not set
         const child = children[s.child_id];
-        if (child && child.age_in_months) {
+        if (child && child.age_in_months != null) {
           const ageMonths = child.age_in_months;
-          if (ageGroup === '2-3.5' && ageMonths >= 24 && ageMonths < 42) {
-            return true;
-          } else if (ageGroup === '3.5-5.5' && ageMonths >= 42 && ageMonths < 66) {
-            return true;
-          } else if (ageGroup === '5.5-6.9' && ageMonths >= 66 && ageMonths < 83) {
+          if (monthsInCanonicalCohort(ageGroup, ageMonths)) {
             return true;
           }
         }

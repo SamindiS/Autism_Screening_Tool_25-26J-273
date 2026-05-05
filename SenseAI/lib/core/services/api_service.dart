@@ -899,7 +899,7 @@ class ApiService {
   /// - format: 'ml' (for ML training) or 'raw' (raw data)
   /// - group: Optional filter by group ('asd' or 'typically_developing')
   /// - sessionType: Optional filter by session type
-  /// - ageGroup: Optional filter by age group ('2-3.5', '3.5-5.5', '5.5-6.9')
+  /// - ageGroup: Optional filter by age group ('2-3.4', '3.5-5.4', '5.5-6.9'; legacy aliases still accepted server-side)
   static Future<String> exportCSV({
     String format = 'ml',
     String? group,

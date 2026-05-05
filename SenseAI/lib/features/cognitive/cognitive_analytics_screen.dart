@@ -367,8 +367,8 @@ class _CognitiveAnalyticsScreenState extends State<CognitiveAnalyticsScreen> {
                 showTitles: true,
                 getTitlesWidget: (value, meta) {
                   const style = TextStyle(fontWeight: FontWeight.bold, fontSize: 12);
-                  if (value.toInt() == 0) return SideTitleWidget(child: Text(l10n?.translate('age_group_2_3') ?? '2-3.5 yrs', style: style), axisSide: meta.axisSide);
-                  if (value.toInt() == 1) return SideTitleWidget(child: Text(l10n?.translate('age_group_3_5') ?? '3.5-5.5 yrs', style: style), axisSide: meta.axisSide);
+                  if (value.toInt() == 0) return SideTitleWidget(child: Text(l10n?.translate('age_group_2_3') ?? '2-3.4 yrs', style: style), axisSide: meta.axisSide);
+                  if (value.toInt() == 1) return SideTitleWidget(child: Text(l10n?.translate('age_group_3_5') ?? '3.5-5.4 yrs', style: style), axisSide: meta.axisSide);
                   if (value.toInt() == 2) return SideTitleWidget(child: Text(l10n?.translate('age_group_5_6') ?? '5.5-6.9 yrs', style: style), axisSide: meta.axisSide);
                   return const SizedBox.shrink();
                 },

@@ -165,26 +165,9 @@ const ChildDetails = () => {
         <Button startIcon={<ArrowBack />} onClick={() => navigate('/children')}>
           {t('back')}
         </Button>
-        <Box display="flex" gap={1} flexWrap="wrap" justifyContent="flex-end">
-          <Button
-            startIcon={<Download />}
-            variant="outlined"
-            onClick={async () => {
-              if (!id) return
-              try {
-                await exportChildToPDF(id, { cognitiveOnly: true })
-              } catch (error) {
-                console.error('Export error:', error)
-                alert(t('error_occurred'))
-              }
-            }}
-          >
-            {t('export_cognitive_pdf')}
-          </Button>
-          <Button startIcon={<Download />} variant="contained" onClick={handleExportPDF}>
-            {t('export_pdf')}
-          </Button>
-        </Box>
+        <Button startIcon={<Download />} variant="contained" onClick={handleExportPDF}>
+          {t('export_pdf')}
+        </Button>
       </Box>
 
       <Typography variant="h4" gutterBottom fontWeight="bold">

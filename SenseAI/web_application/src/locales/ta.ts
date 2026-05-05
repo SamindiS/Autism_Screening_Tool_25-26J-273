@@ -41,8 +41,7 @@ const ta = {
   "english": "English",
   "sinhala": "Sinhala",
   "tamil": "தமிழ்",
-  "admin_portal": "மருத்துவர் மற்றும் ஆராய்ச்சி போர்ட்டல்",
-  "export_cognitive_pdf": "அறிவாற்றல் அறிக்கை (PDF)"
+  "admin_portal": "மருத்துவர் மற்றும் ஆராய்ச்சி போர்ட்டல்"
 };
 
 export default ta;

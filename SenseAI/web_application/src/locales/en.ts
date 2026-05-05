@@ -92,7 +92,6 @@ const en = {
   "manual_assessment": "Manual Assessment",
   "back": "Back",
   "export_pdf": "Export to PDF",
-  "export_cognitive_pdf": "Cognitive report (PDF)",
   "child_details": "Child Details",
   "name": "Name",
   "examined_by": "Examined by",

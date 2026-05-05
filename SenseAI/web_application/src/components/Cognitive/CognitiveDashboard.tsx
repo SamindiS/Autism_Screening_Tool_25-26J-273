@@ -6,7 +6,6 @@ import {
   Grid,
   Card,
   CardContent,
-  CardActionArea,
   CircularProgress,
   TextField,
   Chip,
@@ -17,11 +16,14 @@ import {
   TableHead,
   TableRow,
   Button,
+  IconButton,
+  Tooltip,
 } from '@mui/material'
-import { Psychology, Person, Visibility } from '@mui/icons-material'
+import { Psychology, Person, PictureAsPdf } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { childrenApi, sessionsApi } from '../../services/api'
+import { exportChildToPDF } from '../../services/export'
 import { format } from 'date-fns'
 
 const CognitiveDashboard = () => {
@@ -260,19 +262,26 @@ const CognitiveDashboard = () => {
             const childSessions = getChildSessions(child.id)
             return (
               <Grid item xs={12} md={6} lg={4} key={child.id}>
-                <Card>
-                  <CardActionArea onClick={() => navigate(`/children/${child.id}`)}>
-                    <CardContent>
-                      <Box display="flex" alignItems="center" gap={2} mb={2}>
-                        <Person sx={{ fontSize: 40, color: 'primary.main' }} />
-                        <Box flex={1}>
-                          <Typography variant="h6">{child.name}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {child.child_code || '-'}
-                          </Typography>
+                <Card variant="outlined">
+                  <CardContent sx={{ p: 2 }}>
+                    <Box display="flex" alignItems="flex-start" gap={0.5}>
+                      <Box
+                        flex={1}
+                        onClick={() => navigate(`/children/${child.id}`)}
+                        sx={{ cursor: 'pointer', minWidth: 0 }}
+                      >
+                        <Box display="flex" alignItems="center" gap={2} mb={2}>
+                          <Person sx={{ fontSize: 40, color: 'primary.main' }} />
+                          <Box flex={1} minWidth={0}>
+                            <Typography variant="h6" noWrap title={child.name}>
+                              {child.name}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" noWrap>
+                              {child.child_code || '-'}
+                            </Typography>
+                          </Box>
                         </Box>
-                      </Box>
-                      
+
                       <Box display="flex" gap={1} mb={2} flexWrap="wrap">
                         {/* Primary Highlight: Latest Assessment Result */}
                         {childSessions.length > 0 ? (
@@ -329,8 +338,26 @@ const CognitiveDashboard = () => {
                       <Typography variant="body2" color="text.secondary">
                         {childSessions.length} {t('cognitive')} {t('sessions')}
                       </Typography>
-                    </CardContent>
-                  </CardActionArea>
+                      </Box>
+                      <Tooltip title={t('export_cognitive_pdf')}>
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          aria-label={t('export_cognitive_pdf')}
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            try {
+                              await exportChildToPDF(child.id, { cognitiveOnly: true })
+                            } catch {
+                              alert(t('error_occurred'))
+                            }
+                          }}
+                        >
+                          <PictureAsPdf fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </CardContent>
                 </Card>
               </Grid>
             )

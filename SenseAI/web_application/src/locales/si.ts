@@ -41,7 +41,8 @@ const si = {
   "english": "English",
   "sinhala": "සිංහල",
   "tamil": "Tamil",
-  "admin_portal": "වෛද්‍ය සහ පර්යේෂණ ද්වාරය"
+  "admin_portal": "වෛද්‍ය සහ පර්යේෂණ ද්වාරය",
+  "export_cognitive_pdf": "සංජානන වාර්තාව (PDF)"
 };
 
 export default si;

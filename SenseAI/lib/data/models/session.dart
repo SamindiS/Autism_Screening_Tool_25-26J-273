@@ -50,7 +50,7 @@ class AssessmentSession {
   /// Identify the specific module run (e.g. 'ai_doctor_bot', 'frog_jump', 'color_shape').
   final String sessionType;
   
-  /// Expected or targeted age cohort for the session (e.g., '2-3.4').
+  /// Expected or targeted age cohort for the session (e.g., '2-3.5').
   final String? ageGroup;
   
   /// The current state of the session in its lifecycle.

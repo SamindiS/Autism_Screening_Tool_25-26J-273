@@ -8,7 +8,6 @@
 
 const express = require('express');
 const axios = require('axios');
-const { ageGroupToMlEngine } = require('../utils/ageGroup');
 const router = express.Router();
 
 // FastAPI ML Engine URL
@@ -73,7 +72,6 @@ setInterval(checkMLEngine, 30000);
 router.post('/predict', async (req, res) => {
   try {
     const { mlFeatures, ageGroup, sessionType } = req.body;
-    const mlAgeGroup = ageGroupToMlEngine(ageGroup) || 'unknown';
     
     // Validate input
     if (!mlFeatures) {
@@ -93,7 +91,7 @@ router.post('/predict', async (req, res) => {
         {
           age_months: mlFeatures.age_months || 36,
           features: mlFeatures,
-          age_group: mlAgeGroup,
+          age_group: ageGroup || 'unknown',
           session_type: sessionType || 'unknown'
         },
         {

@@ -197,7 +197,7 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
       final sessionData = await StorageService.saveSession(
         childId: widget.child.id,
         sessionType: 'ai_doctor_bot',
-        ageGroup: '2-3.4',
+        ageGroup: '2-3.5',
         startTime: _startTime!,
       );
       
@@ -296,7 +296,7 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
             // Ensure age_months is present for the backend router
             'age_months': (widget.child.age * 12).round(),
           },
-          ageGroup: '2-3.4',
+          ageGroup: '2-3.5',
           sessionType: 'ai_doctor_bot',
         );
 
@@ -388,7 +388,7 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
           final sessionData = await StorageService.saveSession(
             childId: widget.child.id,
             sessionType: 'ai_doctor_bot',
-            ageGroup: '2-3.4',
+            ageGroup: '2-3.5',
             startTime: _startTime!,
             endTime: DateTime.now(),
             questionnaireResults: results,
@@ -408,7 +408,7 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
         final sessionData = await StorageService.saveSession(
           childId: widget.child.id,
           sessionType: 'ai_doctor_bot',
-          ageGroup: '2-3.4',
+          ageGroup: '2-3.5',
           startTime: _startTime!,
           endTime: DateTime.now(),
           questionnaireResults: results,
@@ -436,7 +436,7 @@ class _AIDoctorBotScreenState extends State<AIDoctorBotScreen>
         // Close loading dialog
         Navigator.of(context).pop();
         
-        // Navigate to Clinical Reflection for 2-3.4 age group
+        // Navigate to Clinical Reflection for 2-3.5 age group
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(

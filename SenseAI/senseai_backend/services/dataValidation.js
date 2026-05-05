@@ -119,16 +119,16 @@ const validateSession = async (sessionData, isUpdate = false) => {
           const age = (Date.now() - childData.date_of_birth) / (1000 * 60 * 60 * 24 * 365.25);
           const ageInMonths = Math.floor((Date.now() - childData.date_of_birth) / (1000 * 60 * 60 * 24 * 30.44));
           
-          if (sessionData.session_type === 'ai_doctor_bot' && (age < 2 || age >= 3.5)) {
-            warnings.push(`AI Doctor Bot is recommended for ages 2.0–<3.5 years, child is ${age.toFixed(1)} years`);
+          if (sessionData.session_type === 'ai_doctor_bot' && (age < 2 || age > 3.5)) {
+            warnings.push(`AI Doctor Bot is recommended for ages 2-3.5 years, child is ${age.toFixed(1)} years`);
           }
           
-          if (sessionData.session_type === 'frog_jump' && (age < 3.5 || age >= 5.5)) {
-            warnings.push(`Frog Jump is recommended for ages 3.5–<5.5 years, child is ${age.toFixed(1)} years`);
+          if (sessionData.session_type === 'frog_jump' && (age < 3.5 || age > 5.5)) {
+            warnings.push(`Frog Jump is recommended for ages 3.5-5.5 years, child is ${age.toFixed(1)} years`);
           }
           
-          if (sessionData.session_type === 'color_shape' && (age < 5.5 || age >= 6.9)) {
-            warnings.push(`Color-Shape Game is recommended for ages 5.5–<6.9 years, child is ${age.toFixed(1)} years`);
+          if (sessionData.session_type === 'color_shape' && (age < 5.5 || age > 6.8)) {
+            warnings.push(`Color-Shape Game is recommended for ages 5.5-6.8 years, child is ${age.toFixed(1)} years`);
           }
         }
       }

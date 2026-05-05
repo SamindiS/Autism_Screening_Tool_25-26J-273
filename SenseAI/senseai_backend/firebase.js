@@ -66,10 +66,15 @@ if (hasVisualEnvCredentials) {
 let app;
 if (mainConfig) {
   try {
-    app = admin.initializeApp({
-      credential: admin.credential.cert(mainConfig),
-    }, 'main');
-    console.log('✅ Main Firebase connected!');
+    if (admin.apps.length > 0 && admin.apps.find(a => a.name === 'main')) {
+      app = admin.app('main');
+      console.log('✅ Main Firebase re-used from cache!');
+    } else {
+      app = admin.initializeApp({
+        credential: admin.credential.cert(mainConfig),
+      }, 'main');
+      console.log('✅ Main Firebase connected!');
+    }
   } catch (err) {
     console.error('❌ Failed to initialize Main Firebase:', err.message);
   }
@@ -78,11 +83,17 @@ if (mainConfig) {
 let visualDb = null;
 if (visualConfig) {
   try {
-    const visualApp = admin.initializeApp({
-      credential: admin.credential.cert(visualConfig),
-    }, 'visual');
+    let visualApp;
+    if (admin.apps.length > 0 && admin.apps.find(a => a.name === 'visual')) {
+      visualApp = admin.app('visual');
+      console.log('✅ Visual Firebase re-used from cache!');
+    } else {
+      visualApp = admin.initializeApp({
+        credential: admin.credential.cert(visualConfig),
+      }, 'visual');
+      console.log(`✅ Visual Firebase connected!`);
+    }
     visualDb = admin.firestore(visualApp);
-    console.log(`✅ Visual Firebase connected!`);
   } catch (err) {
     console.error('⚠️  Failed to initialize Visual Firebase:', err.message);
   }

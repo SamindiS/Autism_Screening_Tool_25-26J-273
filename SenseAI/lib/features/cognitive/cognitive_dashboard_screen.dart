@@ -779,8 +779,8 @@ class _CognitiveDashboardScreenState extends State<CognitiveDashboardScreen> {
                       spacing: 8,
                       children: [
                         buildChoiceChip(l10n?.translate('all_ages_label') ?? 'All Ages', null, tempAgeGroup, (v) => setState(() => tempAgeGroup = v)),
-                        buildChoiceChip('2-3.4', '2-3.4', tempAgeGroup, (v) => setState(() => tempAgeGroup = v)),
-                        buildChoiceChip('3.5-5.4', '3.5-5.4', tempAgeGroup, (v) => setState(() => tempAgeGroup = v)),
+                        buildChoiceChip('2-3.5', '2-3.5', tempAgeGroup, (v) => setState(() => tempAgeGroup = v)),
+                        buildChoiceChip('3.5-5.5', '3.5-5.5', tempAgeGroup, (v) => setState(() => tempAgeGroup = v)),
                         buildChoiceChip('5.5-6.9', '5.5-6.9', tempAgeGroup, (v) => setState(() => tempAgeGroup = v)),
                       ],
                     ),

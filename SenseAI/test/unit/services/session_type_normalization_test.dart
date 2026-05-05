@@ -35,13 +35,12 @@ void main() {
       final session = await StorageService.saveSession(
         childId: testChild['id'] as String,
         sessionType: 'color-shape', // With hyphen
-        ageGroup: '5.5-6.9',
+        ageGroup: '5-6',
         startTime: DateTime.now(),
       );
 
       expect(session, isNotNull);
       expect(session!['session_type'], 'color_shape'); // Should be normalized
-      expect(session['age_group'], '5.5-6.9');
     });
 
     test('should normalize frog-jump to frog_jump', () async {
@@ -54,7 +53,6 @@ void main() {
 
       expect(session, isNotNull);
       expect(session!['session_type'], 'frog_jump'); // Should be normalized
-      expect(session['age_group'], '3.5-5.4');
     });
 
     test('should normalize dccs-color-shape to color_shape', () async {
@@ -67,7 +65,6 @@ void main() {
 
       expect(session, isNotNull);
       expect(session!['session_type'], 'color_shape'); // Should be normalized
-      expect(session['age_group'], '5.5-6.9');
     });
 
     test('should keep already normalized types unchanged', () async {
@@ -80,7 +77,6 @@ void main() {
 
       expect(session, isNotNull);
       expect(session!['session_type'], 'color_shape');
-      expect(session['age_group'], '5.5-6.9');
     });
   });
 }

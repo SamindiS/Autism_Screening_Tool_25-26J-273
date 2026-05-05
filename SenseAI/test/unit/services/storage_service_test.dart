@@ -160,14 +160,14 @@ void main() {
         final session = await StorageService.saveSession(
           childId: childId,
           sessionType: 'color_shape',
-          ageGroup: '5.5-6.9',
+          ageGroup: '5-6',
           startTime: DateTime.now(),
         );
 
         expect(session, isNotNull);
         expect(session!['child_id'], childId);
         expect(session['session_type'], 'color_shape');
-        expect(session['age_group'], '5.5-6.9');
+        expect(session['age_group'], '5-6');
       });
 
       test('should retrieve all sessions from local database', () async {
@@ -190,7 +190,7 @@ void main() {
         await StorageService.saveSession(
           childId: child!['id'] as String,
           sessionType: 'color_shape',
-          ageGroup: '5.5-6.9',
+          ageGroup: '5-6',
           startTime: DateTime.now(),
         );
 

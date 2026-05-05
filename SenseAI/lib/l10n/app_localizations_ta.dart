@@ -122,7 +122,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get ageRange =>
-      'வயது குறைந்தபட்சம் 2.0 ஆண்டுகள் இருக்க வேண்டும் மற்றும் 6.9 ஆண்டுகளுக்கு குறைவாக இருக்க வேண்டும்';
+      'வயது 2.0 மற்றும் 6.0 ஆண்டுகளுக்கு இடையில் இருக்க வேண்டும்';
 
   @override
   String get startAssessment => 'மதிப்பீட்டைத் தொடங்கு';
@@ -134,10 +134,10 @@ class AppLocalizationsTa extends AppLocalizations {
   String get ageGroup23 => '2.0 - 3.4 ஆண்டுகள்';
 
   @override
-  String get ageGroup35 => '3.5 - 5.4 ஆண்டுகள்';
+  String get ageGroup35 => '3.5 - 5.5 ஆண்டுகள்';
 
   @override
-  String get ageGroup56 => '5.5 - 6.9 ஆண்டுகள்';
+  String get ageGroup56 => '5.6 - 6.0 ஆண்டுகள்';
 
   @override
   String get assessment23 => 'பெற்றோர் நேர்காணல் போட்';
@@ -200,7 +200,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get clinicianProfile => 'மருத்துவர் சுயவிவரம்';
 
   @override
-  String get clinicianReflection23 => 'மருத்துவர் பிரதிபலிப்பு (வயது 2-3.4)';
+  String get clinicianReflection23 => 'மருத்துவர் பிரதிபலிப்பு (வயது 2-3.5)';
 
   @override
   String get manualTasks => 'கைமுறை அறிவாற்றல் நெகிழ்வுத்தன்மை பணிகள்';
@@ -790,7 +790,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get importantNoteText =>
-      'This child (ages 2-3.4) did NOT play tablet games. Please use physical objects (blocks, toys, etc.) to assess cognitive flexibility and rule-switching. Observe how the child adapts when rules change.';
+      'This child (ages 2-3.5) did NOT play tablet games. Please use physical objects (blocks, toys, etc.) to assess cognitive flexibility and rule-switching. Observe how the child adapts when rules change.';
 
   @override
   String get taskToPerform => 'Task to Perform:';

@@ -10,11 +10,11 @@ import '../settings/settings_screen.dart';
 import '../assessment/result_screen.dart';
 
 /// Post-assessment clinician observation form.
-///
+/// 
 /// Completes the screening workflow by capturing expert clinical ratings on
-/// key behavioral indicators (attention, engagement, frustration, instructions,
+/// key behavioral indicators (attention, engagement, frustration, instructions, 
 /// overall). Crucially, it manages the fusion of the child's raw game performance
-/// metrics with the clinician's subjective ratings to determine a finalized
+/// metrics with the clinician's subjective ratings to determine a finalized 
 /// synthesized risk score/level.
 class ClinicianReflectionScreen extends StatefulWidget {
   final Child child;
@@ -29,8 +29,7 @@ class ClinicianReflectionScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<ClinicianReflectionScreen> createState() =>
-      _ClinicianReflectionScreenState();
+  State<ClinicianReflectionScreen> createState() => _ClinicianReflectionScreenState();
 }
 
 class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
@@ -69,8 +68,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
     },
     {
       'id': 'overall',
-      'question':
-          'Overall, how would you rate the child\'s behavior during assessment?',
+      'question': 'Overall, how would you rate the child\'s behavior during assessment?',
       'label': 'Overall Behavior',
       'icon': Icons.star,
     },
@@ -78,13 +76,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
 
   final Map<String, List<String>> _scaleLabels = {
     'attention': ['Very Poor', 'Poor', 'Average', 'Good', 'Excellent'],
-    'engagement': [
-      'Not Engaged',
-      'Minimal',
-      'Moderate',
-      'Good',
-      'Very Engaged'
-    ],
+    'engagement': ['Not Engaged', 'Minimal', 'Moderate', 'Good', 'Very Engaged'],
     'frustration': ['Very Low', 'Low', 'Moderate', 'Good', 'Excellent'],
     'instructions': ['Very Poor', 'Poor', 'Average', 'Good', 'Excellent'],
     'overall': ['Concerning', 'Below Average', 'Average', 'Good', 'Excellent'],
@@ -103,8 +95,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
       final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n?.translate('please_answer_all_questions') ??
-              'Please answer all questions'),
+          content: Text(l10n?.translate('please_answer_all_questions') ?? 'Please answer all questions'),
           backgroundColor: Colors.red,
         ),
       );
@@ -123,28 +114,24 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
         'overall': _overallBehavior!,
       };
 
-      final avgReflectionScore =
-          reflectionScores.values.reduce((a, b) => a + b) /
-              reflectionScores.length;
+      final avgReflectionScore = reflectionScores.values.reduce((a, b) => a + b) / reflectionScores.length;
 
       // ✅ Prioritize ML prediction if available (from trained models)
       double finalRiskScore;
       String riskLevel;
-
-      if (widget.gameResults.mlPrediction != null &&
-          widget.gameResults.riskScore != null &&
+      
+      if (widget.gameResults.mlPrediction != null && 
+          widget.gameResults.riskScore != null && 
           widget.gameResults.riskLevel != null) {
         // Use ML prediction from trained model
         finalRiskScore = widget.gameResults.riskScore!;
         riskLevel = widget.gameResults.riskLevel!;
-        debugPrint(
-            '✅ Using ML prediction: $riskLevel (${finalRiskScore.toStringAsFixed(1)}%)');
+        debugPrint('✅ Using ML prediction: $riskLevel (${finalRiskScore.toStringAsFixed(1)}%)');
       } else {
         // Fallback to rule-based calculation
         // Combine game metrics (60%) with behavioral observations (40%)
         // Lower combined score ⇒ higher ASD risk
-        final gameScore =
-            widget.gameResults.accuracy / 100.0 * 5.0; // Convert to 1-5 scale
+        final gameScore = widget.gameResults.accuracy / 100.0 * 5.0; // Convert to 1-5 scale
         finalRiskScore = (gameScore * 0.6) + (avgReflectionScore * 0.4);
 
         // Determine risk level purely from performance (all children, all groups)
@@ -156,8 +143,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
           riskLevel = 'low';
         }
 
-        debugPrint(
-            '⚠️  Using rule-based calculation: $riskLevel (${finalRiskScore.toStringAsFixed(1)})');
+        debugPrint('⚠️  Using rule-based calculation: $riskLevel (${finalRiskScore.toStringAsFixed(1)})');
       }
 
       // Save reflection data
@@ -210,7 +196,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
             riskScore: finalRiskScore,
             riskLevel: riskLevel.toLowerCase(),
           );
-
+          
           if (sessionData != null && sessionData['id'] != null) {
             // Use the new session ID
             finalSessionId = sessionData['id'] as String;
@@ -267,8 +253,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)?.clinicianReflection ??
-            'Clinician Reflection'),
+        title: Text(AppLocalizations.of(context)?.clinicianReflection ?? 'Clinician Reflection'),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         actions: [
@@ -331,12 +316,8 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
                     final l10n = AppLocalizations.of(context);
                     final translatedQuestion = {
                       ...q,
-                      'question': l10n?.translate(
-                              'reflectionQuestion${q['id'].toString().substring(0, 1).toUpperCase()}${q['id'].toString().substring(1)}') ??
-                          q['question'],
-                      'label': l10n?.translate(
-                              'reflectionLabel${q['id'].toString().substring(0, 1).toUpperCase()}${q['id'].toString().substring(1)}') ??
-                          q['label'],
+                      'question': l10n?.translate('reflectionQuestion${q['id'].toString().substring(0, 1).toUpperCase()}${q['id'].toString().substring(1)}') ?? q['question'],
+                      'label': l10n?.translate('reflectionLabel${q['id'].toString().substring(0, 1).toUpperCase()}${q['id'].toString().substring(1)}') ?? q['label'],
                     };
                     return _buildQuestionCard(translatedQuestion);
                   }),
@@ -393,8 +374,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
                     Builder(builder: (ctx) {
                       final l10n = AppLocalizations.of(ctx);
                       return Text(
-                        l10n?.translate('behavioral_observation_header') ??
-                            'Behavioral Observation',
+                        l10n?.translate('behavioral_observation_header') ?? 'Behavioral Observation',
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -436,8 +416,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
             child: Builder(builder: (ctx) {
               final l10n = AppLocalizations.of(ctx);
               return Text(
-                l10n?.translate('game_reflection_instructions') ??
-                    'Please observe and rate the child\'s behavior during the game assessment. Your observations will help determine the child\'s autism risk level.',
+                l10n?.translate('game_reflection_instructions') ?? 'Please observe and rate the child\'s behavior during the game assessment. Your observations will help determine the child\'s autism risk level.',
                 style: TextStyle(
                   color: Colors.blue.shade900,
                   fontSize: 14,
@@ -556,8 +535,9 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
                           : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color:
-                            isSelected ? Colors.orange : Colors.grey.shade300,
+                        color: isSelected
+                            ? Colors.orange
+                            : Colors.grey.shade300,
                         width: isSelected ? 3 : 1,
                       ),
                     ),
@@ -575,18 +555,14 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          l10n?.translate(
-                                  'scale${questionId.substring(0, 1).toUpperCase()}${questionId.substring(1)}${value}') ??
-                              labels[index],
+                          l10n?.translate('scale${questionId.substring(0, 1).toUpperCase()}${questionId.substring(1)}${value}') ?? labels[index],
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 10,
                             color: isSelected
                                 ? Colors.orange.shade900
                                 : Colors.grey.shade600,
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                           ),
                         ),
                       ],
@@ -627,8 +603,7 @@ class _ClinicianReflectionScreenState extends State<ClinicianReflectionScreen> {
             : Builder(builder: (ctx) {
                 final l10n = AppLocalizations.of(ctx);
                 return Text(
-                  l10n?.translate('complete_assessment') ??
-                      'COMPLETE ASSESSMENT',
+                  l10n?.translate('complete_assessment') ?? 'COMPLETE ASSESSMENT',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

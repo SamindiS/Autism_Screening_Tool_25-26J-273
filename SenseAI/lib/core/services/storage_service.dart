@@ -12,10 +12,10 @@ import 'api_service.dart';
 import 'offline_sync_service.dart';
 
 /// Centralized service for local data persistence and offline capabilities.
-///
+/// 
 /// This service orchestrates all database operations using `sqflite`. It provides
 /// a sophisticated caching layer that seamlessly syncs with the remote API when
-/// online, while ensuring that all CRUD operations function immediately and reliably
+/// online, while ensuring that all CRUD operations function immediately and reliably 
 /// when offline. It primarily handles [children], [sessions], and [trials].
 class StorageService {
   static Database? _database;
@@ -37,7 +37,8 @@ class StorageService {
 
     return await openDatabase(
       path,
-      version: 7, // v7: external_diagnosis, data_source, ml_prediction
+      version:
+          7, // v7: external_diagnosis, data_source, ml_prediction
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -166,17 +167,12 @@ class StorageService {
     }
     if (oldVersion < 7) {
       // Add clinical ground truth and data source fields
-      await db
-          .execute('ALTER TABLE children ADD COLUMN external_diagnosis TEXT');
-      await db
-          .execute('ALTER TABLE children ADD COLUMN previous_diagnosis TEXT');
-      await db.execute(
-          "ALTER TABLE children ADD COLUMN data_source TEXT NOT NULL DEFAULT 'app_live'");
-
-      await db
-          .execute('ALTER TABLE sessions ADD COLUMN external_diagnosis TEXT');
-      await db.execute(
-          "ALTER TABLE sessions ADD COLUMN data_source TEXT NOT NULL DEFAULT 'app_live'");
+      await db.execute('ALTER TABLE children ADD COLUMN external_diagnosis TEXT');
+      await db.execute('ALTER TABLE children ADD COLUMN previous_diagnosis TEXT');
+      await db.execute("ALTER TABLE children ADD COLUMN data_source TEXT NOT NULL DEFAULT 'app_live'");
+      
+      await db.execute('ALTER TABLE sessions ADD COLUMN external_diagnosis TEXT');
+      await db.execute("ALTER TABLE sessions ADD COLUMN data_source TEXT NOT NULL DEFAULT 'app_live'");
       await db.execute('ALTER TABLE sessions ADD COLUMN ml_prediction TEXT');
     }
   }
@@ -382,10 +378,8 @@ class StorageService {
         'clinician_id': updated['clinician_id'] ?? clinicianId,
         'clinician_name': updated['clinician_name'] ?? clinicianName,
         'diagnosis_type': updated['diagnosis_type'] ?? diagnosisType,
-        'external_diagnosis':
-            updated['external_diagnosis'] ?? externalDiagnosis,
-        'previous_diagnosis':
-            updated['previous_diagnosis'] ?? previousDiagnosis,
+        'external_diagnosis': updated['external_diagnosis'] ?? externalDiagnosis,
+        'previous_diagnosis': updated['previous_diagnosis'] ?? previousDiagnosis,
         'created_at':
             updated['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
       });
